@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(dirname \"$0\")/../scripts/setup-statusline.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

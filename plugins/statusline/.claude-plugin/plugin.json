@@ -1,0 +1,9 @@
+{
+  "name": "statusline",
+  "version": "1.0.0",
+  "description": "Custom Claude Code statusline with API rate limits, context window, git branch, model info",
+  "author": { "name": "Tribe Coding" },
+  "license": "MIT",
+  "commands": ["./commands/"],
+  "hooks": "./hooks/hooks.json"
+}

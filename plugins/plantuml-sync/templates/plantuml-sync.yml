@@ -1,0 +1,32 @@
+name: PlantUML Sync Check
+
+on:
+  pull_request:
+    paths:
+      - '**/*.md'
+
+jobs:
+  check-plantuml:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Check PlantUML URLs match source blocks
+        run: |
+          # Get list of changed .md files
+          CHANGED_MD=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- '*.md')
+
+          if [ -z "$CHANGED_MD" ]; then
+            echo "No markdown files changed."
+            exit 0
+          fi
+
+          echo "Checking files: $CHANGED_MD"
+          python3 scripts/plantuml-encode.py --check $CHANGED_MD
