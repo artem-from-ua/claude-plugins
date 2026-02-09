@@ -2,6 +2,42 @@
 
 A marketplace of reusable plugins for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
 
+## Quick Reference
+
+| Plugin | Type | Name | Invocation | Description |
+|--------|------|------|------------|-------------|
+| **plantuml** | hook | PostToolUse | *automatic* | Auto-sync PlantUML image URLs on `.md` edits |
+| | hook | SessionStart | *automatic* | Inject base formatting rules + install pre-commit hook |
+| | command | `plantuml-validate` | `/plantuml:plantuml-validate` | Check all diagram URLs are in sync |
+| | skill | `plantuml-diagram-guide` | *on-demand* | Full catalog of 16 diagram types with selection guide |
+| **statusline** | hook | SessionStart | *automatic* | Install statusline script to `~/.claude/` |
+| | command | `statusline-setup` | `/statusline:statusline-setup` | Configure statusline in `~/.claude/settings.json` |
+
+## Installation
+
+### Add the marketplace
+
+```bash
+/plugin marketplace add Tribe-Coding/claude-plugins
+```
+
+### Install a plugin
+
+```bash
+/plugin install plantuml@tribe-coding
+/plugin install statusline@tribe-coding
+```
+
+### Enable auto-updates
+
+After installing, enable automatic updates so plugins stay in sync with the latest fixes:
+
+```bash
+/plugin
+```
+
+Then select the installed plugin and enable **auto-update**.
+
 ## Available Plugins
 
 ### plantuml
@@ -29,31 +65,6 @@ Custom Claude Code statusline with real-time API usage info.
 - 5-hour and 7-day rate limit progress bars with time remaining
 - Anthropic OAuth usage API integration (cached 60s)
 - Setup command: `/statusline:statusline-setup`
-
-## Installation
-
-### Add the marketplace
-
-```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-```
-
-### Install a plugin
-
-```bash
-/plugin install plantuml@tribe-coding
-/plugin install statusline@tribe-coding
-```
-
-### Enable auto-updates
-
-After installing, enable automatic updates so plugins stay in sync with the latest fixes:
-
-```bash
-/plugin
-```
-
-Then select the installed plugin and enable **auto-update**.
 
 ## Plugin Structure
 
