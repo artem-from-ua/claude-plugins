@@ -20,11 +20,14 @@ Alice -> Bob: Hello
 
 ![Sequence Diagram](https://www.plantuml.com/plantuml/svg/<encoded>)
 
+Proactive usage:
+- When creating or updating `.md` documentation files, proactively add PlantUML diagrams to illustrate architecture, sequences, state machines, data flow, and component relationships.
+- When explaining architecture or flows in the terminal, render diagrams as ASCII art using box-drawing characters — do NOT paste raw PlantUML source.
+- Use the `plantuml-diagram-guide` skill to choose the right diagram type for the task.
+
 Rules:
 - Always keep both parts in sync. When you modify PlantUML source, the PostToolUse hook auto-updates the image URL.
 - Use SVG format (`/svg/` path) unless PNG is specifically requested.
 - The alt text in the image link should be a short description of the diagram.
 - Place a blank line between the closing ``` and the image link.
-- In terminal/TUI interactions, render diagrams as ASCII art using box-drawing characters — do NOT paste raw PlantUML source.
-- For the full diagram type catalog (sequence, activity, state, class, ER, etc.), invoke the `plantuml-diagram-guide` skill.
 RULES
