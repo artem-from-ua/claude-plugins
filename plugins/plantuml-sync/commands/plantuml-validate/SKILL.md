@@ -1,3 +1,11 @@
+---
+name: plantuml-validate
+description: >
+  Validate that all PlantUML diagram URLs in markdown files match their
+  source blocks. Reports missing or stale URLs and offers auto-fix.
+compatibility: Requires Python 3.x
+---
+
 # PlantUML Validate
 
 Validate that all PlantUML diagram URLs in markdown files are in sync with their source blocks.
