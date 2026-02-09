@@ -2,7 +2,7 @@
 # SessionStart hook: install PlantUML pre-commit hook in the current project.
 # Idempotent — only installs if not already present.
 
-PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 
 # Only run in git repos

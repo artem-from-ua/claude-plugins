@@ -3,7 +3,7 @@
 # Called by Claude Code after every Write/Edit operation.
 # Reads tool input from stdin, checks if the file is .md, and runs sync.
 
-PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 INPUT=$(cat)
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')

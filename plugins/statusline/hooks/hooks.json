@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$(dirname \"$0\")/../scripts/setup-statusline.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/setup-statusline.sh\"",
             "timeout": 10
           }
         ]

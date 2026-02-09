@@ -2,7 +2,7 @@
 # SessionStart hook: ensure statusline.sh is available at ~/.claude/statusline.sh
 # Copies the script if missing or outdated. Does NOT modify settings.json.
 
-PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 SOURCE="$PLUGIN_ROOT/scripts/statusline.sh"
 TARGET="$HOME/.claude/statusline.sh"
 

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$(dirname \"$0\")/../scripts/sync-plantuml.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/sync-plantuml.sh\"",
             "timeout": 30
           }
         ]
@@ -17,12 +17,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$(dirname \"$0\")/../scripts/inject-base-rules.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/inject-base-rules.sh\"",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "bash \"$(dirname \"$0\")/../scripts/setup-project.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh\"",
             "timeout": 10
           }
         ]

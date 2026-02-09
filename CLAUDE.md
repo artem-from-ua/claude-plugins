@@ -48,12 +48,30 @@ All SKILL.md files must follow the [agentskills.io specification](https://agents
 - Optional: `compatibility`, `license`, `metadata`
 - When creating or editing SKILL.md files, always include valid frontmatter
 
+## Hook Scripts Convention
+
+In `hooks.json`, always use `${CLAUDE_PLUGIN_ROOT}` to reference plugin files — never `$(dirname "$0")` (it resolves to the shell binary path, not the plugin directory):
+
+```json
+{
+  "type": "command",
+  "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/my-hook.sh\""
+}
+```
+
+Inside scripts, use a fallback so they work both as hooks and when run directly:
+
+```bash
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+```
+
 ## Adding a New Plugin
 
 1. Create `plugins/<name>/` with the structure above
 2. Add `.claude-plugin/plugin.json` manifest
 3. All SKILL.md files must include YAML frontmatter per the [agentskills.io spec](https://agentskills.io/specification)
-4. Register in `.claude-plugin/marketplace.json`
+4. In hooks.json, use `${CLAUDE_PLUGIN_ROOT}` for script paths (see Hook Scripts Convention)
+5. Register in `.claude-plugin/marketplace.json`
 
 ## Dependencies
 
