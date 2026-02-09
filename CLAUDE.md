@@ -8,7 +8,7 @@ A marketplace of reusable Claude Code plugins (`Tribe Coding`). Each plugin live
 
 ## Plugins
 
-### plantuml-sync
+### plantuml
 Keeps PlantUML diagram image URLs in sync with their source blocks in markdown files.
 
 Key components:
@@ -17,7 +17,7 @@ Key components:
 - `scripts/inject-base-rules.sh` — SessionStart hook, outputs ~200 tokens of formatting rules so Claude knows the two-part pattern (code block + image link)
 - `scripts/setup-project.sh` — SessionStart hook, installs git pre-commit hook in `.githooks/` and sets `core.hooksPath`
 - `templates/pre-commit` — blocks commits when PlantUML URLs are stale
-- `templates/plantuml-sync.yml` — GitHub Actions workflow for PR checks
+- `templates/plantuml.yml` — GitHub Actions workflow for PR checks
 - `skills/plantuml-diagram-guide/` — on-demand skill with full diagram type catalog
 - `commands/plantuml-validate/` — user-invocable `/plantuml-validate` command
 
@@ -75,5 +75,5 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 ## Dependencies
 
-- plantuml-sync: Python 3.x, git
+- plantuml: Python 3.x, git
 - statusline: jq, curl, macOS Keychain (for Anthropic OAuth token)

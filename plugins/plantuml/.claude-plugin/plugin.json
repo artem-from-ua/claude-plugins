@@ -1,5 +1,5 @@
 {
-  "name": "plantuml-sync",
+  "name": "plantuml",
   "version": "1.0.0",
   "description": "PlantUML diagram automation: auto-sync, validation, diagram type guide",
   "author": { "name": "Tribe Coding" },
