@@ -45,6 +45,16 @@ Custom Claude Code statusline with real-time API usage info.
 /plugin install statusline@tribe-coding
 ```
 
+### Enable auto-updates
+
+After installing, enable automatic updates so plugins stay in sync with the latest fixes:
+
+```bash
+/plugin
+```
+
+Then select the installed plugin and enable **auto-update**.
+
 ## Plugin Structure
 
 Each plugin follows the Claude Code plugin spec:
