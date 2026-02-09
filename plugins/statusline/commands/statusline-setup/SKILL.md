@@ -1,3 +1,11 @@
+---
+name: statusline-setup
+description: >
+  Configure the Claude Code custom statusline showing API rate limits,
+  context window usage, git branch, and model info.
+compatibility: Requires jq, curl, and macOS Keychain
+---
+
 # Statusline Setup
 
 Configure the Claude Code custom statusline with API rate limits, context window usage, git branch, and model info.

@@ -1,3 +1,11 @@
+---
+name: plantuml-diagram-guide
+description: >
+  Comprehensive catalog of PlantUML diagram types with selection guidance.
+  Use when choosing which diagram type fits a documentation task — covers
+  sequence, activity, state, class, ER, component, and 10 more types.
+---
+
 # PlantUML Diagram Type Guide
 
 Use this guide to choose the right PlantUML diagram type for documentation. When creating or updating `.md` files, proactively suggest and use the appropriate diagram type.

@@ -82,8 +82,9 @@ To add a new plugin:
 
 1. Create `plugins/<name>/` with the standard structure
 2. Add a `.claude-plugin/plugin.json` manifest
-3. Register it in `.claude-plugin/marketplace.json`
-4. Submit a PR
+3. All SKILL.md files must include YAML frontmatter per the [agentskills.io spec](https://agentskills.io/specification)
+4. Register it in `.claude-plugin/marketplace.json`
+5. Submit a PR
 
 ## License
 
