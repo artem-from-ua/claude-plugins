@@ -4,7 +4,7 @@ A marketplace of reusable plugins for [Claude Code](https://docs.anthropic.com/e
 
 ## Available Plugins
 
-### plantuml-sync
+### plantuml
 
 PlantUML diagram automation for markdown documentation.
 
@@ -13,7 +13,7 @@ PlantUML diagram automation for markdown documentation.
 - Git pre-commit hook blocks commits with stale diagram URLs
 - Base formatting rules injected on session start (~200 tokens)
 - Full diagram type catalog available on-demand via skill
-- Validation command: `/plantuml-sync:plantuml-validate`
+- Validation command: `/plantuml:plantuml-validate`
 - GitHub Actions CI workflow template
 
 **What it does:** Every PlantUML diagram in markdown has two parts — a fenced code block with raw source and an image link pointing to plantuml.com. This plugin keeps them in sync automatically.
@@ -41,7 +41,7 @@ Custom Claude Code statusline with real-time API usage info.
 ### Install a plugin
 
 ```bash
-/plugin install plantuml-sync@tribe-coding
+/plugin install plantuml@tribe-coding
 /plugin install statusline@tribe-coding
 ```
 
@@ -77,7 +77,7 @@ plugins/<name>/
 
 ## Requirements
 
-### plantuml-sync
+### plantuml
 - Python 3.x (for the encoder script)
 - Git (for pre-commit hook)
 

@@ -1,0 +1,36 @@
+#!/bin/bash
+# Block commits if PlantUML URLs are out of sync with source blocks.
+# Installed by the plantuml Claude Code plugin.
+
+STAGED_MD=$(git diff --cached --name-only --diff-filter=ACM -- '*.md')
+
+if [ -n "$STAGED_MD" ]; then
+    # Find the encoder script: check plugin cache locations, then project fallback
+    ENCODER=""
+    for candidate in \
+        "$HOME/.claude/plugins/plantuml/scripts/plantuml-encode.py" \
+        "$(git rev-parse --show-toplevel 2>/dev/null)/scripts/plantuml-encode.py"; do
+        if [ -f "$candidate" ]; then
+            ENCODER="$candidate"
+            break
+        fi
+    done
+
+    if [ -z "$ENCODER" ]; then
+        echo "Warning: plantuml-encode.py not found. Skipping PlantUML check."
+        echo "Install the plantuml plugin or add scripts/plantuml-encode.py to your project."
+        exit 0
+    fi
+
+    echo "Checking PlantUML diagrams in: $STAGED_MD"
+    if ! python3 "$ENCODER" --check $STAGED_MD; then
+        echo ""
+        echo "Commit blocked. Fix with:"
+        echo "  python3 $ENCODER --sync <file.md>"
+        echo "  git add <file.md>"
+        echo ""
+        echo "Hint: if you edited PlantUML source manually, the image URL"
+        echo "must be updated to match. The --sync command does this automatically."
+        exit 1
+    fi
+fi

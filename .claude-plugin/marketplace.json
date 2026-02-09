@@ -4,8 +4,8 @@
   "owner": { "name": "Tribe Coding" },
   "plugins": [
     {
-      "name": "plantuml-sync",
-      "source": "./plugins/plantuml-sync",
+      "name": "plantuml",
+      "source": "./plugins/plantuml",
       "description": "PlantUML diagram automation: auto-sync URLs in markdown, pre-commit validation, CI checks"
     },
     {
