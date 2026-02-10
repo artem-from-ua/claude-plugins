@@ -19,9 +19,9 @@ Validate that all PlantUML diagram URLs in markdown files are in sync with their
 
 2. Run the validation check on all found files:
    ```bash
-   python3 "$(dirname "$0")/../../scripts/plantuml-encode.py" --check <files>
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/plantuml-encode.py" --check <files>
    ```
-   If `plantuml-encode.py` is not found at the plugin path, look for it at `$CLAUDE_PROJECT_DIR/scripts/plantuml-encode.py`.
+   `CLAUDE_PLUGIN_ROOT` is set automatically by Claude Code when running plugin commands.
 
 3. Report results to the user:
    - If all diagrams are in sync: confirm success with file count
@@ -30,5 +30,5 @@ Validate that all PlantUML diagram URLs in markdown files are in sync with their
 
 4. If the user confirms auto-fix, run:
    ```bash
-   python3 plantuml-encode.py --sync <affected-files>
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/plantuml-encode.py" --sync <affected-files>
    ```
