@@ -8,10 +8,14 @@ A marketplace of reusable plugins for [Claude Code](https://docs.anthropic.com/e
 |--------|------|------|------------|-------------|
 | **plantuml** | hook | PostToolUse | *automatic* | Auto-sync PlantUML image URLs on `.md` edits |
 | | hook | SessionStart | *automatic* | Inject base formatting rules + install pre-commit hook |
-| | command | `plantuml-validate` | `/plantuml:plantuml-validate` | Check all diagram URLs are in sync |
-| | skill | `plantuml-diagram-guide` | *on-demand* | Full catalog of 16 diagram types with selection guide |
+| | command | [`plantuml-validate`](plugins/plantuml/commands/plantuml-validate/SKILL.md) | `/plantuml:plantuml-validate` | Check all diagram URLs are in sync |
+| | skill | [`plantuml-diagram-guide`](plugins/plantuml/skills/plantuml-diagram-guide/SKILL.md) | *on-demand* | Full catalog of 16 diagram types with selection guide |
 | **statusline** | hook | SessionStart | *automatic* | Install statusline script to `~/.claude/` |
-| | command | `statusline-setup` | `/statusline:statusline-setup` | Configure statusline in `~/.claude/settings.json` |
+| | command | [`statusline-setup`](plugins/statusline/commands/statusline-setup/SKILL.md) | `/statusline:statusline-setup` | Configure statusline in `~/.claude/settings.json` |
+
+> **hook** — runs automatically in response to events (e.g. after every file edit or on session start). No user action needed.
+> **command** — a `/slash-command` that the user invokes explicitly when needed.
+> **skill** — reference material that Claude loads on-demand when it decides the context is relevant.
 
 ## Installation
 
@@ -36,7 +40,7 @@ After installing, enable automatic updates so plugins stay in sync with the late
 /plugin
 ```
 
-Then select the installed plugin and enable **auto-update**.
+Then select the installed plugin and enable **auto-update**. Updates are applied automatically on the next Claude Code restart.
 
 ## Available Plugins
 
