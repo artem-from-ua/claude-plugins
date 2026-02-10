@@ -89,6 +89,12 @@ if [ ! -f "$INSTALLED_JSON" ]; then
     exit 0
 fi
 
+# Validate marketplaces JSON structure before processing
+if ! jq -e 'keys' "$MARKETPLACES_JSON" >/dev/null 2>&1; then
+    echo "claude-sync: Invalid or unexpected JSON structure in ${MARKETPLACES_JSON}" >&2
+    exit 1
+fi
+
 # --- Resolve timeout command ---
 TIMEOUT_CMD=""
 if command -v timeout &>/dev/null; then
