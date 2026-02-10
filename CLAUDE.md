@@ -48,6 +48,102 @@ All SKILL.md files must follow the [agentskills.io specification](https://agents
 - Optional: `compatibility`, `license`, `metadata`
 - When creating or editing SKILL.md files, always include valid frontmatter
 
+### Hybrid Skill Design
+
+SKILL.md is loaded entirely into context when the skill is invoked. Keep it **small** — under ~100 lines — containing only the decision logic and orchestration steps. Move bulky reference data (catalogs, examples, templates) into separate files that the skill reads on demand.
+
+**Pattern: routing SKILL.md + external reference files**
+
+```
+skills/<name>/
+├── SKILL.md              # ≤100 lines: routing logic, step descriptions
+└── references/
+    ├── catalog.md        # large lookup table, loaded only when needed
+    ├── examples.md       # code examples / templates
+    └── ...
+```
+
+In SKILL.md, instruct Claude to read only the files it needs:
+
+```markdown
+## Steps
+
+1. Ask the user which category they need (A, B, or C).
+2. Based on the answer, read the matching reference file:
+   - A → `references/category-a.md`
+   - B → `references/category-b.md`
+   - C → `references/category-c.md`
+3. Follow the instructions from the loaded file.
+```
+
+**Guidelines:**
+
+- **SKILL.md** contains: purpose, decision tree / routing logic, step-by-step orchestration, pointers to reference files. No large data.
+- **Reference files** contain: lookup tables, catalogs, examples, templates, verbose instructions. Read via `Read` tool at runtime.
+- Use `${SKILL_DIR}` (resolves to the SKILL.md directory) or relative paths from the skill directory to reference sibling files.
+- If the skill has a single reference that is always needed, it's fine to keep everything in SKILL.md — the hybrid pattern is for cases where content is large or conditionally needed.
+
+**Anti-patterns:**
+
+- Inlining a 200-line catalog directly in SKILL.md (wastes context on every invocation).
+- A SKILL.md that just says "read everything in `references/`" without routing logic (defeats the purpose — Claude loads all files anyway).
+- Splitting a 40-line skill into 5 tiny files (unnecessary overhead for small skills).
+
+## Proactive Plugin Behavior
+
+Plugins should work without explicit user invocation where possible. There are three mechanisms for proactive behavior, each suited for a different level of autonomy:
+
+### 1. SessionStart hook — always-on context rules
+
+Inject a short block of rules (~100–200 tokens) into every session via a SessionStart hook. This is the strongest mechanism: Claude sees the rules in its system prompt and follows them automatically.
+
+Use for: formatting conventions, mandatory patterns, "always do X when you see Y" rules.
+
+Example (plantuml `inject-base-rules.sh`):
+```
+Proactive usage:
+- When creating or updating `.md` documentation files, proactively add PlantUML diagrams…
+- Use the `plantuml-diagram-guide` skill to choose the right diagram type.
+```
+
+**Budget:** Keep injected text minimal. Every token costs context in every session, even when the plugin is irrelevant. Rules only — no catalogs, no examples.
+
+### 2. Skill description — trigger-based suggestion
+
+The `description` field in SKILL.md frontmatter is shown in the skill list at session start. Write it so Claude can decide when to invoke the skill without being asked.
+
+Use for: on-demand reference data, catalogs, guides that are useful in specific situations.
+
+**Guidelines for description:**
+- State **when** to use, not just **what** it does: `"Use when choosing which diagram type fits a documentation task"` (good) vs `"Diagram type catalog"` (bad — no trigger signal).
+- If the skill has a "When to suggest" table (like `plantuml-diagram-guide`), that logic belongs inside the skill body. The description should summarize the trigger concisely.
+
+### 3. PostToolUse hook — automatic action
+
+Run a script automatically after specific tool calls (Write, Edit, Bash, etc.) via PostToolUse hooks. This is fully autonomous — no Claude reasoning needed.
+
+Use for: validation, auto-fixing, syncing derived artifacts.
+
+Example (plantuml `sync-plantuml.sh`): runs after every Write/Edit on `.md` files to update diagram URLs.
+
+**Guidelines:**
+- Keep hooks fast (timeout ≤30s) and silent on success — noisy output on every edit is distracting.
+- Use the `matcher` field to scope to relevant tools (e.g., `"Write|Edit"` not all tools).
+- Hooks should be idempotent — running twice produces the same result.
+
+### Choosing the right mechanism
+
+| Need | Mechanism | Context cost |
+|------|-----------|--------------|
+| Claude must always follow a rule | SessionStart hook | Per-session (fixed) |
+| Claude should use a skill when relevant | Skill description trigger | Only the description line |
+| Action must happen after every matching tool call | PostToolUse hook | Zero (runs externally) |
+
+When designing a new plugin, combine these layers. Typical setup:
+1. SessionStart injects **base rules** (what to always do)
+2. Skill descriptions provide **trigger signals** (when to load more context)
+3. PostToolUse hooks handle **automatic actions** (no Claude involvement needed)
+
 ## Hook Scripts Convention
 
 In `hooks.json`, always use `${CLAUDE_PLUGIN_ROOT}` to reference plugin files — never `$(dirname "$0")` (it resolves to the shell binary path, not the plugin directory):
