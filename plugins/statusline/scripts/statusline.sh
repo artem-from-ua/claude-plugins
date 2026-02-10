@@ -20,7 +20,7 @@
 #         When API returns resets_at=null (window inactive, no usage yet),
 #         shows yellow "idle" instead of bar+time (bar needs time_pct to colorize)
 #
-# Progress bar (20 blocks, each = 5%):
+# Progress bar (20 blocks for 5h, 21 blocks for 7d):
 #   When usage ≤ time elapsed (under/on pace):
 #     dark gray  — consumed portion
 #     green      — buffer (ahead of schedule)
@@ -213,27 +213,19 @@ calc_time_pct() {
   echo $(( elapsed * 100 / window_seconds ))
 }
 
-# Round to nearest multiple of 5
-round5() {
-  local val="$1"
-  echo $(( ((val + 2) / 5) * 5 ))
-}
-
-# Build progress bar (20 chars wide)
-# Args: $1=usage_pct (0-100), $2=time_pct (0-100)
+# Build progress bar
+# Args: $1=usage_pct (0-100), $2=time_pct (0-100), $3=bar_length (default 20)
 # Colors: dark gray=used, green/red=gap, dark blue=remaining
 build_progress_bar() {
-  local u_raw="$1"
-  local t_raw="$2"
-  local u=$(round5 "$u_raw")
-  local t=$(round5 "$t_raw")
-  # Clamp to 0-100
-  [ "$u" -lt 0 ] && u=0; [ "$u" -gt 100 ] && u=100
-  [ "$t" -lt 0 ] && t=0; [ "$t" -gt 100 ] && t=100
-  # Convert to blocks (each block = 5%)
-  local u_blocks=$(( u / 5 ))
-  local t_blocks=$(( t / 5 ))
-  local total=20
+  local u_pct="$1"
+  local t_pct="$2"
+  local total="${3:-20}"
+  # Clamp percentages to 0-100
+  [ "$u_pct" -lt 0 ] 2>/dev/null && u_pct=0; [ "$u_pct" -gt 100 ] 2>/dev/null && u_pct=100
+  [ "$t_pct" -lt 0 ] 2>/dev/null && t_pct=0; [ "$t_pct" -gt 100 ] 2>/dev/null && t_pct=100
+  # Convert pct to blocks with rounding: (pct * total + 50) / 100
+  local u_blocks=$(( (u_pct * total + 50) / 100 ))
+  local t_blocks=$(( (t_pct * total + 50) / 100 ))
   local bar=""
   local block="█"
   # ANSI colors (use printf to produce real escape bytes)
@@ -297,7 +289,7 @@ if [ -n "$usage_json" ]; then
     seven_int=${seven_day_pct%.*}
     seven_remaining=$(format_time_remaining "$seven_day_resets" "1")
     seven_time_pct=$(calc_time_pct "$seven_day_resets" 604800)
-    seven_bar=$(build_progress_bar "$seven_int" "$seven_time_pct")
+    seven_bar=$(build_progress_bar "$seven_int" "$seven_time_pct" 21)
     if [ -n "$seven_remaining" ]; then
       status="${status}   📅 ${seven_int}${dim}%${rst} ${seven_bar} ${seven_remaining}"
     else
