@@ -161,18 +161,11 @@ Inside scripts, use a fallback so they work both as hooks and when run directly:
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 ```
 
-## Plugin Cache Workaround
+## Plugin Cache Sync
 
-Claude Code has a bug where the plugin cache (`~/.claude/plugins/cache/`) is not invalidated when the marketplace source (`~/.claude/plugins/marketplaces/`) is updated via auto-update. `CLAUDE_PLUGIN_ROOT` points to the stale cached version.
+Claude Code has a bug where the plugin cache is not invalidated on auto-update ([#14061](https://github.com/anthropics/claude-code/issues/14061), [#15621](https://github.com/anthropics/claude-code/issues/15621), [#15642](https://github.com/anthropics/claude-code/issues/15642)).
 
-Upstream issues:
-- [#14061](https://github.com/anthropics/claude-code/issues/14061) — `/plugin update` doesn't invalidate cache
-- [#15621](https://github.com/anthropics/claude-code/issues/15621) — old versions not removed, their hooks still run
-- [#15642](https://github.com/anthropics/claude-code/issues/15642) — `CLAUDE_PLUGIN_ROOT` points to stale version
-
-**Workaround:** Each plugin includes a `scripts/sync-plugin-cache.sh` SessionStart hook (first in the list) that pulls the latest marketplace content from remote (`git pull --depth=1`, 3s timeout) and then copies it into the cache on every session start. A flag file (`/tmp/claude-marketplace-pull-<name>`) prevents duplicate pulls when multiple plugins from the same marketplace start in the same session. This ensures scripts, skills, commands, and hook configs are always up to date.
-
-The script is intentionally simple and stable — since the cached copy runs first (bootstrapping), it must not require changes to function correctly.
+**Solution:** The standalone `scripts/claude-sync` script runs _before_ Claude Code starts, pulling marketplace repos and rsyncing into cache. Install it via `scripts/install-sync.sh` and add a shell alias (`alias claude='claude-sync && command claude'`). See README for details.
 
 ## Adding a New Plugin
 

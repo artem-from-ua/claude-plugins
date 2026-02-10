@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+# claude-sync — Sync Claude Code plugin caches from marketplace sources.
+#
+# Claude Code has a bug where auto-updating a marketplace does not invalidate
+# the plugin cache. This script pulls the latest marketplace content from
+# remote and rsyncs it into the cache directory.
+#
+# Run before starting Claude Code, e.g. via a shell alias:
+#   alias claude='claude-sync && command claude'
+#
+# Upstream issues:
+#   https://github.com/anthropics/claude-code/issues/14061
+#   https://github.com/anthropics/claude-code/issues/15621
+#   https://github.com/anthropics/claude-code/issues/15642
+
+set -euo pipefail
+
+PLUGINS_DIR="${HOME}/.claude/plugins"
+MARKETPLACES_JSON="${PLUGINS_DIR}/known_marketplaces.json"
+INSTALLED_JSON="${PLUGINS_DIR}/installed_plugins.json"
+FRESHNESS_FILE="/tmp/claude-sync-last-run"
+FRESHNESS_WINDOW=300  # 5 minutes
+
+verbose=false
+force=false
+sync_all=false
+
+usage() {
+    cat <<'EOF'
+Usage: claude-sync [OPTIONS]
+
+Sync Claude Code plugin caches from marketplace sources.
+
+Options:
+  --force     Ignore freshness window and always sync
+  --all       Sync all marketplaces, not just autoUpdate ones
+  --verbose   Print detailed progress
+  --help      Show this help
+EOF
+    exit 0
+}
+
+log() {
+    if [ "$verbose" = true ]; then
+        echo "[claude-sync] $*" >&2
+    fi
+}
+
+# --- Parse arguments ---
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --force)   force=true ;;
+        --all)     sync_all=true ;;
+        --verbose) verbose=true ;;
+        --help)    usage ;;
+        *)         echo "Unknown option: $1" >&2; usage ;;
+    esac
+    shift
+done
+
+# --- Check freshness window ---
+if [ "$force" = false ] && [ -f "$FRESHNESS_FILE" ]; then
+    last_run=$(stat -f %m "$FRESHNESS_FILE" 2>/dev/null || echo 0)
+    now=$(date +%s)
+    age=$(( now - last_run ))
+    if [ "$age" -lt "$FRESHNESS_WINDOW" ]; then
+        log "Last sync ${age}s ago (window: ${FRESHNESS_WINDOW}s), skipping"
+        exit 0
+    fi
+fi
+
+# --- Check prerequisites ---
+if ! command -v jq &>/dev/null; then
+    echo "claude-sync: jq is required but not found" >&2
+    exit 1
+fi
+
+if [ ! -f "$MARKETPLACES_JSON" ]; then
+    log "No marketplaces found at ${MARKETPLACES_JSON}, nothing to do"
+    exit 0
+fi
+
+if [ ! -f "$INSTALLED_JSON" ]; then
+    log "No installed plugins found at ${INSTALLED_JSON}, nothing to do"
+    exit 0
+fi
+
+# --- Resolve timeout command ---
+TIMEOUT_CMD=""
+if command -v timeout &>/dev/null; then
+    TIMEOUT_CMD="timeout 10"
+elif command -v gtimeout &>/dev/null; then
+    TIMEOUT_CMD="gtimeout 10"
+fi
+
+# --- Pull marketplaces ---
+marketplace_names=$(jq -r 'keys[]' "$MARKETPLACES_JSON")
+
+for name in $marketplace_names; do
+    auto_update=$(jq -r --arg n "$name" '.[$n].autoUpdate // false' "$MARKETPLACES_JSON")
+    install_location=$(jq -r --arg n "$name" '.[$n].installLocation' "$MARKETPLACES_JSON")
+
+    if [ "$sync_all" = false ] && [ "$auto_update" != "true" ]; then
+        log "Skipping ${name} (autoUpdate not enabled)"
+        continue
+    fi
+
+    if [ ! -d "${install_location}/.git" ]; then
+        log "Skipping ${name} (no git repo at ${install_location})"
+        continue
+    fi
+
+    log "Pulling ${name}..."
+    if $TIMEOUT_CMD git -C "$install_location" pull --depth=1 origin main &>/dev/null; then
+        log "  pulled OK"
+    else
+        log "  pull failed or timed out (continuing)"
+    fi
+done
+
+# --- Sync installed plugins into cache ---
+plugin_keys=$(jq -r '.plugins | keys[]' "$INSTALLED_JSON")
+
+for key in $plugin_keys; do
+    # key format: <plugin>@<marketplace>
+    marketplace="${key##*@}"
+    plugin="${key%%@*}"
+
+    marketplace_location=$(jq -r --arg n "$marketplace" '.[$n].installLocation // empty' "$MARKETPLACES_JSON")
+    if [ -z "$marketplace_location" ]; then
+        log "Skipping ${key} (marketplace '${marketplace}' not found)"
+        continue
+    fi
+
+    source_dir="${marketplace_location}/plugins/${plugin}"
+    if [ ! -d "$source_dir" ]; then
+        log "Skipping ${key} (source dir not found: ${source_dir})"
+        continue
+    fi
+
+    # Iterate all installations of this plugin (could be multiple scopes)
+    install_count=$(jq -r --arg k "$key" '.plugins[$k] | length' "$INSTALLED_JSON")
+    for i in $(seq 0 $(( install_count - 1 ))); do
+        cache_dir=$(jq -r --arg k "$key" --argjson i "$i" '.plugins[$k][$i].installPath' "$INSTALLED_JSON")
+
+        if [ -z "$cache_dir" ] || [ "$cache_dir" = "null" ]; then
+            continue
+        fi
+
+        if [ ! -d "$cache_dir" ]; then
+            log "Skipping ${key}[${i}] (cache dir not found: ${cache_dir})"
+            continue
+        fi
+
+        log "Syncing ${key} → ${cache_dir}"
+        if rsync -a --delete "${source_dir}/" "${cache_dir}/" 2>/dev/null; then
+            log "  synced OK"
+        else
+            echo "claude-sync: failed to sync ${key} → ${cache_dir}" >&2
+        fi
+    done
+done
+
+touch "$FRESHNESS_FILE" 2>/dev/null || true
+log "Done"
