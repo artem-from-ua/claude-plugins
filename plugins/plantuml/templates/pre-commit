@@ -23,7 +23,7 @@ if [ -n "$STAGED_MD" ]; then
     fi
 
     echo "Checking PlantUML diagrams in: $STAGED_MD"
-    if ! python3 "$ENCODER" --check $STAGED_MD; then
+    if ! python3 "$ENCODER" --check "$STAGED_MD"; then
         echo ""
         echo "Commit blocked. Fix with:"
         echo "  python3 \"$ENCODER\" --sync <file.md>"
