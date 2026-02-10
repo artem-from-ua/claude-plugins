@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install claude-sync to ~/.local/bin and print alias instructions.
+# Install claude-sync to ~/.local/bin and configure shell profile.
 
 set -euo pipefail
 
@@ -16,12 +16,37 @@ fi
 mkdir -p "$DEST_DIR"
 cp "$SOURCE" "$DEST"
 chmod +x "$DEST"
-
 echo "Installed claude-sync → ${DEST}"
-echo ""
-echo "Add this alias to your shell profile (~/.zshrc or ~/.bashrc):"
-echo ""
-echo "  alias claude='claude-sync && command claude'"
-echo ""
-echo "This runs claude-sync before every Claude Code session, keeping"
-echo "the plugin cache in sync with marketplace sources."
+
+# --- Detect shell profile ---
+SHELL_NAME="$(basename "${SHELL:-/bin/bash}")"
+case "$SHELL_NAME" in
+    zsh)  PROFILE="${HOME}/.zshrc" ;;
+    bash) PROFILE="${HOME}/.bashrc" ;;
+    *)    PROFILE="${HOME}/.profile" ;;
+esac
+
+changed=false
+
+# --- Ensure ~/.local/bin is in PATH ---
+if ! grep -q '\.local/bin' "$PROFILE" 2>/dev/null; then
+    echo '' >> "$PROFILE"
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$PROFILE"
+    echo "Added ~/.local/bin to PATH in ${PROFILE}"
+    changed=true
+fi
+
+# --- Add claude alias ---
+if ! grep -q "alias claude=" "$PROFILE" 2>/dev/null; then
+    echo "alias claude='claude-sync && command claude'" >> "$PROFILE"
+    echo "Added claude alias to ${PROFILE}"
+    changed=true
+fi
+
+if [ "$changed" = true ]; then
+    echo ""
+    echo "Run this to apply now:"
+    echo "  source ${PROFILE}"
+else
+    echo "PATH and alias already configured in ${PROFILE}"
+fi
