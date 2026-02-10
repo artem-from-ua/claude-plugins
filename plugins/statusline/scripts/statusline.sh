@@ -151,7 +151,16 @@ parse_reset_epoch() {
     echo ""
     return
   fi
-  date -juf "%Y-%m-%dT%H:%M:%S" "$(echo "$resets_at" | sed 's/\.[0-9]*+00:00$//' | sed 's/+00:00$//')" +%s 2>/dev/null
+  # Normalize timestamp: drop fractional seconds and explicit +00:00 offset
+  local normalized
+  normalized=$(echo "$resets_at" | sed 's/\.[0-9]*+00:00$//' | sed 's/+00:00$//')
+
+  # Use BSD date flags on macOS, GNU date flags elsewhere
+  if [ "$(uname)" = "Darwin" ]; then
+    date -j -u -f "%Y-%m-%dT%H:%M:%S" "$normalized" +%s 2>/dev/null
+  else
+    date -u -d "$normalized" +%s 2>/dev/null
+  fi
 }
 
 # Format time remaining as human-readable string
