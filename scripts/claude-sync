@@ -156,11 +156,50 @@ for key in $plugin_keys; do
             continue
         fi
 
-        log "Syncing ${key} → ${cache_dir}"
-        if rsync -a --delete "${source_dir}/" "${cache_dir}/" 2>/dev/null; then
+        # Validate that source_dir and cache_dir are safe, expected directories
+        if ! command -v realpath >/dev/null 2>&1; then
+            echo "claude-sync: realpath not found; refusing to sync with unvalidated paths" >&2
+            continue
+        fi
+
+        marketplace_root_real=$(realpath "$marketplace_location") || {
+            log "Skipping ${key} (failed to resolve marketplace root: ${marketplace_location})"
+            continue
+        }
+        source_dir_real=$(realpath "$source_dir") || {
+            log "Skipping ${key} (failed to resolve source dir: ${source_dir})"
+            continue
+        }
+        plugins_root_real="${marketplace_root_real%/}/plugins"
+        case "$source_dir_real" in
+            "${plugins_root_real}"/*) ;;
+            *)
+                log "Skipping ${key} (source dir outside expected plugins root: ${source_dir_real})"
+                continue
+                ;;
+        esac
+
+        plugins_dir_real=$(realpath "$PLUGINS_DIR") || {
+            log "Skipping ${key}[${i}] (failed to resolve plugins dir: ${PLUGINS_DIR})"
+            continue
+        }
+        cache_dir_real=$(realpath "$cache_dir") || {
+            log "Skipping ${key}[${i}] (failed to resolve cache dir: ${cache_dir})"
+            continue
+        }
+        case "$cache_dir_real" in
+            "${plugins_dir_real}"/*) ;;
+            *)
+                log "Skipping ${key}[${i}] (cache dir outside plugins dir: ${cache_dir_real})"
+                continue
+                ;;
+        esac
+
+        log "Syncing ${key} → ${cache_dir_real}"
+        if rsync -a --delete "${source_dir_real}/" "${cache_dir_real}/" 2>/dev/null; then
             log "  synced OK"
         else
-            echo "claude-sync: failed to sync ${key} → ${cache_dir}" >&2
+            echo "claude-sync: failed to sync ${key} → ${cache_dir_real}" >&2
         fi
     done
 done
