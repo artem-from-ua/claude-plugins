@@ -32,7 +32,7 @@ MARKETPLACE_DIR="${PLUGINS_BASE}/marketplaces/${marketplace}/plugins/${plugin}"
 # If marketplace source doesn't exist, nothing to sync
 [ -d "$MARKETPLACE_DIR" ] || exit 0
 
-# Copy marketplace content into cache, overwriting stale files
-cp -rf "$MARKETPLACE_DIR"/ "$CACHE_DIR"/ 2>/dev/null || {
+# Sync marketplace content into cache, removing deleted files
+rsync -a --delete "$MARKETPLACE_DIR"/ "$CACHE_DIR"/ 2>/dev/null || {
     echo "warning: sync-plugin-cache: failed to sync ${plugin} from marketplace to cache" >&2
 }
