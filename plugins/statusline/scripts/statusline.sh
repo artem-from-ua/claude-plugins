@@ -227,7 +227,7 @@ build_progress_bar() {
   local u_blocks=$(( (u_pct * total + 50) / 100 ))
   local t_blocks=$(( (t_pct * total + 50) / 100 ))
   local bar=""
-  local block="█"
+  local block="■"
   # ANSI colors (use printf to produce real escape bytes)
   local dark_gray=$(printf '\033[38;5;236m')
   local bright_green=$(printf '\033[38;5;71m')
