@@ -161,6 +161,34 @@ Inside scripts, use a fallback so they work both as hooks and when run directly:
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 ```
 
+## Cross-Platform Compatibility
+
+All scripts must work on both macOS and Linux. Use these patterns:
+
+**Platform detection:**
+```bash
+if [ "$(uname)" = "Darwin" ]; then
+  # macOS
+else
+  # Linux
+fi
+```
+
+**`stat` — file modification time:**
+- macOS: `stat -f %m "$file"`
+- Linux: `stat -c %Y "$file"`
+
+**`date` — parsing ISO timestamps:**
+- macOS: `date -juf "%Y-%m-%dT%H:%M:%S" "$str" +%s`
+- Linux: `date -ud "$str" +%s`
+
+**OAuth credentials** (priority order):
+1. `$CLAUDE_CODE_OAUTH_TOKEN` env var (any platform)
+2. macOS Keychain: `security find-generic-password -s "Claude Code-credentials" -w`
+3. Linux credentials file: `~/.claude/.credentials.json`
+
+**Shared `/tmp` files:** Always append `-${UID}` to avoid collisions in multi-user environments.
+
 ## Plugin Cache Sync
 
 Claude Code has a bug where the plugin cache is not invalidated on auto-update ([#14061](https://github.com/anthropics/claude-code/issues/14061), [#15621](https://github.com/anthropics/claude-code/issues/15621), [#15642](https://github.com/anthropics/claude-code/issues/15642)).
@@ -178,4 +206,4 @@ Claude Code has a bug where the plugin cache is not invalidated on auto-update (
 ## Dependencies
 
 - plantuml: Python 3.x, git
-- statusline: jq, curl, macOS Keychain (for Anthropic OAuth token)
+- statusline: jq, curl, python3; macOS Keychain or ~/.claude/.credentials.json on Linux (for Anthropic OAuth token)

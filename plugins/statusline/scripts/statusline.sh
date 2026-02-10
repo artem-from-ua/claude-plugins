@@ -47,7 +47,8 @@ dirty_info=""
 if git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
   branch=$(git -C "$cwd" branch --show-current 2>/dev/null)
   if [ -n "$branch" ]; then
-    if ! git -C "$cwd" diff-index --quiet HEAD -- 2>/dev/null || [ -n "$(git -C "$cwd" ls-files --others --exclude-standard 2>/dev/null)" ]; then
+    git_status_output=$(git -C "$cwd" status --porcelain=v1 --untracked-files=normal 2>/dev/null)
+    if [ -n "$git_status_output" ]; then
       git_info="   🌿 $(printf '\033[38;5;178m')${branch}$(printf '\033[0m')"
       dirty_info=" ⚠️"
     else
@@ -105,7 +106,7 @@ if [ -n "$used_pct" ]; then
 fi
 
 # Fetch usage data from Anthropic API (cached for 60 seconds)
-cache_file="/tmp/claude-statusline-usage-cache"
+cache_file="/tmp/claude-statusline-usage-cache-${UID}"
 cache_max_age=60
 now=$(date +%s)
 use_cache=false
@@ -126,7 +127,15 @@ usage_json=""
 if [ "$use_cache" = true ]; then
   usage_json=$(cat "$cache_file" 2>/dev/null)
 else
-  token=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['claudeAiOauth']['accessToken'])" 2>/dev/null)
+  # Cross-platform OAuth token retrieval
+  token=""
+  if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+    token="$CLAUDE_CODE_OAUTH_TOKEN"
+  elif [ "$(uname)" = "Darwin" ]; then
+    token=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['claudeAiOauth']['accessToken'])" 2>/dev/null)
+  elif [ -f "${HOME}/.claude/.credentials.json" ]; then
+    token=$(jq -r '.claudeAiOauth.accessToken' "${HOME}/.claude/.credentials.json" 2>/dev/null)
+  fi
   if [ -n "$token" ]; then
     usage_json=$(curl -s --connect-timeout 2 --max-time 3 \
       -H "Authorization: Bearer $token" \
@@ -151,7 +160,13 @@ parse_reset_epoch() {
     echo ""
     return
   fi
-  date -juf "%Y-%m-%dT%H:%M:%S" "$(echo "$resets_at" | sed 's/\.[0-9]*+00:00$//' | sed 's/+00:00$//')" +%s 2>/dev/null
+  local normalized
+  normalized=$(echo "$resets_at" | sed 's/\.[0-9]*+00:00$//' | sed 's/+00:00$//')
+  if [ "$(uname)" = "Darwin" ]; then
+    date -juf "%Y-%m-%dT%H:%M:%S" "$normalized" +%s 2>/dev/null
+  else
+    date -ud "$normalized" +%s 2>/dev/null
+  fi
 }
 
 # Format time remaining as human-readable string

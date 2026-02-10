@@ -99,7 +99,8 @@ plugins/<name>/
 ### statusline
 - `jq` — JSON processing
 - `curl` — API requests
-- macOS Keychain access (for Anthropic OAuth token)
+- `python3` — OAuth token parsing (macOS)
+- macOS Keychain or `~/.claude/.credentials.json` (for Anthropic OAuth token)
 
 ## Plugin Cache Sync
 

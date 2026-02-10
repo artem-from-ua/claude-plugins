@@ -60,7 +60,11 @@ done
 
 # --- Check freshness window ---
 if [ "$force" = false ] && [ -f "$FRESHNESS_FILE" ]; then
-    last_run=$(stat -f %m "$FRESHNESS_FILE" 2>/dev/null || echo 0)
+    if [ "$(uname)" = "Darwin" ]; then
+      last_run=$(stat -f %m "$FRESHNESS_FILE" 2>/dev/null || echo 0)
+    else
+      last_run=$(stat -c %Y "$FRESHNESS_FILE" 2>/dev/null || echo 0)
+    fi
     now=$(date +%s)
     age=$(( now - last_run ))
     if [ "$age" -lt "$FRESHNESS_WINDOW" ]; then
