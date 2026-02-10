@@ -165,7 +165,7 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 Claude Code has a bug where the plugin cache is not invalidated on auto-update ([#14061](https://github.com/anthropics/claude-code/issues/14061), [#15621](https://github.com/anthropics/claude-code/issues/15621), [#15642](https://github.com/anthropics/claude-code/issues/15642)).
 
-**Solution:** The standalone `scripts/claude-sync` script runs _before_ Claude Code starts, pulling marketplace repos and rsyncing into cache. Install it via `scripts/install-sync.sh` and add a shell alias (`alias claude='claude-sync && command claude'`). See README for details.
+**Solution:** The standalone `scripts/claude-sync` script runs _before_ Claude Code starts, pulling marketplace repos and rsyncing into cache. Run `scripts/install-sync.sh` to install — it configures PATH and shell alias automatically. See README for details.
 
 ## Adding a New Plugin
 

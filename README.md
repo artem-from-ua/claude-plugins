@@ -123,11 +123,7 @@ A standalone script that runs _before_ Claude Code starts. It pulls marketplace 
 ./scripts/install-sync.sh
 ```
 
-This copies `claude-sync` to `~/.local/bin/`. Then add a shell alias to your `~/.zshrc` or `~/.bashrc`:
-
-```bash
-alias claude='claude-sync && command claude'
-```
+This copies `claude-sync` to `~/.local/bin/`, adds it to `PATH`, and configures a shell alias so that `claude` automatically syncs before starting.
 
 **Usage:**
 
