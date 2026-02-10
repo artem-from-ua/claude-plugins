@@ -11,8 +11,11 @@ mkdir -p "$HOME/.claude"
 
 # Copy if target doesn't exist or is different from source
 if [ ! -f "$TARGET" ] || ! diff -q "$SOURCE" "$TARGET" > /dev/null 2>&1; then
-  cp "$SOURCE" "$TARGET"
-  chmod +x "$TARGET"
+  if cp "$SOURCE" "$TARGET" && chmod +x "$TARGET"; then
+    echo "statusline.sh updated"
+  else
+    echo "Warning: failed to copy statusline.sh to $TARGET" >&2
+  fi
 fi
 
 # Check if statusline is configured in settings
@@ -26,5 +29,3 @@ else
   echo "Note: statusline.sh installed at ~/.claude/statusline.sh"
   echo "Run /statusline:statusline-setup to configure it in your settings."
 fi
-
-exit 0
