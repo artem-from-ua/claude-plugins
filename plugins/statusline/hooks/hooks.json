@@ -5,6 +5,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/sync-plugin-cache.sh\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/setup-statusline.sh\"",
             "timeout": 10
           }

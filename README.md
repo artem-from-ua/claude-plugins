@@ -6,11 +6,13 @@ A marketplace of reusable plugins for [Claude Code](https://docs.anthropic.com/e
 
 | Plugin | Type | Name | Invocation | Description |
 |--------|------|------|------------|-------------|
-| **plantuml** | hook | PostToolUse | *automatic* | Auto-sync PlantUML image URLs on `.md` edits |
+| **plantuml** | hook | SessionStart | *automatic* | **FIXME:** Sync plugin cache from marketplace source ([#13](https://github.com/Tribe-Coding/claude-plugins/issues/13)) |
+| | hook | PostToolUse | *automatic* | Auto-sync PlantUML image URLs on `.md` edits |
 | | hook | SessionStart | *automatic* | Inject base formatting rules + install pre-commit hook |
 | | command | [`plantuml-validate`](plugins/plantuml/commands/plantuml-validate/SKILL.md) | `/plantuml:plantuml-validate` | Check all diagram URLs are in sync |
 | | skill | [`plantuml-diagram-guide`](plugins/plantuml/skills/plantuml-diagram-guide/SKILL.md) | *on-demand* | Full catalog of 16 diagram types with selection guide |
-| **statusline** | hook | SessionStart | *automatic* | Install statusline script to `~/.claude/` |
+| **statusline** | hook | SessionStart | *automatic* | **FIXME:** Sync plugin cache from marketplace source ([#13](https://github.com/Tribe-Coding/claude-plugins/issues/13)) |
+| | hook | SessionStart | *automatic* | Install statusline script to `~/.claude/` |
 | | command | [`statusline-setup`](plugins/statusline/commands/statusline-setup/SKILL.md) | `/statusline:statusline-setup` | Configure statusline in `~/.claude/settings.json` |
 
 > - **hook** — runs automatically in response to events (e.g. after every file edit or on session start). No user action needed.
@@ -100,6 +102,19 @@ plugins/<name>/
 - `jq` — JSON processing
 - `curl` — API requests
 - macOS Keychain access (for Anthropic OAuth token)
+
+## Known Issues
+
+### Plugin cache not invalidated on auto-update
+
+Claude Code has a bug where auto-updating a marketplace does not invalidate the plugin cache. `CLAUDE_PLUGIN_ROOT` continues to point at stale cached files, so updated scripts, skills, and commands are not picked up.
+
+**Upstream issues:**
+- [anthropics/claude-code#14061](https://github.com/anthropics/claude-code/issues/14061) — `/plugin update` doesn't invalidate cache
+- [anthropics/claude-code#15621](https://github.com/anthropics/claude-code/issues/15621) — old versions not removed, their hooks still run
+- [anthropics/claude-code#15642](https://github.com/anthropics/claude-code/issues/15642) — `CLAUDE_PLUGIN_ROOT` points to stale version
+
+**Workaround:** All plugins in this marketplace include a `sync-plugin-cache.sh` SessionStart hook that copies fresh content from the marketplace source into the cache on every session start. No user action is needed — the workaround is automatic and will be removed once the upstream bugs are fixed.
 
 ## Contributing
 

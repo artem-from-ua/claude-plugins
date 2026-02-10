@@ -65,6 +65,19 @@ Inside scripts, use a fallback so they work both as hooks and when run directly:
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 ```
 
+## Plugin Cache Workaround
+
+Claude Code has a bug where the plugin cache (`~/.claude/plugins/cache/`) is not invalidated when the marketplace source (`~/.claude/plugins/marketplaces/`) is updated via auto-update. `CLAUDE_PLUGIN_ROOT` points to the stale cached version.
+
+Upstream issues:
+- [#14061](https://github.com/anthropics/claude-code/issues/14061) — `/plugin update` doesn't invalidate cache
+- [#15621](https://github.com/anthropics/claude-code/issues/15621) — old versions not removed, their hooks still run
+- [#15642](https://github.com/anthropics/claude-code/issues/15642) — `CLAUDE_PLUGIN_ROOT` points to stale version
+
+**Workaround:** Each plugin includes a `scripts/sync-plugin-cache.sh` SessionStart hook (first in the list) that copies the entire plugin directory from marketplace into the cache on every session start. This ensures scripts, skills, commands, and hook configs are always up to date.
+
+The script is intentionally simple and stable — since the cached copy runs first (bootstrapping), it must not require changes to function correctly.
+
 ## Adding a New Plugin
 
 1. Create `plugins/<name>/` with the structure above
