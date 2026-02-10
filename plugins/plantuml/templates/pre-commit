@@ -6,8 +6,12 @@ STAGED_MD=$(git diff --cached --name-only --diff-filter=ACM -- '*.md')
 
 if [ -n "$STAGED_MD" ]; then
     # Find the encoder script: check plugin cache locations, then project fallback
+    # Allow overriding the plugin root for portability; default to the standard Claude path.
+    PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$HOME/.claude/plugins}"
+
     ENCODER=""
     for candidate in \
+        "$PLUGIN_ROOT/plantuml/scripts/plantuml-encode.py" \
         "$HOME/.claude/plugins/marketplaces/tribe-coding/plugins/plantuml/scripts/plantuml-encode.py" \
         "$(git rev-parse --show-toplevel 2>/dev/null)/scripts/plantuml-encode.py"; do
         if [ -f "$candidate" ]; then
