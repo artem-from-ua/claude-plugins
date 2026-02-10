@@ -114,7 +114,7 @@ Claude Code has a bug where auto-updating a marketplace does not invalidate the 
 - [anthropics/claude-code#15621](https://github.com/anthropics/claude-code/issues/15621) — old versions not removed, their hooks still run
 - [anthropics/claude-code#15642](https://github.com/anthropics/claude-code/issues/15642) — `CLAUDE_PLUGIN_ROOT` points to stale version
 
-**Workaround:** All plugins in this marketplace include a `sync-plugin-cache.sh` SessionStart hook that copies fresh content from the marketplace source into the cache on every session start. No user action is needed — the workaround is automatic and will be removed once the upstream bugs are fixed.
+**Workaround:** All plugins in this marketplace include a `sync-plugin-cache.sh` SessionStart hook that pulls the latest marketplace content from remote (`git pull --depth=1`, 3s timeout) and then copies it into the cache on every session start. A flag file (`/tmp/claude-marketplace-pull-<name>`) prevents duplicate pulls when multiple plugins from the same marketplace start in the same session. No user action is needed — the workaround is automatic and will be removed once the upstream bugs are fixed.
 
 ## Contributing
 

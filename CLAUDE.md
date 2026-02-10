@@ -170,7 +170,7 @@ Upstream issues:
 - [#15621](https://github.com/anthropics/claude-code/issues/15621) — old versions not removed, their hooks still run
 - [#15642](https://github.com/anthropics/claude-code/issues/15642) — `CLAUDE_PLUGIN_ROOT` points to stale version
 
-**Workaround:** Each plugin includes a `scripts/sync-plugin-cache.sh` SessionStart hook (first in the list) that copies the entire plugin directory from marketplace into the cache on every session start. This ensures scripts, skills, commands, and hook configs are always up to date.
+**Workaround:** Each plugin includes a `scripts/sync-plugin-cache.sh` SessionStart hook (first in the list) that pulls the latest marketplace content from remote (`git pull --depth=1`, 3s timeout) and then copies it into the cache on every session start. A flag file (`/tmp/claude-marketplace-pull-<name>`) prevents duplicate pulls when multiple plugins from the same marketplace start in the same session. This ensures scripts, skills, commands, and hook configs are always up to date.
 
 The script is intentionally simple and stable — since the cached copy runs first (bootstrapping), it must not require changes to function correctly.
 
