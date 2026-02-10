@@ -95,6 +95,8 @@ if command -v timeout &>/dev/null; then
     TIMEOUT_CMD="timeout 10"
 elif command -v gtimeout &>/dev/null; then
     TIMEOUT_CMD="gtimeout 10"
+else
+    log "No timeout command found; git pull will run without a timeout"
 fi
 
 # --- Pull marketplaces ---
@@ -115,10 +117,18 @@ for name in $marketplace_names; do
     fi
 
     log "Pulling ${name}..."
-    if $TIMEOUT_CMD git -C "$install_location" pull --depth=1 origin main &>/dev/null; then
-        log "  pulled OK"
+    if [ -n "$TIMEOUT_CMD" ]; then
+        if $TIMEOUT_CMD git -C "$install_location" pull --depth=1 origin main &>/dev/null; then
+            log "  pulled OK"
+        else
+            log "  pull failed or timed out (continuing)"
+        fi
     else
-        log "  pull failed or timed out (continuing)"
+        if git -C "$install_location" pull --depth=1 origin main &>/dev/null; then
+            log "  pulled OK"
+        else
+            log "  pull failed (continuing)"
+        fi
     fi
 done
 
