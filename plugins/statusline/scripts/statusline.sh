@@ -131,7 +131,10 @@ else
     usage_json=$(curl -s --connect-timeout 2 --max-time 3 \
       -H "Authorization: Bearer $token" \
       -H "anthropic-beta: oauth-2025-04-20" \
-      "https://api.anthropic.com/api/oauth/usage" 2>/dev/null)
+      "https://api.anthropic.com/api/oauth/usage")
+    if [ $? -ne 0 ]; then
+      usage_json=""
+    fi
     if echo "$usage_json" | jq -e '.five_hour' > /dev/null 2>&1; then
       echo "$usage_json" > "$cache_file"
     else
