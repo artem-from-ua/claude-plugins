@@ -29,7 +29,7 @@ esac
 changed=false
 
 # --- Ensure ~/.local/bin is in PATH ---
-if ! grep -q '\.local/bin' "$PROFILE" 2>/dev/null; then
+if ! grep -q '/.local/bin' "$PROFILE" 2>/dev/null; then
     echo '' >> "$PROFILE"
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$PROFILE"
     echo "Added ~/.local/bin to PATH in ${PROFILE}"
