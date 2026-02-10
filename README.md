@@ -13,9 +13,9 @@ A marketplace of reusable plugins for [Claude Code](https://docs.anthropic.com/e
 | **statusline** | hook | SessionStart | *automatic* | Install statusline script to `~/.claude/` |
 | | command | [`statusline-setup`](plugins/statusline/commands/statusline-setup/SKILL.md) | `/statusline:statusline-setup` | Configure statusline in `~/.claude/settings.json` |
 
-> **hook** — runs automatically in response to events (e.g. after every file edit or on session start). No user action needed.
-> **command** — a `/slash-command` that the user invokes explicitly when needed.
-> **skill** — reference material that Claude loads on-demand when it decides the context is relevant.
+> - **hook** — runs automatically in response to events (e.g. after every file edit or on session start). No user action needed.
+> - **command** — a `/slash-command` that the user invokes explicitly when needed.
+> - **skill** — reference material that Claude loads on-demand when it decides the context is relevant.
 
 ## Installation
 
