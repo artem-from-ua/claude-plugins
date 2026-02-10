@@ -47,7 +47,8 @@ dirty_info=""
 if git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
   branch=$(git -C "$cwd" branch --show-current 2>/dev/null)
   if [ -n "$branch" ]; then
-    if ! git -C "$cwd" diff-index --quiet HEAD -- 2>/dev/null || [ -n "$(git -C "$cwd" ls-files --others --exclude-standard 2>/dev/null)" ]; then
+    git_status_output=$(git -C "$cwd" status --porcelain=v1 --untracked-files=normal 2>/dev/null)
+    if [ -n "$git_status_output" ]; then
       git_info="   🌿 $(printf '\033[38;5;178m')${branch}$(printf '\033[0m')"
       dirty_info=" ⚠️"
     else
