@@ -8,6 +8,17 @@ SOURCE="${SCRIPT_DIR}/claude-sync"
 DEST_DIR="${HOME}/.local/bin"
 DEST="${DEST_DIR}/claude-sync"
 
+# Cross-platform file modification time helper.
+# Uses BSD stat on macOS (*-f %m*) and GNU stat on Linux (*-c %Y*).
+get_mtime() {
+    local path="$1"
+    if stat -f %m "$path" >/dev/null 2>&1; then
+        stat -f %m "$path"
+    else
+        stat -c %Y "$path"
+    fi
+}
+
 if [ ! -f "$SOURCE" ]; then
     echo "Error: claude-sync not found at ${SOURCE}" >&2
     exit 1
