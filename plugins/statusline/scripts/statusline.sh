@@ -105,7 +105,7 @@ if [ -n "$used_pct" ]; then
 fi
 
 # Fetch usage data from Anthropic API (cached for 60 seconds)
-cache_file="/tmp/claude-statusline-usage-cache"
+cache_file="/tmp/claude-statusline-usage-cache-$UID"
 cache_max_age=60
 now=$(date +%s)
 use_cache=false
