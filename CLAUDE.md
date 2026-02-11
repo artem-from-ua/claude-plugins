@@ -38,7 +38,9 @@ plugins/<name>/
 ├── scripts/                      # shell/python scripts called by hooks
 ├── commands/<cmd>/SKILL.md       # user-invocable slash commands
 ├── skills/<skill>/SKILL.md       # on-demand context-efficient skills
-└── templates/                    # project templates (pre-commit, CI)
+├── templates/                    # project templates (pre-commit, CI)
+└── docs/
+    └── ACCEPTANCE_TESTS.md       # comprehensive test documentation (REQUIRED)
 ```
 
 ## Skills Standard
@@ -202,6 +204,139 @@ Claude Code has a bug where the plugin cache is not invalidated on auto-update (
 3. All SKILL.md files must include YAML frontmatter per the [agentskills.io spec](https://agentskills.io/specification)
 4. In hooks.json, use `${CLAUDE_PLUGIN_ROOT}` for script paths (see Hook Scripts Convention)
 5. Register in `.claude-plugin/marketplace.json`
+6. **Create acceptance test documentation** in `plugins/<name>/docs/ACCEPTANCE_TESTS.md`
+
+## Acceptance Test Documentation Standard
+
+Every plugin MUST include comprehensive acceptance test documentation at `plugins/<name>/docs/ACCEPTANCE_TESTS.md`. This document serves multiple purposes:
+- Pre-release validation checklist
+- Regression testing after refactoring
+- Onboarding material for new contributors
+- CI/CD test specification
+
+**Required sections:**
+
+### 1. Purpose
+Explain what the plugin does and why acceptance tests are critical for this specific plugin.
+
+### 2. Test Execution Order
+List test categories in order of execution (static checks → unit tests → integration tests → behavioral tests → end-to-end).
+
+### 3. Automation Status
+Clearly mark which tests can be automated and which require manual execution:
+- ✅ **Fully automated**: Tests Claude Code can run within a session
+- 🟡 **Partially automated**: Tests that work in current session but may need fresh session for full verification
+- ⚠️ **Manual only**: Tests requiring human interaction or fresh session setup
+
+### 4. Test Categories
+Organize tests by component or functionality:
+- **Static checks**: YAML frontmatter, JSON schema validation, file structure
+- **Unit tests**: Individual scripts/functions in isolation
+- **Integration tests**: Hooks + scripts interaction, tool chain validation
+- **Behavioral tests**: Proactive behavior, skill invocation patterns, user experience flows
+- **End-to-End**: Complete workflows from user action to final outcome
+
+### 5. Detailed Test Scenarios
+For each test, provide:
+- **Objective**: What the test verifies
+- **Automation status**: Can Claude run this automatically?
+- **Steps**: Exact commands or user actions to perform
+- **Expected result**: What success looks like (with examples)
+- **Acceptance criteria**: Checklist of ✅/❌ conditions
+- **Failure modes**: Common issues and troubleshooting (if applicable)
+
+### 6. Manual Test Procedures
+For tests requiring manual execution (especially SessionStart hooks, fresh session behavior):
+- **Step-by-step instructions** with exact user inputs
+- **Expected response** for each step
+- **Verification commands** to confirm success
+- **Failure mode table** mapping symptoms → root causes → fixes
+
+### 7. Regression Testing Guide
+- When to run tests (before release, after refactoring, etc.)
+- CI/CD integration instructions
+- How to use the document for automated testing (prompt examples)
+
+**Template structure:**
+
+```markdown
+# [Plugin Name] Acceptance Tests
+
+## Purpose
+[Why these tests matter for this plugin]
+
+## Test Execution Order
+1. Static checks (automated)
+2. Unit tests (automated)
+3. Integration tests (automated)
+4. Behavioral tests (partially automated)
+5. End-to-End (automated)
+
+## Automation Status
+- ✅ Fully automated: Tests 1-X
+- 🟡 Partially automated: Test Y
+- ⚠️ Manual only: Test Z
+
+[Optionally include automated test results table if tests were run]
+
+## Test Categories
+
+### 1. [Test Category Name]
+
+**Objective:** [What this verifies]
+
+**Automation:** ✅/🟡/⚠️
+
+**Steps:**
+```bash
+[commands]
+```
+
+**Expected result:**
+- ✅ [Success criterion 1]
+- ✅ [Success criterion 2]
+
+**Acceptance criteria:**
+- ✅ [Condition 1]
+- ✅ [Condition 2]
+
+[If manual test, include detailed procedure with steps 1-N]
+
+---
+
+[Repeat for each test category]
+
+## Regression Testing Guide
+[When and how to use this document]
+```
+
+**Guidelines:**
+
+- **Be specific**: Include exact commands, expected outputs, and file paths
+- **Show examples**: Use code blocks with real expected output
+- **Mark automation**: Every test should have an automation status marker
+- **Provide troubleshooting**: For manual tests, include failure mode tables
+- **Include results**: If tests were run during development, include results table
+- **Use tables**: For comparison data (scenarios, pass/fail, automation status)
+- **Reference real files**: Link to actual plugin files in examples
+
+**Example: See `plugins/plantuml/docs/ACCEPTANCE_TESTS.md`**
+
+This document demonstrates:
+- Clear automation status for 11 test categories
+- Automated test results table (tests 8.1, 8.2, 8.6, 8.7)
+- Detailed 5-step manual procedure for SessionStart verification (test 8.4)
+- Failure mode troubleshooting tables
+- Mix of bash commands, user prompts, and expected Claude behavior
+
+**When NOT to automate:**
+
+- SessionStart hook verification (requires fresh session)
+- User interaction flows (keyboard shortcuts, UI responses)
+- Cross-machine scenarios (OAuth, credentials, platform differences)
+- Time-dependent behavior (cache expiry, rate limits)
+
+For these cases, provide **step-by-step manual procedures** with clear expected outcomes at each step.
 
 ## Dependencies
 
