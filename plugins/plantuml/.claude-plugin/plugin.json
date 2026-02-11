@@ -5,6 +5,5 @@
   "author": { "name": "Tribe Coding" },
   "license": "MIT",
   "commands": ["./commands/"],
-  "skills": ["./skills/"],
-  "hooks": "./hooks/hooks.json"
+  "skills": ["./skills/"]
 }
