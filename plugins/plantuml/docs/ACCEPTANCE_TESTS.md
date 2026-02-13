@@ -142,6 +142,43 @@ echo "" | python3 scripts/plantuml-encode.py --render-ascii
 # Expected: exit 1, stderr message about fetch failure
 ```
 
+#### 2.1.2 Wrapper Script for Reduced Prompts
+
+**Test case:** Verify wrapper script works and reduces command length
+
+**Steps:**
+```bash
+echo '@startuml
+User -> System: Request
+System --> User: Response
+@enduml' | bash scripts/render-ascii.sh
+```
+
+**Expected output:**
+```
+     ┌────┐           ┌──────┐
+     │User│           │System│
+     └──┬─┘           └───┬──┘
+        │   Request       │
+        │────────────────>│
+        │                 │
+        │   Response      │
+        │<─ ─ ─ ─ ─ ─ ─ ─ │
+     ┌──┴─┐           ┌───┴──┐
+     │User│           │System│
+     └────┘           └──────┘
+```
+
+**Acceptance criteria:**
+- ✅ Wrapper script exists: `scripts/render-ascii.sh`
+- ✅ Script is executable (`chmod +x`)
+- ✅ Outputs same result as direct `--render-ascii` call
+- ✅ Works with `${CLAUDE_PLUGIN_ROOT}` environment variable (as plugin hook)
+- ✅ Works without `${CLAUDE_PLUGIN_ROOT}` (falls back to `$(dirname "$0")`)
+- ✅ Command length is shorter: `bash render-ascii.sh` vs `python3 plantuml-encode.py --render-ascii`
+
+**Purpose:** Shorter commands trigger fewer permission prompts in Claude Code.
+
 ---
 
 #### 2.2 --sync Mode (Auto-fix)
@@ -1161,8 +1198,10 @@ echo "@startuml
 Client -> Server: Login request
 Server -> DB: Check password
 Server --> Client: Response
-@enduml" | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plantuml-encode.py --render-ascii
+@enduml" | bash ${CLAUDE_PLUGIN_ROOT}/scripts/render-ascii.sh
 ```
+
+**Note:** The wrapper script `render-ascii.sh` keeps commands short to reduce permission prompts.
 
 **Expected ASCII output example:**
 ```
@@ -1546,6 +1585,48 @@ rm -rf /tmp/plantuml-e2e-*
 # Reset git test repos if needed
 rm -rf /path/to/test-repo
 ```
+
+---
+
+## Reducing Permission Prompts (Optional)
+
+The PlantUML plugin uses a wrapper script (`render-ascii.sh`) to keep commands short and reduce permission prompts. However, if you still experience frequent prompts, you can add an explicit permission rule.
+
+### Option 1: Granular Permission (Recommended)
+
+Add this to `~/.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(*render-ascii.sh:*)"
+    ]
+  }
+}
+```
+
+This allows only the PlantUML render script, not all Bash commands.
+
+### Option 2: Permissive Mode (NOT Recommended)
+
+⚠️ **Warning:** This disables all permission prompts globally, which is a security risk.
+
+```json
+{
+  "permissions": {
+    "defaultMode": "permissive"
+  }
+}
+```
+
+**Why not recommended:**
+- Allows ANY Bash command without confirmation (`rm -rf /`, `curl | bash`, etc.)
+- Affects all projects, not just PlantUML
+- Violates principle of least privilege
+- Risk of data loss if Claude hallucinates destructive commands
+
+**Use granular permissions (Option 1) instead.**
 
 ---
 
