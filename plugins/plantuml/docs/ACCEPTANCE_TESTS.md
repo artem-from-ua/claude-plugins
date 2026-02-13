@@ -1167,7 +1167,7 @@ explain how a simple client-server authentication flow works
 | Raw PlantUML source displayed (`@startuml`) | SessionStart rule not loaded | Verify plugin installed; run `/clear` |
 | Manually drawn ASCII with alignment issues | Claude ignoring WebFetch instruction | Check inject-base-rules.sh line 25 |
 | No diagram shown at all | SessionStart rule missing terminal context | Verify "explaining in terminal" trigger phrase |
-| WebFetch fails | plantuml.com API down | Fallback: manual ASCII is acceptable |
+| WebFetch fails | plantuml.com API down | Claude should inform user and fallback to manual ASCII |
 
 **Verification command:**
 
@@ -1180,14 +1180,41 @@ Claude should be able to show the `@startuml...@enduml` source that was encoded 
 
 **Technical details:**
 
-The SessionStart rule (`inject-base-rules.sh` line 25-30) instructs:
+The SessionStart rule (`inject-base-rules.sh` line 25-31) instructs:
 ```markdown
 When explaining architecture or flows in the terminal, use PlantUML's ASCII text renderer:
 1. Create the PlantUML source code
-2. Encode it using the same algorithm as for SVG URLs
+2. Encode it: echo "$source" | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plantuml-encode.py
 3. Fetch ASCII output via WebFetch from: https://www.plantuml.com/plantuml/txt/<encoded>
-4. Display the rendered ASCII diagram in your response
-Do NOT paste raw PlantUML source or manually draw ASCII art.
+4. Display the rendered ASCII diagram
+5. If WebFetch fails: retry once with simpler diagram
+6. If both attempts fail: inform user PlantUML API unavailable, then generate ASCII diagram
+   yourself using box-drawing characters (as fallback only)
+Do NOT paste raw PlantUML source. Do NOT manually draw ASCII if PlantUML API is available.
+```
+
+**Fallback behavior:**
+
+If PlantUML API is unavailable (both attempts fail), Claude should:
+1. **Inform the user:** "⚠️ PlantUML text renderer API is currently unavailable. Showing manually drawn ASCII diagram as fallback."
+2. **Generate ASCII diagram manually** using box-drawing characters (┌─┐│└┘)
+3. **Quality expectation:** Manual ASCII may have minor alignment issues, but should be readable
+
+**Example fallback message:**
+```
+⚠️ PlantUML text renderer API is currently unavailable. Showing manually drawn ASCII diagram as fallback:
+
+┌────────┐         ┌────────┐
+│ Client │         │ Server │
+└───┬────┘         └───┬────┘
+    │    Request       │
+    │─────────────────>│
+    │                  │
+    │    Response      │
+    │<─────────────────│
+
+Note: This is a manually drawn fallback. For production-quality diagrams,
+please try again when plantuml.com is accessible.
 ```
 
 **Encoding verification:**
