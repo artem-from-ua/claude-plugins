@@ -139,13 +139,26 @@ The workaround will be removed once the upstream bugs are fixed.
 
 ## Contributing
 
-To add a new plugin:
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
-1. Create `plugins/<name>/` with the standard structure
-2. Add a `.claude-plugin/plugin.json` manifest
-3. All SKILL.md files must include YAML frontmatter per the [agentskills.io spec](https://agentskills.io/specification)
-4. Register it in `.claude-plugin/marketplace.json`
-5. Submit a PR
+**Quick links:**
+- [CONTRIBUTING.md](CONTRIBUTING.md) — Full contribution workflow
+- [CLAUDE.md](CLAUDE.md) — Complete technical guidelines
+- [Version Bump Requirements](CLAUDE.md#version-bump-requirements) — **CRITICAL**: Required before merge
+- [Acceptance Test Standard](CLAUDE.md#acceptance-test-documentation-standard)
+- [PR Template](.github/pull_request_template.md) — Use this when creating PRs
+
+**Quick start:**
+
+1. Create `plugins/<name>/` with the standard structure (see [CLAUDE.md](CLAUDE.md))
+2. Add `.claude-plugin/plugin.json` manifest (version `0.1.0`)
+3. All SKILL.md files must include YAML frontmatter ([agentskills.io spec](https://agentskills.io/specification))
+4. Create `docs/ACCEPTANCE_TESTS.md` with comprehensive tests
+5. Register in `.claude-plugin/marketplace.json`
+6. **Bump version before merge** (see [Version Bump Requirements](CLAUDE.md#version-bump-requirements))
+7. Submit PR using the [template](.github/pull_request_template.md)
+
+**Important:** Version bumps are **required** before merging any PR that changes plugin code. Without version bumps, `claude-sync` won't pick up your changes. See [CLAUDE.md](CLAUDE.md#version-bump-requirements) for semantic versioning rules.
 
 ## License
 
