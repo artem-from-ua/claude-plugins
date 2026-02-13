@@ -123,6 +123,67 @@ Use for: on-demand reference data, catalogs, guides that are useful in specific 
 - State **when** to use, not just **what** it does: `"Use when choosing which diagram type fits a documentation task"` (good) vs `"Diagram type catalog"` (bad — no trigger signal).
 - If the skill has a "When to suggest" table (like `plantuml-diagram-guide`), that logic belongs inside the skill body. The description should summarize the trigger concisely.
 
+**Best practices for maximum effectiveness** (based on [testing](https://github.com/Tribe-Coding/claude-plugins/issues/28) and [community research](https://scottspence.com/posts/how-to-make-claude-code-skills-activate-reliably)):
+
+1. **Lead with action state** — Use "Invoked automatically" or "Use when" at the start, not just "Catalog of..." or "Guide for...". This signals when/how the skill activates.
+
+   ```yaml
+   # Good
+   description: "Invoked automatically before creating PlantUML diagrams to select the correct type."
+
+   # Bad
+   description: "Comprehensive catalog of PlantUML diagram types with selection guidance."
+   ```
+
+2. **Include specific keywords** — Add common user phrases that should trigger the skill. This improves natural language intent matching.
+
+   ```yaml
+   description: >
+     Invoked automatically before creating PlantUML diagrams to select the correct type.
+     Keywords: diagram type, which diagram, best diagram, choose diagram, UML.
+   ```
+
+3. **Add WHEN NOT clause** — Explicitly state when NOT to use the skill. This follows the [Scott Spence best practice](https://scottspence.com/posts/how-to-make-claude-code-skills-activate-reliably) pattern.
+
+   ```yaml
+   description: >
+     Invoked automatically before creating PlantUML diagrams to select the correct type.
+     Do NOT create PlantUML without consulting this guide.
+   ```
+
+4. **List concrete examples** — Include specific types/categories the skill covers. This helps Claude match user requests to skills.
+
+   ```yaml
+   description: >
+     Covers 17 types: sequence, activity, state, class, ER, component, deployment,
+     timing, mindmap, gantt, WBS, JSON, YAML, network, object, usecase, wireframe.
+   ```
+
+5. **Keep it concise** — Description budget is 2% of context window (~16K chars total for ALL skills). Aim for 60-100 tokens per skill. Use the combined pattern below for maximum effectiveness without bloat.
+
+**Recommended combined pattern** (90 tokens, +30 over minimal):
+
+```yaml
+description: >
+  Invoked automatically before creating [X] to [purpose].
+  Covers [N] types: [type1], [type2], [type3]...
+  Do NOT [action] without consulting this [skill].
+  Keywords: [phrase1], [phrase2], [phrase3].
+```
+
+**Example** (plantuml-diagram-guide):
+
+```yaml
+description: >
+  Invoked automatically before creating PlantUML diagrams to select the correct type.
+  Covers 17 types: sequence, activity, state, class, ER, component, deployment,
+  timing, mindmap, gantt, WBS, JSON, YAML, network, object, usecase, wireframe.
+  Do NOT create PlantUML without consulting this guide.
+  Keywords: diagram type, which diagram, best diagram, choose diagram, UML.
+```
+
+**Token cost impact:** +30 tokens (~$0.00009 per session with Sonnet at $0.003/1K input tokens). Negligible cost for measurably better discoverability.
+
 ### 3. PostToolUse hook — automatic action
 
 Run a script automatically after specific tool calls (Write, Edit, Bash, etc.) via PostToolUse hooks. This is fully autonomous — no Claude reasoning needed.
