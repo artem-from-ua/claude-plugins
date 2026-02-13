@@ -1211,6 +1211,65 @@ Should produce identical ASCII to what Claude showed.
 
 ---
 
+**Common issues and troubleshooting:**
+
+| Error | Symptom | Root Cause | Fix |
+|-------|---------|------------|-----|
+| `sizeCalculation return invalid` | WebFetch to PlantUML text API fails | PlantUML source has incorrect escaping (e.g., `\n` instead of `\\n` in Python heredoc) | Claude should retry with `\\n` for line breaks in labels |
+| `Error: ...` on first WebFetch | First attempt fails, second succeeds | Python string escaping issue or overly complex diagram | SessionStart rule now includes retry guidance |
+| No ASCII shown | Claude doesn't use WebFetch | SessionStart rule not loaded or ignored | Verify version 1.3.0 installed; run `/clear` |
+| Raw PlantUML source shown | Claude pastes `@startuml` instead of ASCII | Old SessionStart rule (pre-1.3.0) | Run `claude-sync --force` to update |
+
+**Debugging steps if WebFetch fails:**
+
+1. **Check encoded URL manually:**
+   ```bash
+   # Copy the encoded string from Claude's Bash output
+   curl "https://www.plantuml.com/plantuml/txt/<encoded>"
+   ```
+   If this returns ASCII, encoding was correct. If error, encoding failed.
+
+2. **Verify PlantUML source:**
+   Ask Claude: "Show me the PlantUML source you tried to encode"
+
+   Check for:
+   - ✅ Valid syntax (`@startuml...@enduml`)
+   - ✅ Escaped line breaks (`\\n` not `\n` in Python heredoc)
+   - ✅ No invalid characters
+
+3. **Test encoding algorithm:**
+   ```bash
+   echo '@startuml
+   A -> B: Test
+   @enduml' | python3 plugins/plantuml/scripts/plantuml-encode.py
+
+   # Should output encoded string without errors
+   ```
+
+4. **Check PlantUML API status:**
+   ```bash
+   curl -I https://www.plantuml.com/plantuml/txt/SoWkIImgAStDuNBCoKnELT2rKt3CoKnELR1Iy4ZDoSddSaZDIm6g0G00
+   ```
+   Should return `200 OK`. If `500` or timeout, PlantUML API may be down.
+
+**Real-world test result (from issue verification):**
+
+First attempt failed:
+```
+⏺ Fetch(https://www.plantuml.com/plantuml/txt/jVPBThsxEL...)
+  ⎿  Error: sizeCalculation return invalid
+```
+
+Second attempt succeeded after Claude fixed escaping:
+```
+⏺ Fetch(https://www.plantuml.com/plantuml/txt/ZLDDJzmm4BtxLunogAW...)
+  ⎿  Received 11.9KB (200 OK)
+```
+
+**Key insight:** Claude correctly self-recovered by detecting the escaping issue and retrying with `\\n`. The SessionStart rule now explicitly mentions this to prevent the initial failure.
+
+---
+
 ### 9. End-to-End Scenario
 
 **Objective:** Validate complete workflow from editing to commit
