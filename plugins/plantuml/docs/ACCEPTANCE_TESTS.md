@@ -97,6 +97,51 @@ https://www.plantuml.com/plantuml/svg/SoWkIImgAStDuNBCoKnELT2rKt3AJx9I24ajBk5oIC
 - ✅ Default format is SVG (`/svg/` in URL)
 - ✅ With `--format png`, outputs PNG URL (`/png/` in URL)
 
+#### 2.1.1 ASCII Rendering Mode
+
+**Test case:** Render PlantUML diagram as ASCII directly from PlantUML API
+
+**Steps:**
+```bash
+echo '@startuml
+Alice -> Bob: Hello
+Bob -> Alice: Hi there!
+@enduml' | python3 scripts/plantuml-encode.py --render-ascii
+```
+
+**Expected output:**
+```
+     ┌─────┐          ┌───┐
+     │Alice│          │Bob│
+     └──┬──┘          └─┬─┘
+        │    Hello      │
+        │──────────────>│
+        │               │
+        │  Hi there!    │
+        │<──────────────│
+     ┌──┴──┐          ┌─┴─┐
+     │Alice│          │Bob│
+     └─────┘          └───┘
+```
+
+**Acceptance criteria:**
+- ✅ Outputs ASCII art diagram (not URL)
+- ✅ Diagram uses box-drawing characters (┌─┐│<>)
+- ✅ No extraneous output (clean stdout)
+- ✅ Exits with code 0 on success
+- ✅ Exits with code 1 on network failure or empty input
+- ✅ Error messages go to stderr (not stdout)
+
+**Test error handling:**
+```bash
+# Empty input
+echo "" | python3 scripts/plantuml-encode.py --render-ascii
+# Expected: exit 1, stderr message "Error: No input provided"
+
+# Network timeout (if PlantUML API is down)
+# Expected: exit 1, stderr message about fetch failure
+```
+
 ---
 
 #### 2.2 --sync Mode (Auto-fix)
@@ -715,7 +760,7 @@ What are the rules for PlantUML diagrams in markdown files?
 - ✅ Reference to SVG format by default
 - ✅ Instruction to "proactively add PlantUML diagrams when creating or updating .md files"
 - ✅ Mention of the `plantuml-diagram-guide` skill
-- ✅ Instruction to render diagrams as ASCII art when explaining in terminal
+- ✅ Instruction to render diagrams as ASCII art when explaining in terminal using `--render-ascii`
 
 **Example expected response:**
 ```
@@ -1104,11 +1149,20 @@ explain how a simple client-server authentication flow works
 
 **Expected behavior:**
 - ✅ Claude creates PlantUML source code internally
-- ✅ Encodes it using plantuml-encode algorithm
-- ✅ Fetches ASCII output via WebFetch from `https://www.plantuml.com/plantuml/txt/<encoded>`
+- ✅ Pipes it to `plantuml-encode.py --render-ascii` via Bash tool
 - ✅ Displays perfectly aligned ASCII diagram using box-drawing characters (`┌─┐│└┘`)
+- ✅ Entire process happens in one command (no separate encode + fetch steps)
 - ❌ Does NOT paste raw PlantUML source (`@startuml`, `Alice -> Bob`, etc.)
 - ❌ Does NOT manually draw ASCII art (would have alignment issues)
+
+**Example command used by Claude:**
+```bash
+echo "@startuml
+Client -> Server: Login request
+Server -> DB: Check password
+Server --> Client: Response
+@enduml" | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plantuml-encode.py --render-ascii
+```
 
 **Expected ASCII output example:**
 ```

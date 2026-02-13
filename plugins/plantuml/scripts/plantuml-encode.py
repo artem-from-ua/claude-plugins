@@ -12,6 +12,9 @@ Usage:
     # Output full URL (default is SVG)
     python3 plantuml-encode.py --format png < diagram.puml
 
+    # Render ASCII diagram directly to stdout (fetch from PlantUML server)
+    echo '@startuml\nAlice -> Bob: Hello\n@enduml' | python3 plantuml-encode.py --render-ascii
+
     # Sync all PlantUML blocks in a markdown file (auto-fix)
     python3 plantuml-encode.py --sync README.md
 
@@ -23,6 +26,8 @@ import sys
 import zlib
 import argparse
 import re
+import urllib.request
+import urllib.error
 
 PLANTUML_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_"
 
@@ -69,6 +74,25 @@ def plantuml_encode(text):
 def make_url(text, fmt="svg"):
     """Generate full PlantUML server URL."""
     return f"https://www.plantuml.com/plantuml/{fmt}/{plantuml_encode(text)}"
+
+
+def render_ascii(text):
+    """
+    Render PlantUML diagram as ASCII by fetching from PlantUML text API.
+    Returns the ASCII diagram text on success, or None on failure.
+    """
+    url = make_url(text, fmt="txt")
+    try:
+        req = urllib.request.Request(url)
+        req.add_header('User-Agent', 'plantuml-encode.py/1.0')
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return response.read().decode('utf-8')
+    except urllib.error.URLError as e:
+        print(f"Error: Failed to fetch ASCII diagram from PlantUML API: {e}", file=sys.stderr)
+        return None
+    except Exception as e:
+        print(f"Error: Unexpected error while rendering ASCII: {e}", file=sys.stderr)
+        return None
 
 
 def check_markdown(filepath):
@@ -180,6 +204,8 @@ def main():
                         help='Check PlantUML image URLs match source (exit 1 if mismatch)')
     parser.add_argument('--encode-only', '-e', action='store_true',
                         help='Output only the encoded string, not full URL')
+    parser.add_argument('--render-ascii', '-r', action='store_true',
+                        help='Render ASCII diagram directly from PlantUML API (reads from stdin)')
     args = parser.parse_args()
 
     if args.check:
@@ -202,6 +228,16 @@ def main():
     elif args.sync:
         for filepath in args.sync:
             sync_markdown(filepath)
+    elif args.render_ascii:
+        text = sys.stdin.read().strip()
+        if not text:
+            print("Error: No input provided. Pipe PlantUML text via stdin.", file=sys.stderr)
+            sys.exit(1)
+        ascii_diagram = render_ascii(text)
+        if ascii_diagram:
+            print(ascii_diagram, end='')
+        else:
+            sys.exit(1)
     else:
         text = sys.stdin.read().strip()
         if not text:
