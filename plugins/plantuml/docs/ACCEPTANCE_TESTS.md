@@ -808,11 +808,12 @@ bash plugins/plantuml/scripts/inject-base-rules.sh | grep -A 5 "Proactive usage"
 Proactive usage:
 - When creating or updating `.md` documentation files, proactively add PlantUML diagrams...
 - When explaining architecture or flows in the terminal, render diagrams as ASCII art...
-- Use the `plantuml-diagram-guide` skill to choose the right diagram type for the task.
+- **ALWAYS invoke the `plantuml-diagram-guide` skill BEFORE creating any PlantUML diagram** to choose the correct diagram type. This is MANDATORY — do not skip this step even if you think you know which type to use.
 ```
 
 **Acceptance criteria:**
-- ✅ Contains explicit instruction: "Use the `plantuml-diagram-guide` skill"
+- ✅ Contains **MANDATORY** instruction: "ALWAYS invoke the `plantuml-diagram-guide` skill BEFORE creating any PlantUML diagram"
+- ✅ Uses imperative language: "ALWAYS", "MANDATORY", "do not skip"
 - ✅ Trigger: "When creating or updating `.md`" (automatic context)
 - ✅ No conditional phrasing like "if the user asks"
 
