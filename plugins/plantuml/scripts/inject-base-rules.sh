@@ -24,7 +24,7 @@ Proactive usage:
 - When creating or updating `.md` documentation files, proactively add PlantUML diagrams to illustrate architecture, sequences, state machines, data flow, and component relationships.
 - When explaining architecture or flows in the terminal, use PlantUML's ASCII text renderer:
   ```bash
-  echo "$plantuml_source" | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plantuml-encode.py --render-ascii
+  echo "$plantuml_source" | bash ${CLAUDE_PLUGIN_ROOT}/scripts/render-ascii.sh
   ```
   If rendering fails (exit code 1): retry once with simpler diagram. If both attempts fail: inform user PlantUML API unavailable, then generate ASCII diagram yourself using box-drawing characters (as fallback only).
   Do NOT paste raw PlantUML source. Do NOT manually draw ASCII if PlantUML API is available.
