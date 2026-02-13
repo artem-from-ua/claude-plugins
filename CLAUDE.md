@@ -498,6 +498,85 @@ For tests requiring manual execution (especially SessionStart hooks, fresh sessi
 - **Use tables**: For comparison data (scenarios, pass/fail, automation status)
 - **Reference real files**: Link to actual plugin files in examples
 
+### 8. Testing SessionStart Hooks and Proactive Behavior
+
+**Critical insight from [issue #28](https://github.com/Tribe-Coding/claude-plugins/issues/28):** SessionStart hooks that inject MANDATORY instructions work correctly, but testing them requires understanding environmental failure modes.
+
+**Test design recommendations:**
+
+1. **Always test in fresh sessions** — SessionStart hooks only execute on session start. Tests within an existing session are invalid for verifying hook behavior.
+
+2. **Test across multiple models** — Different models (Opus 4.6, Sonnet 4.5) may have different compliance levels with MANDATORY instructions. Test on at least two models.
+
+3. **Document environmental failure modes** — Not all test failures indicate bugs. Common environmental causes:
+   - **API timeouts** (32K token limit) — Claude may skip "optional" steps to finish before timeout
+   - **SessionStart race conditions** (upstream [#10997](https://github.com/anthropics/claude-code/issues/10997), [#19491](https://github.com/anthropics/claude-code/issues/19491)) — Hooks may execute before plugins fully load
+   - **Plugin cache not synced** — Changes not yet in `~/.claude/plugins/cache/`
+
+4. **Provide mitigation steps** — For each failure mode, document workarounds:
+   ```markdown
+   **Known failure modes:**
+
+   If skill does NOT invoke in your test:
+
+   1. **API timeout** — Set `CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000`
+   2. **Race condition** — Run `/clear` to restart session
+   3. **Plugin not loaded** — Verify with `/skills | grep plugin-name`
+   ```
+
+5. **Include test result matrix** — Show actual test runs with different conditions:
+
+   ```markdown
+   | Test | Model | Skill invoked? | Duration | Notes |
+   |------|-------|----------------|----------|-------|
+   | Test 1 | Sonnet 4.5 | ❌ No | 4m 33s | API timeout (32K limit) |
+   | Test 2 (retry) | Sonnet 4.5 | ✅ Yes | 35s | Fresh session |
+   | Test 3 | Opus 4.6 | ✅ Yes | 32s | Fresh session |
+   ```
+
+6. **Test both positive and negative cases** — Verify MANDATORY instructions are followed (positive) and verify they don't trigger when inappropriate (negative):
+   - Positive: "create docs/architecture.md" → skill SHOULD invoke
+   - Negative: "create a sequence diagram" (type specified) → skill should NOT invoke
+
+7. **Distinguish UI display bugs from functionality bugs** — Skill invocation may work even if not displayed in UI. Test outcomes (e.g., correct diagram type selection) not just UI output.
+
+8. **Provide step-by-step manual test procedures** — For SessionStart tests that MUST be manual:
+
+   ```markdown
+   #### Manual Test Procedure (5 steps)
+
+   **Step 1:** Start fresh session
+   ```bash
+   mkdir /tmp/test && cd /tmp/test && git init && claude
+   ```
+
+   **Step 2:** Verify rules loaded
+   Ask: "What are the rules for [feature X]?"
+   Expected: Claude mentions specific rules from SessionStart hook
+
+   **Step 3:** Test proactive behavior
+   Ask: "Create docs/example.md with [relevant content]"
+   Expected: Claude proactively invokes skill before creating content
+
+   **Step 4:** Verify UI shows invocation
+   Expected: See `⏺ Skill(plugin-name:skill-name)` in output
+
+   **Step 5:** Test failure mode recovery
+   If skill doesn't invoke: Run `/clear` and retry from Step 3
+   ```
+
+9. **Link to upstream issues** — When environmental failures occur due to known Claude Code bugs, link to the relevant issues so readers understand it's not a plugin problem:
+   - SessionStart race conditions: [#10997](https://github.com/anthropics/claude-code/issues/10997), [#19491](https://github.com/anthropics/claude-code/issues/19491)
+   - Plugin skills visibility: [#15178](https://github.com/anthropics/claude-code/issues/15178)
+   - CLAUDE.md compliance: [#18454](https://github.com/anthropics/claude-code/issues/18454), [#2544](https://github.com/anthropics/claude-code/issues/2544)
+
+10. **Document expected success rate** — Based on community research ([Scott Spence](https://scottspence.com/posts/how-to-make-claude-code-skills-activate-reliably)), different approaches have different success rates:
+    - SessionStart MANDATORY instructions: ~90%+ (in fresh sessions without environmental issues)
+    - Passive skill descriptions: ~20%
+    - Forced evaluation hooks: ~84%
+
+    Set realistic expectations in acceptance tests: "This feature should work in >90% of fresh session tests. Occasional failures due to API timeouts or race conditions are expected and documented below."
+
 **Example: See `plugins/plantuml/docs/ACCEPTANCE_TESTS.md`**
 
 This document demonstrates:

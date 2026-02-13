@@ -757,6 +757,57 @@ cat README.md
 - ✅ Image URL is present immediately after the code block
 - ✅ URL format: `![...](https://www.plantuml.com/plantuml/svg/...)`
 
+---
+
+**Step 5: Verify MANDATORY skill invocation**
+
+The most critical aspect of SessionStart injection is ensuring Claude **automatically invokes** the `plantuml-diagram-guide` skill before creating any PlantUML diagram.
+
+Ask Claude:
+```
+create docs/architecture.md with a description of simple client-server architecture
+```
+
+**Expected behavior:**
+- ✅ Claude explicitly invokes the skill: `⏺ Skill(plantuml:plantuml-diagram-guide)`
+- ✅ Skill invocation happens BEFORE writing any PlantUML code
+- ✅ Claude may explain diagram type choice based on skill recommendations
+- ✅ Multiple diagrams are created (Component, Sequence, Deployment are common for this prompt)
+- ✅ All diagrams have correct two-part format
+
+**Test results from issue [#28](https://github.com/Tribe-Coding/claude-plugins/issues/28):**
+
+| Test | Model | Skill invoked? | Notes |
+|------|-------|----------------|-------|
+| Fresh session test 1 | Opus 4.6 | ✅ Yes | Showed `⏺ Skill(plantuml:plantuml-diagram-guide)` |
+| Fresh session test 2 | Sonnet 4.5 | ✅ Yes | Showed `⏺ Skill(plantuml:plantuml-diagram-guide)` |
+| Initial test (invalid) | Sonnet 4.5 | ❌ No | API timeout (32K token limit exceeded) |
+
+**Conclusion:** SessionStart MANDATORY instruction works correctly on both Opus 4.6 and Sonnet 4.5 when tested in fresh sessions without environmental issues.
+
+---
+
+**Known failure modes:**
+
+If the skill does NOT invoke in your test, this may be due to:
+
+1. **API timeout** — When output exceeds 32K tokens, Claude may skip skill invocation to complete before timeout
+   - **Mitigation:** Set `CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000` or generate smaller documents
+
+2. **SessionStart hook race condition** — Hooks may execute before plugins fully load (upstream issues [#10997](https://github.com/anthropics/claude-code/issues/10997), [#19491](https://github.com/anthropics/claude-code/issues/19491))
+   - **Mitigation:** Run `/clear` to restart session, or manually invoke `/plantuml-diagram-guide`
+
+3. **Plugin not installed** — Marketplace plugin may still be downloading
+   - **Verification:** Run `/skills` and confirm `plantuml:plantuml-diagram-guide` appears in list
+
+**If skill invocation fails in your test:**
+- Run `/clear` to restart the session
+- Verify plugin is installed: `/skills | grep plantuml`
+- Try a simpler prompt: "create docs/test.md with a sequence diagram"
+- Check for API errors in Claude's response
+
+---
+
 If the URL is missing, the PostToolUse hook may not have fired. Check:
 ```bash
 git log -1 --name-only
