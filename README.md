@@ -50,13 +50,16 @@ PlantUML diagram automation for markdown documentation.
 
 **Features:**
 - Auto-sync PlantUML image URLs after every Write/Edit (PostToolUse hook)
+- ASCII text diagrams in terminal via PlantUML text renderer API
 - Git pre-commit hook blocks commits with stale diagram URLs
 - Base formatting rules injected on session start (~200 tokens)
 - Full diagram type catalog available on-demand via skill
 - Validation command: `/plantuml:plantuml-validate`
 - GitHub Actions CI workflow template
 
-**What it does:** Every PlantUML diagram in markdown has two parts — a fenced code block with raw source and an image link pointing to plantuml.com. This plugin keeps them in sync automatically.
+**What it does:**
+- **In markdown files**: Every PlantUML diagram has two parts — a fenced code block with raw source and an image link pointing to plantuml.com. This plugin keeps them in sync automatically.
+- **In terminal**: When you ask Claude to explain architecture or flows, it uses PlantUML's ASCII text renderer (`https://www.plantuml.com/plantuml/txt/<encoded>`) to show perfectly aligned ASCII diagrams instead of pasting raw PlantUML source or manually drawing ASCII art.
 
 ### statusline
 

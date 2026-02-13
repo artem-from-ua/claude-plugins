@@ -22,7 +22,12 @@ Alice -> Bob: Hello
 
 Proactive usage:
 - When creating or updating `.md` documentation files, proactively add PlantUML diagrams to illustrate architecture, sequences, state machines, data flow, and component relationships.
-- When explaining architecture or flows in the terminal, render diagrams as ASCII art using box-drawing characters — do NOT paste raw PlantUML source.
+- When explaining architecture or flows in the terminal, use PlantUML's ASCII text renderer:
+  1. Create the PlantUML source code
+  2. Encode it using the same algorithm as for SVG URLs
+  3. Fetch ASCII output via WebFetch from: `https://www.plantuml.com/plantuml/txt/<encoded>`
+  4. Display the rendered ASCII diagram in your response
+  Do NOT paste raw PlantUML source or manually draw ASCII art.
 - **ALWAYS invoke the `plantuml-diagram-guide` skill BEFORE creating any PlantUML diagram** to choose the correct diagram type. This is MANDATORY — do not skip this step even if you think you know which type to use.
 
 Rules:

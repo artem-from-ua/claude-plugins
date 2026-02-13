@@ -1079,6 +1079,138 @@ bash scripts/inject-base-rules.sh | grep -A 10 "Proactive usage"
 
 ---
 
+#### 8.9 ASCII Text Renderer in Terminal
+
+**Objective:** Verify Claude uses PlantUML text renderer API for terminal diagrams instead of manually drawing ASCII art
+
+**Automation status:** ⚠️ **Manual only** (requires fresh session to verify SessionStart rule)
+
+**Manual test procedure:**
+
+**Step 1: Start fresh session**
+```bash
+mkdir /tmp/plantuml-ascii-test
+cd /tmp/plantuml-ascii-test
+git init
+claude
+```
+
+**Step 2: Request architecture explanation**
+
+Ask Claude:
+```
+explain how a simple client-server authentication flow works
+```
+
+**Expected behavior:**
+- ✅ Claude creates PlantUML source code internally
+- ✅ Encodes it using plantuml-encode algorithm
+- ✅ Fetches ASCII output via WebFetch from `https://www.plantuml.com/plantuml/txt/<encoded>`
+- ✅ Displays perfectly aligned ASCII diagram using box-drawing characters (`┌─┐│└┘`)
+- ❌ Does NOT paste raw PlantUML source (`@startuml`, `Alice -> Bob`, etc.)
+- ❌ Does NOT manually draw ASCII art (would have alignment issues)
+
+**Expected ASCII output example:**
+```
+     ┌────────┐          ┌────────┐
+     │ Client │          │ Server │
+     └───┬────┘          └───┬────┘
+         │   Login request   │
+         │──────────────────>│
+         │                   │
+         │   Check password  │
+         │                   │──> [DB]
+         │                   │
+         │     Response      │
+         │<──────────────────│
+     ┌───┴────┐          ┌───┴────┐
+     │ Client │          │ Server │
+     └────────┘          └────────┘
+```
+
+**Key characteristics of PlantUML text renderer:**
+- ✅ Perfect vertical alignment (all `│` characters in same column)
+- ✅ Consistent box-drawing characters
+- ✅ Participant boxes at top and bottom
+- ✅ Arrow direction clear (`────>` for requests, `<────` for responses)
+
+**Acceptance criteria:**
+- ✅ ASCII diagram is displayed (not raw PlantUML source)
+- ✅ Vertical lines are perfectly aligned (no misalignment like manually drawn ASCII)
+- ✅ Uses box-drawing characters (┌─┐│└┘) not regular characters
+- ✅ Diagram structure matches PlantUML text renderer output format
+
+**Test with different diagram types:**
+
+1. **Sequence diagram:**
+   ```
+   explain OAuth authentication flow
+   ```
+   Expected: Sequence diagram with actors, arrows, messages
+
+2. **Component diagram:**
+   ```
+   explain microservices architecture
+   ```
+   Expected: Component diagram with packages and connections
+
+3. **State diagram:**
+   ```
+   explain order lifecycle states in e-commerce
+   ```
+   Expected: State diagram with states and transitions
+
+**Failure modes:**
+
+| Symptom | Root cause | Fix |
+|---------|------------|-----|
+| Raw PlantUML source displayed (`@startuml`) | SessionStart rule not loaded | Verify plugin installed; run `/clear` |
+| Manually drawn ASCII with alignment issues | Claude ignoring WebFetch instruction | Check inject-base-rules.sh line 25 |
+| No diagram shown at all | SessionStart rule missing terminal context | Verify "explaining in terminal" trigger phrase |
+| WebFetch fails | plantuml.com API down | Fallback: manual ASCII is acceptable |
+
+**Verification command:**
+
+After Claude shows ASCII diagram, verify it came from PlantUML API:
+```
+Can you show me the PlantUML source code you used to generate that ASCII diagram?
+```
+
+Claude should be able to show the `@startuml...@enduml` source that was encoded and sent to `plantuml.com/txt/`.
+
+**Technical details:**
+
+The SessionStart rule (`inject-base-rules.sh` line 25-30) instructs:
+```markdown
+When explaining architecture or flows in the terminal, use PlantUML's ASCII text renderer:
+1. Create the PlantUML source code
+2. Encode it using the same algorithm as for SVG URLs
+3. Fetch ASCII output via WebFetch from: https://www.plantuml.com/plantuml/txt/<encoded>
+4. Display the rendered ASCII diagram in your response
+Do NOT paste raw PlantUML source or manually draw ASCII art.
+```
+
+**Encoding verification:**
+
+To manually verify Claude used correct encoding:
+
+```bash
+# Get the PlantUML source from Claude
+# Encode it yourself using:
+python3 plugins/plantuml/scripts/plantuml-encode.py <<'EOF'
+@startuml
+Alice -> Bob: Hello
+@enduml
+EOF
+
+# Fetch ASCII:
+curl "https://www.plantuml.com/plantuml/txt/<encoded_output>"
+```
+
+Should produce identical ASCII to what Claude showed.
+
+---
+
 ### 9. End-to-End Scenario
 
 **Objective:** Validate complete workflow from editing to commit
