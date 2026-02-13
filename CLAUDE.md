@@ -105,10 +105,13 @@ Example (plantuml `inject-base-rules.sh`):
 ```
 Proactive usage:
 - When creating or updating `.md` documentation files, proactively add PlantUML diagrams…
-- Use the `plantuml-diagram-guide` skill to choose the right diagram type.
+- **ALWAYS invoke the `plantuml-diagram-guide` skill BEFORE creating any PlantUML diagram**.
+  This is MANDATORY — do not skip this step even if you think you know which type to use.
 ```
 
 **Budget:** Keep injected text minimal. Every token costs context in every session, even when the plugin is irrelevant. Rules only — no catalogs, no examples.
+
+**Language:** Use imperative, unambiguous language for critical behavior. Words like "ALWAYS", "MUST", "MANDATORY" enforce strict compliance. Avoid soft language like "consider", "you may", "it's recommended".
 
 ### 2. Skill description — trigger-based suggestion
 

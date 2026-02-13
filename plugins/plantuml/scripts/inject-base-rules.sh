@@ -23,7 +23,7 @@ Alice -> Bob: Hello
 Proactive usage:
 - When creating or updating `.md` documentation files, proactively add PlantUML diagrams to illustrate architecture, sequences, state machines, data flow, and component relationships.
 - When explaining architecture or flows in the terminal, render diagrams as ASCII art using box-drawing characters — do NOT paste raw PlantUML source.
-- Use the `plantuml-diagram-guide` skill to choose the right diagram type for the task.
+- **ALWAYS invoke the `plantuml-diagram-guide` skill BEFORE creating any PlantUML diagram** to choose the correct diagram type. This is MANDATORY — do not skip this step even if you think you know which type to use.
 
 Rules:
 - Always keep both parts in sync. When you modify PlantUML source, the PostToolUse hook auto-updates the image URL.
