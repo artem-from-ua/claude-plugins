@@ -3,7 +3,7 @@
 # Reads JSON from stdin (piped by Claude Code)
 #
 # Layout (two lines):
-#   Line 1: ⏳ <bar> [icon] <time>   📅 <bar> [icon] <time>   💸 <status> <bar> [warning] <amount>
+#   Line 1: ⏳ <bar> [icon] <time>   📅 <bar> [icon] <time>   💸 <status> <bar> [warning] <money>
 #   Line 2: 📁 <dir>   🌿 <branch>   🤖 <model>   📚 <ctx>%
 #
 # Fields:
@@ -18,10 +18,14 @@
 #   ⏳  5-hour rate limit: progress bar, optional icon, time remaining
 #   📅  7-day rate limit: progress bar, optional icon, time remaining
 #         Icons: ❌ when usage =100% (limit exhausted), ⚠️ when usage >90%
-#         Time format: XhYm (5h) or XdYh rounded (7d when >24h left)
+#         Time format (simplified for less noise):
+#           5h: >=2h shows ~Xh (approximate, ~ dimmed), <2h shows XhYm (exact)
+#           7d: >=2d shows ~Xd (approximate, ~ dimmed), <2d shows XdYh or XhYm (exact)
 #         When API returns resets_at=null (window inactive, no usage yet),
 #         shows yellow "idle" instead of icon+time (bar needs time_pct to colorize)
-#   💸  Extra usage (monthly billing): status icon (▶️/⏸️), progress bar, warning icon, dollar amount
+#   💸  Extra usage (monthly billing): status icon (▶️/⏸️), progress bar, warning icon, money spent
+#         Money format: ¤X.YZ where ¤ is dimmed, X is integer part, .YZ is dimmed fractional part
+#         Status icon: ▶️ when 5h or 7d exhausted (extra usage active), ⏸️ otherwise
 #
 # Progress bar (20 blocks for 5h, 21 blocks for 7d):
 #   When usage ≤ time elapsed (under/on pace):
@@ -176,10 +180,10 @@ parse_reset_epoch() {
 }
 
 # Format time remaining as human-readable string
-# Args: $1=resets_at, $2=compact (if "1", round to hours when >24h)
+# Args: $1=resets_at, $2=threshold_hours (if >= threshold, show approximate rounded time)
 format_time_remaining() {
   local resets_at="$1"
-  local compact="$2"
+  local threshold_hours="$2"
   local reset_epoch
   reset_epoch=$(parse_reset_epoch "$resets_at")
   if [ -z "$reset_epoch" ]; then
@@ -196,17 +200,34 @@ format_time_remaining() {
   local mins=$(( (diff % 3600) / 60 ))
   local dim=$(printf '\033[38;5;242m')
   local rst=$(printf '\033[0m')
-  if [ "$compact" = "1" ] && [ "$days" -gt 0 ]; then
-    if [ "$mins" -ge 30 ]; then
-      hours=$(( hours + 1 ))
+
+  # Calculate total hours for threshold check
+  local total_hours=$(( days * 24 + hours ))
+
+  # If >= threshold, show approximate rounded time
+  if [ "$total_hours" -ge "$threshold_hours" ]; then
+    if [ "$days" -gt 0 ]; then
+      # Round to nearest day (hours >= 12 rounds up)
+      if [ "$hours" -ge 12 ]; then
+        days=$(( days + 1 ))
+      fi
+      echo "${dim}~${rst}${days}${dim}d${rst}"
+    else
+      # Round to nearest hour (mins >= 30 rounds up)
+      if [ "$mins" -ge 30 ]; then
+        hours=$(( hours + 1 ))
+      fi
+      echo "${dim}~${rst}${hours}${dim}h${rst}"
     fi
-    echo "${days}${dim}d${rst}${hours}${dim}h${rst}"
-  elif [ "$days" -gt 0 ]; then
-    echo "${days}${dim}d${rst}${hours}${dim}h${rst}${mins}${dim}m${rst}"
-  elif [ "$hours" -gt 0 ]; then
-    echo "${hours}${dim}h${rst}${mins}${dim}m${rst}"
   else
-    echo "${mins}${dim}m${rst}"
+    # Show exact time
+    if [ "$days" -gt 0 ]; then
+      echo "${days}${dim}d${rst}${hours}${dim}h${rst}"
+    elif [ "$hours" -gt 0 ]; then
+      echo "${hours}${dim}h${rst}${mins}${dim}m${rst}"
+    else
+      echo "${mins}${dim}m${rst}"
+    fi
   fi
 }
 
@@ -295,7 +316,7 @@ if [ -n "$usage_json" ]; then
 
   if [ -n "$five_hour_pct" ]; then
     five_int=${five_hour_pct%.*}
-    five_remaining=$(format_time_remaining "$five_hour_resets" "0")
+    five_remaining=$(format_time_remaining "$five_hour_resets" 2)
     five_time_pct=$(calc_time_pct "$five_hour_resets" 18000)
     five_bar=$(build_progress_bar "$five_int" "$five_time_pct")
 
@@ -317,7 +338,7 @@ if [ -n "$usage_json" ]; then
 
   if [ -n "$seven_day_pct" ]; then
     seven_int=${seven_day_pct%.*}
-    seven_remaining=$(format_time_remaining "$seven_day_resets" "1")
+    seven_remaining=$(format_time_remaining "$seven_day_resets" 48)
     seven_time_pct=$(calc_time_pct "$seven_day_resets" 604800)
     seven_bar=$(build_progress_bar "$seven_int" "$seven_time_pct" 21)
 
@@ -344,8 +365,15 @@ if [ -n "$usage_json" ]; then
     extra_utilization=$(echo "$usage_json" | jq -r '.extra_usage.utilization // empty')
 
     if [ -n "$used_credits" ]; then
-      # Convert credits to dollars (credits / 100)
-      dollars=$(echo "$used_credits" | awk '{printf "%.2f", $1/100}')
+      # Convert API credits to money amount (credits / 100)
+      money_raw=$(echo "$used_credits" | awk '{printf "%.2f", $1/100}')
+
+      # Split into integer and fractional parts
+      money_int=$(echo "$money_raw" | cut -d'.' -d',' -f1)
+      money_frac=$(echo "$money_raw" | grep -o '[.,][0-9]*$')
+
+      # Format: integer part normal, decimal separator + fractional part dimmed
+      money_display="${money_int}${dim}${money_frac}${rst}"
 
       # Determine status icon: ▶️ if 5h or 7d limit exhausted (100%), otherwise ⏸️
       status_icon="⏸️"
@@ -411,8 +439,8 @@ if [ -n "$usage_json" ]; then
         extra_block="${extra_block} ${extra_bar}${extra_warning}"
       fi
 
-      # Add dollar amount
-      extra_block="${extra_block} ${dollars}"
+      # Add money spent with currency symbol
+      extra_block="${extra_block} ${dim}¤${rst}${money_display}"
 
       line1="${line1}   ${extra_block}"
     fi
