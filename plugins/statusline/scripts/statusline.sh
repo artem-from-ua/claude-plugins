@@ -2,8 +2,9 @@
 # Claude Code statusline script
 # Reads JSON from stdin (piped by Claude Code)
 #
-# Layout:
-#   📁 <dir>   🌿 <branch>   🤖 <model>   📚 <ctx>%   ⏳ <5h>% <bar> <time>   📅 <7d>% <bar> <time>
+# Layout (two lines):
+#   Line 1: ⏳ <bar> [icon] <time>   📅 <bar> [icon] <time>   💸 <status> <bar> [warning] <amount>
+#   Line 2: 📁 <dir>   🌿 <branch>   🤖 <model>   📚 <ctx>%
 #
 # Fields:
 #   📁  Current directory (basename)
@@ -14,11 +15,13 @@
 #         <60%  — default (no color)
 #         ≥60%  — yellow + ⚠️  — first compression likely, wrap up current task
 #         ≥80%  — red + 🛑 — context degraded, start a new session
-#   ⏳  5-hour rate limit: usage%, progress bar, time remaining
-#   📅  7-day rate limit: usage%, progress bar, time remaining
+#   ⏳  5-hour rate limit: progress bar, optional icon, time remaining
+#   📅  7-day rate limit: progress bar, optional icon, time remaining
+#         Icons: ❌ when usage =100% (limit exhausted), ⚠️ when usage >90%
 #         Time format: XhYm (5h) or XdYh rounded (7d when >24h left)
 #         When API returns resets_at=null (window inactive, no usage yet),
-#         shows yellow "idle" instead of bar+time (bar needs time_pct to colorize)
+#         shows yellow "idle" instead of icon+time (bar needs time_pct to colorize)
+#   💸  Extra usage (monthly billing): status icon (▶️/⏸️), progress bar, warning icon, dollar amount
 #
 # Progress bar (20 blocks for 5h, 21 blocks for 7d):
 #   When usage ≤ time elapsed (under/on pace):
@@ -79,14 +82,17 @@ colorize_model() {
 }
 model_colored=$(colorize_model "$model")
 
-# Build base status
-status="📁 ${short_dir}${git_info}${dirty_info}   🤖 ${model_colored}"
+# Build line 2 (info line)
+line2="📁 ${short_dir}${git_info}${dirty_info}   🤖 ${model_colored}"
+
+# Build line 1 (progress bars line) - will be populated later
+line1=""
 
 # Dim color for units (%, d, h, m)
 dim=$(printf '\033[38;5;242m')
 rst=$(printf '\033[0m')
 
-# Context window (yellow ≥60%, red ≥80%)
+# Context window (yellow ≥60%, red ≥80%) - goes to line 2
 if [ -n "$used_pct" ]; then
   ctx_int=${used_pct%.*}
   if [ "$ctx_int" -ge 80 ] 2>/dev/null; then
@@ -97,11 +103,11 @@ if [ -n "$used_pct" ]; then
     ctx_color=""
   fi
   if [ "$ctx_int" -ge 80 ] 2>/dev/null; then
-    status="${status}   📚 ${ctx_color}${used_pct}${dim}%${rst} 🛑"
+    line2="${line2}   📚 ${ctx_color}${used_pct}${dim}%${rst} 🛑"
   elif [ "$ctx_int" -ge 60 ] 2>/dev/null; then
-    status="${status}   📚 ${ctx_color}${used_pct}${dim}%${rst} ⚠️"
+    line2="${line2}   📚 ${ctx_color}${used_pct}${dim}%${rst} ⚠️"
   else
-    status="${status}   📚 ${used_pct}${dim}%${rst}"
+    line2="${line2}   📚 ${used_pct}${dim}%${rst}"
   fi
 fi
 
@@ -242,7 +248,7 @@ build_progress_bar() {
   local u_blocks=$(( (u_pct * total + 50) / 100 ))
   local t_blocks=$(( (t_pct * total + 50) / 100 ))
   local bar=""
-  local block="▉"
+  local block="■"
   # ANSI colors (use printf to produce real escape bytes)
   local dark_gray=$(printf '\033[38;5;236m')
   local bright_green=$(printf '\033[38;5;71m')
@@ -292,11 +298,20 @@ if [ -n "$usage_json" ]; then
     five_remaining=$(format_time_remaining "$five_hour_resets" "0")
     five_time_pct=$(calc_time_pct "$five_hour_resets" 18000)
     five_bar=$(build_progress_bar "$five_int" "$five_time_pct")
+
+    # Determine icon: ❌ if limit exhausted (exactly 100%), ⚠️ if >90%, none otherwise
+    five_icon=""
+    if [ "$five_int" -eq 100 ] 2>/dev/null; then
+      five_icon="❌ "
+    elif [ "$five_int" -gt 90 ] 2>/dev/null; then
+      five_icon="⚠️ "
+    fi
+
     if [ -n "$five_remaining" ]; then
-      status="${status}   ⏳ ${five_int}${dim}%${rst} ${five_bar} ${five_remaining}"
+      line1="${line1}⏳ ${five_bar} ${five_icon}${five_remaining}"
     else
       yellow=$(printf '\033[38;5;178m')
-      status="${status}   ⏳ ${five_int}${dim}%${rst} ${yellow}idle${rst}"
+      line1="${line1}⏳ ${five_bar} ${yellow}idle${rst}"
     fi
   fi
 
@@ -305,13 +320,105 @@ if [ -n "$usage_json" ]; then
     seven_remaining=$(format_time_remaining "$seven_day_resets" "1")
     seven_time_pct=$(calc_time_pct "$seven_day_resets" 604800)
     seven_bar=$(build_progress_bar "$seven_int" "$seven_time_pct" 21)
+
+    # Determine icon: ❌ if limit exhausted (exactly 100%), ⚠️ if >90%, none otherwise
+    seven_icon=""
+    if [ "$seven_int" -eq 100 ] 2>/dev/null; then
+      seven_icon="❌ "
+    elif [ "$seven_int" -gt 90 ] 2>/dev/null; then
+      seven_icon="⚠️ "
+    fi
+
     if [ -n "$seven_remaining" ]; then
-      status="${status}   📅 ${seven_int}${dim}%${rst} ${seven_bar} ${seven_remaining}"
+      line1="${line1}   📅 ${seven_bar} ${seven_icon}${seven_remaining}"
     else
       yellow=$(printf '\033[38;5;178m')
-      status="${status}   📅 ${seven_int}${dim}%${rst} ${yellow}idle${rst}"
+      line1="${line1}   📅 ${seven_bar} ${yellow}idle${rst}"
+    fi
+  fi
+
+  # Extra usage block (only if enabled)
+  extra_enabled=$(echo "$usage_json" | jq -r '.extra_usage.is_enabled // empty')
+  if [ "$extra_enabled" = "true" ]; then
+    used_credits=$(echo "$usage_json" | jq -r '.extra_usage.used_credits // empty')
+    extra_utilization=$(echo "$usage_json" | jq -r '.extra_usage.utilization // empty')
+
+    if [ -n "$used_credits" ]; then
+      # Convert credits to dollars (credits / 100)
+      dollars=$(echo "$used_credits" | awk '{printf "%.2f", $1/100}')
+
+      # Determine status icon: ▶️ if 5h or 7d limit exhausted (100%), otherwise ⏸️
+      status_icon="⏸️"
+      if [ "$five_int" -eq 100 ] 2>/dev/null || [ "$seven_int" -eq 100 ] 2>/dev/null; then
+        status_icon="▶️"
+      fi
+
+      # Start building extra usage block
+      extra_block="💸 ${status_icon}"
+
+      # Add progress bar if utilization is available (not null)
+      if [ -n "$extra_utilization" ] && [ "$extra_utilization" != "null" ]; then
+        extra_int=${extra_utilization%.*}
+
+        # Calculate days in current month (UTC)
+        if [ "$(uname)" = "Darwin" ]; then
+          current_year=$(date -u +%Y)
+          current_month=$(date -u +%m)
+          days_in_month=$(date -u -v1d -v+1m -v-1d +%d 2>/dev/null)
+        else
+          current_year=$(date -u +%Y)
+          current_month=$(date -u +%m)
+          days_in_month=$(date -u -d "$(date -u +%Y-%m-01) +1 month -1 day" +%d 2>/dev/null)
+        fi
+        days_in_month=${days_in_month:-30}
+
+        # Calculate month time percentage by seconds
+        # Start of current month (UTC midnight)
+        if [ "$(uname)" = "Darwin" ]; then
+          month_start=$(date -ju -f "%Y-%m-%d %H:%M:%S" "${current_year}-${current_month}-01 00:00:00" +%s 2>/dev/null)
+          # Start of next month
+          next_month_start=$(date -ju -v1d -v+1m -f "%Y-%m-%d %H:%M:%S" "${current_year}-${current_month}-01 00:00:00" +%s 2>/dev/null)
+        else
+          month_start=$(date -u -d "${current_year}-${current_month}-01 00:00:00" +%s 2>/dev/null)
+          next_month_start=$(date -u -d "$(date -u +%Y-%m-01) +1 month" +%s 2>/dev/null)
+        fi
+
+        # Current time (UTC)
+        now_utc=$(date -u +%s)
+
+        # Calculate elapsed and total seconds in month
+        month_elapsed=$((now_utc - month_start))
+        month_total=$((next_month_start - month_start))
+
+        # Time percentage
+        if [ "$month_total" -gt 0 ]; then
+          month_time_pct=$((month_elapsed * 100 / month_total))
+        else
+          month_time_pct=0
+        fi
+
+        # Build progress bar with month-specific length
+        extra_bar=$(build_progress_bar "$extra_int" "$month_time_pct" "$days_in_month")
+
+        # Determine warning icon
+        extra_warning=""
+        if [ "$extra_int" -eq 100 ] 2>/dev/null; then
+          extra_warning=" ❌"
+        elif [ "$extra_int" -gt 90 ] 2>/dev/null; then
+          extra_warning=" ⚠️"
+        fi
+
+        extra_block="${extra_block} ${extra_bar}${extra_warning}"
+      fi
+
+      # Add dollar amount
+      extra_block="${extra_block} ${dollars}"
+
+      line1="${line1}   ${extra_block}"
     fi
   fi
 fi
 
-echo "$status"
+# Output two lines
+echo "$line1"
+echo "$line2"
