@@ -19,13 +19,13 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null || ec
 # For Write tool: check file_path
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null || echo "")
 
-# Allow PlantUML rendering commands
-if echo "$COMMAND" | grep -qE '(render-ascii\.sh|plantuml-encode\.py --render-ascii)'; then
+# Allow PlantUML encoding and rendering commands
+if echo "$COMMAND" | grep -qE '(render-ascii\.sh|plantuml-encode\.py)'; then
   jq -n '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
       permissionDecision: "allow",
-      permissionDecisionReason: "PlantUML plugin rendering command"
+      permissionDecisionReason: "PlantUML plugin encoding/rendering command"
     }
   }'
   exit 0
