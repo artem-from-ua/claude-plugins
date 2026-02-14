@@ -43,6 +43,18 @@ if [[ -n "$COMMAND" ]] && echo "$COMMAND" | grep -qE 'cat > .*(diagram|plantuml)
   exit 0
 fi
 
+# Allow deleting temp PlantUML diagram files
+if [[ -n "$COMMAND" ]] && echo "$COMMAND" | grep -qE 'rm .*/tmp/(diagram|plantuml).*\.puml'; then
+  jq -n '{
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "allow",
+      permissionDecisionReason: "PlantUML plugin temp file cleanup"
+    }
+  }'
+  exit 0
+fi
+
 # Allow Write tool for PlantUML diagram files in /tmp
 if [[ -n "$FILE_PATH" ]] && echo "$FILE_PATH" | grep -qE '^/tmp/.*diagram.*\.puml$'; then
   jq -n '{
