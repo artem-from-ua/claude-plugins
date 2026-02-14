@@ -46,6 +46,10 @@ log() {
     fi
 }
 
+log_always() {
+    echo "[claude-marketplace-sync] $*" >&2
+}
+
 # --- Parse arguments ---
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -68,10 +72,12 @@ if [ "$force" = false ] && [ -f "$FRESHNESS_FILE" ]; then
     now=$(date +%s)
     age=$(( now - last_run ))
     if [ "$age" -lt "$FRESHNESS_WINDOW" ]; then
-        log "Last sync ${age}s ago (window: ${FRESHNESS_WINDOW}s), skipping"
+        log_always "⏭️  Skipping sync (last run ${age}s ago)"
         exit 0
     fi
 fi
+
+log_always "🔄 Syncing Claude plugins..."
 
 # --- Check prerequisites ---
 if ! command -v jq &>/dev/null; then
@@ -158,11 +164,28 @@ for key in $plugin_keys; do
             continue
         fi
 
+        # Get old version before sync
+        old_version=""
+        plugin_json="${cache_dir}/.claude-plugin/plugin.json"
+        if [ -f "$plugin_json" ]; then
+            old_version=$(jq -r '.version // ""' "$plugin_json" 2>/dev/null || echo "")
+        fi
+
         log "Syncing ${key} → ${cache_dir}"
         if rsync -a --delete "${source_dir}/" "${cache_dir}/" 2>/dev/null; then
+            # Get new version after sync
+            new_version=""
+            if [ -f "$plugin_json" ]; then
+                new_version=$(jq -r '.version // ""' "$plugin_json" 2>/dev/null || echo "")
+            fi
+
+            # Show update message only if version changed
+            if [ -n "$old_version" ] && [ -n "$new_version" ] && [ "$old_version" != "$new_version" ]; then
+                log_always "✅ Updated: ${key} version ${new_version}"
+            fi
             log "  synced OK"
         else
-            echo "claude-marketplace-sync: failed to sync ${key} → ${cache_dir}" >&2
+            log_always "❌ Failed to sync ${key} → ${cache_dir}"
         fi
     done
 done
