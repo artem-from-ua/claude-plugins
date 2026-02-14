@@ -32,12 +32,17 @@ Key components:
 - `commands/plantuml-validate/` — user-invocable `/plantuml-validate` command
 
 ### statusline
-Custom Claude Code statusline showing real-time session info.
+Two-line Claude Code statusline: progress bars (line 1) + session info (line 2). Tracks 5h/7d rate limits, extra usage (monthly billing), context window, git branch, and model. Features warning icons (❌ at 100%, ⚠️ at >90%) and pacing visualization.
 
-Key components:
-- `scripts/statusline.sh` — main script, reads JSON from stdin (piped by Claude Code), outputs ANSI-colored status line. Fetches Anthropic OAuth usage API (cached 60s in `/tmp/claude-statusline-usage-cache`), reads OAuth token from macOS Keychain
+**Layout:**
+- **Line 1:** ⏳ 5h limit | 📅 7d limit | 💸 extra usage (status icon, progress bar, money spent)
+- **Line 2:** 📁 directory | 🌿 branch | 🤖 model | 📚 context%
+
+**Key components:**
+- `scripts/statusline.sh` — main script, reads JSON from stdin (piped by Claude Code), outputs two ANSI-colored lines. Fetches Anthropic OAuth usage API (cached 60s in `/tmp/claude-statusline-usage-cache`), reads OAuth token from macOS Keychain or Linux credentials file
 - `scripts/setup-statusline.sh` — SessionStart hook, copies `statusline.sh` to `~/.claude/statusline.sh`
 - `commands/statusline-setup/` — user-invocable `/statusline-setup` command, configures `~/.claude/settings.json`
+- `docs/ACCEPTANCE_TESTS.md` — comprehensive test documentation (8 categories, 17+ tests)
 
 ## Plugin Structure Convention
 
