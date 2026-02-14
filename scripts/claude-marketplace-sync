@@ -150,44 +150,48 @@ for key in $plugin_keys; do
         continue
     fi
 
-    # Iterate all installations of this plugin (could be multiple scopes)
-    install_count=$(jq -r --arg k "$key" '.plugins[$k] | length' "$INSTALLED_JSON")
-    for i in $(seq 0 $(( install_count - 1 ))); do
-        cache_dir=$(jq -r --arg k "$key" --argjson i "$i" '.plugins[$k][$i].installPath' "$INSTALLED_JSON")
+    # Read new version from marketplace source
+    source_plugin_json="${source_dir}/.claude-plugin/plugin.json"
+    if [ ! -f "$source_plugin_json" ]; then
+        log "Skipping ${key} (no plugin.json in source)"
+        continue
+    fi
 
-        if [ -z "$cache_dir" ] || [ "$cache_dir" = "null" ]; then
-            continue
+    new_version=$(jq -r '.version // ""' "$source_plugin_json" 2>/dev/null || echo "")
+    if [ -z "$new_version" ]; then
+        log "Skipping ${key} (no version in source plugin.json)"
+        continue
+    fi
+
+    # Determine cache directory based on marketplace scope
+    # Format: ~/.claude/plugins/cache/<marketplace>/<plugin>/<version>
+    cache_base="${PLUGINS_DIR}/cache/${marketplace}/${plugin}"
+    cache_dir="${cache_base}/${new_version}"
+
+    # Get old version from existing cache (if any)
+    old_version=""
+    if [ -d "$cache_dir" ]; then
+        old_plugin_json="${cache_dir}/.claude-plugin/plugin.json"
+        if [ -f "$old_plugin_json" ]; then
+            old_version=$(jq -r '.version // ""' "$old_plugin_json" 2>/dev/null || echo "")
         fi
+    else
+        # Directory doesn't exist yet, create it
+        mkdir -p "$cache_dir"
+    fi
 
-        if [ ! -d "$cache_dir" ]; then
-            log "Skipping ${key}[${i}] (cache dir not found: ${cache_dir})"
-            continue
+    log "Syncing ${key} → ${cache_dir}"
+    if rsync -a --delete "${source_dir}/" "${cache_dir}/" 2>/dev/null; then
+        # Show update message only if version changed
+        if [ -n "$old_version" ] && [ "$old_version" != "$new_version" ]; then
+            log_always "✅ Updated: ${key} version ${new_version}"
+        elif [ -z "$old_version" ]; then
+            log_always "✅ Installed: ${key} version ${new_version}"
         fi
-
-        # Get old version before sync
-        old_version=""
-        plugin_json="${cache_dir}/.claude-plugin/plugin.json"
-        if [ -f "$plugin_json" ]; then
-            old_version=$(jq -r '.version // ""' "$plugin_json" 2>/dev/null || echo "")
-        fi
-
-        log "Syncing ${key} → ${cache_dir}"
-        if rsync -a --delete "${source_dir}/" "${cache_dir}/" 2>/dev/null; then
-            # Get new version after sync
-            new_version=""
-            if [ -f "$plugin_json" ]; then
-                new_version=$(jq -r '.version // ""' "$plugin_json" 2>/dev/null || echo "")
-            fi
-
-            # Show update message only if version changed
-            if [ -n "$old_version" ] && [ -n "$new_version" ] && [ "$old_version" != "$new_version" ]; then
-                log_always "✅ Updated: ${key} version ${new_version}"
-            fi
-            log "  synced OK"
-        else
-            log_always "❌ Failed to sync ${key} → ${cache_dir}"
-        fi
-    done
+        log "  synced OK"
+    else
+        log_always "❌ Failed to sync ${key} → ${cache_dir}"
+    fi
 done
 
 touch "$FRESHNESS_FILE" 2>/dev/null || true
