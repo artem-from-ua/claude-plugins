@@ -4,12 +4,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## ⚠️ CRITICAL: Version Bump Requirement
 
-**BEFORE merging ANY plugin changes to `main`: MUST bump version in `plugins/<name>/.claude-plugin/plugin.json`**
+**MANDATORY: Claude Code MUST automatically bump version when plugin files change**
 
-- ANY change to plugin files merged to main (code, docs, config) → version bump REQUIRED
-- Semantic versioning: MAJOR.MINOR.PATCH (see [Version Bump Requirements](#version-bump-requirements))
-- Commit version bump in feature branch before merging
-- **Without version bump, `claude-marketplace-sync` won't update plugin cache**
+### Workflow (NO EXCEPTIONS)
+
+When ANY files under `plugins/<name>/` are modified:
+
+1. **Make code/doc changes**
+2. **Check current version in main**: `git show main:plugins/<name>/.claude-plugin/plugin.json | jq -r '.version'`
+3. **Automatically bump version** in `plugins/<name>/.claude-plugin/plugin.json`:
+   - Determine semantic version increment (MAJOR.MINOR.PATCH - see [Version Bump Requirements](#version-bump-requirements))
+   - If current main has same or higher version → increment appropriately
+   - PATCH: bug fixes, docs, UI improvements (increment Z in X.Y.Z)
+   - MINOR: new features, backwards-compatible (increment Y in X.Y.Z, reset Z to 0)
+   - MAJOR: breaking changes (increment X in X.Y.Z, reset Y and Z to 0)
+4. **Commit version bump** (separate commit with changelog message)
+5. **Then create PR**
+
+### Conflict Resolution
+
+If version conflict occurs during PR merge:
+1. **Rebase on main**: `git rebase main`
+2. **Check conflicting version in main**
+3. **Resolve by incrementing** from main's version (not your original base)
+4. **Update commit message** with new version number
+5. **Continue with merge**
+
+### Why This is CRITICAL
+
+- **Without version bump**: `claude-marketplace-sync` won't update plugin cache
+- **Users won't see changes**: old version still loaded
+- **Bug fixes won't reach users**: cache stuck on old version
+- **Testing becomes invalid**: testing old code, not new changes
+
+**This is NOT a reminder. This is NOT optional. This is MANDATORY automated behavior.**
 
 ## What This Is
 
@@ -365,27 +393,57 @@ Examples:
 - Performance optimization in sync script → `1.1.8` to `1.1.9`
 - Updated ACCEPTANCE_TESTS.md to reflect current behavior → `1.2.5` to `1.2.6`
 
-### Version Bump Workflow
+### Version Bump Workflow (Automated by Claude Code)
 
-1. **Make your changes** in a feature branch
-2. **Before merging:** Create a version bump commit:
+**Claude Code MUST follow this workflow automatically:**
+
+1. **Detect plugin changes**: Check if any files under `plugins/<name>/` were modified
+2. **Get current version from main**:
    ```bash
-   # Edit plugins/<name>/.claude-plugin/plugin.json
-   # Change "version": "1.2.3" to "1.3.0" (for example)
-
+   git show main:plugins/<name>/.claude-plugin/plugin.json | jq -r '.version'
+   ```
+3. **Determine semantic increment**: Based on change type (MAJOR/MINOR/PATCH)
+4. **Bump version** in `plugins/<name>/.claude-plugin/plugin.json`
+5. **Create version bump commit**:
+   ```bash
    git add plugins/<name>/.claude-plugin/plugin.json
-   git commit -m "Bump <plugin-name> version to 1.3.0
+   git commit -m "Bump <plugin-name> version to X.Y.Z
 
    Version bump for PR #XX: <description>
 
-   Changes in 1.3.0:
+   Changes in X.Y.Z:
    - <list key changes>
 
    Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
    ```
+6. **Then create PR** (NEVER before version bump)
+7. **After merge**: User runs `claude-marketplace-sync --force` to update cache
 
-3. **Merge to main** (version bump included)
-4. **Sync plugin cache:** Run `claude-marketplace-sync --force` after merge
+### Handling Version Conflicts
+
+If rebasing on main reveals version conflict:
+
+1. **Check current main version**:
+   ```bash
+   git show main:plugins/<name>/.claude-plugin/plugin.json | jq -r '.version'
+   ```
+2. **Compare with your bumped version**:
+   - If main has higher version → increment from main's version
+   - If main has same version → increment again (likely concurrent PRs)
+   - If main has lower version → keep your version (already correct)
+3. **Update version in plugin.json** if needed
+4. **Amend commit** with new version number:
+   ```bash
+   git add plugins/<name>/.claude-plugin/plugin.json
+   git commit --amend
+   ```
+5. **Continue rebase/merge**
+
+Example conflict scenario:
+- You started from main@1.1.0, bumped to 1.1.1
+- Meanwhile, someone merged PR bumping to 1.2.0
+- On rebase: detect main is now 1.2.0
+- Your PATCH change should become 1.2.1 (not 1.1.1)
 
 ### Multiple Plugins Changed
 
