@@ -3,7 +3,7 @@
 # Reads JSON from stdin (piped by Claude Code)
 #
 # Layout (two lines):
-#   Line 1: ⏳ <bar> [icon] <time>   📅 <bar> [icon] <time>   💸 <status> <bar> [warning] <money>
+#   Line 1: ⏳ <bar> [icon] <time>   📅 <bar> [icon] <time>   💸 <bar> [warning] <status> <money>
 #   Line 2: 📁 <dir>   🌿 <branch>   🤖 <model>   📚 <ctx>%
 #
 # Fields:
@@ -23,9 +23,11 @@
 #           7d: >=2d shows ~Xd (approximate, ~ dimmed), <2d shows XdYh or XhYm (exact)
 #         When API returns resets_at=null (window inactive, no usage yet),
 #         shows yellow "idle" instead of icon+time (bar needs time_pct to colorize)
-#   💸  Extra usage (monthly billing): status icon (▶️/⏸️), progress bar, warning icon, money spent
+#   💸  Extra usage (monthly billing): progress bar, warning icon, status icon (▶️/⏸️), money spent
 #         Money format: ¤X.YZ where ¤ is dimmed, X is integer part, .YZ is dimmed fractional part
-#         Status icon: ▶️ when 5h or 7d exhausted (extra usage active), ⏸️ otherwise
+#         Status icon (between bar and money):
+#           ▶️ when (5h=100 OR 7d=100) AND extra_utilization exists AND extra_utilization<100
+#           ⏸️ otherwise (extra=100, extra=null, or limits not exhausted)
 #
 # Progress bar (20 blocks for 5h, 21 blocks for 7d):
 #   When usage ≤ time elapsed (under/on pace):
@@ -375,14 +377,8 @@ if [ -n "$usage_json" ]; then
       # Format: integer part normal, decimal separator + fractional part dimmed
       money_display="${money_int}${dim}${money_frac}${rst}"
 
-      # Determine status icon: ▶️ if 5h or 7d limit exhausted (100%), otherwise ⏸️
-      status_icon="⏸️"
-      if [ "$five_int" -eq 100 ] 2>/dev/null || [ "$seven_int" -eq 100 ] 2>/dev/null; then
-        status_icon="▶️"
-      fi
-
       # Start building extra usage block
-      extra_block="💸 ${status_icon}"
+      extra_block="💸"
 
       # Add progress bar if utilization is available (not null)
       if [ -n "$extra_utilization" ] && [ "$extra_utilization" != "null" ]; then
@@ -439,8 +435,21 @@ if [ -n "$usage_json" ]; then
         extra_block="${extra_block} ${extra_bar}${extra_warning}"
       fi
 
-      # Add money spent with currency symbol
-      extra_block="${extra_block} ${dim}¤${rst}${money_display}"
+      # Determine status icon (placed between progress bar and money):
+      # ▶️ if (5h=100 OR 7d=100) AND extra_utilization exists AND extra_utilization<100
+      # ⏸️ otherwise
+      status_icon="⏸️"
+      if [ -n "$extra_utilization" ] && [ "$extra_utilization" != "null" ]; then
+        extra_int_check=${extra_utilization%.*}
+        if [ "$extra_int_check" -lt 100 ] 2>/dev/null; then
+          if [ "$five_int" -eq 100 ] 2>/dev/null || [ "$seven_int" -eq 100 ] 2>/dev/null; then
+            status_icon="▶️"
+          fi
+        fi
+      fi
+
+      # Add status icon and money spent with currency symbol
+      extra_block="${extra_block} ${status_icon} ${dim}¤${rst}${money_display}"
 
       line1="${line1}   ${extra_block}"
     fi
