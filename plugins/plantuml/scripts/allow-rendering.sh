@@ -31,8 +31,8 @@ if echo "$COMMAND" | grep -qE '(render-ascii\.sh|plantuml-encode\.py)'; then
   exit 0
 fi
 
-# Allow creating temp files for PlantUML diagrams via Bash
-if [[ -n "$COMMAND" ]] && echo "$COMMAND" | grep -qE 'cat > .*(diagram|plantuml).*\.puml'; then
+# Allow creating temp PlantUML files via Bash (heredoc or redirect)
+if [[ -n "$COMMAND" ]] && echo "$COMMAND" | grep -qE 'cat > /tmp/.*\.puml'; then
   jq -n '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
@@ -43,8 +43,8 @@ if [[ -n "$COMMAND" ]] && echo "$COMMAND" | grep -qE 'cat > .*(diagram|plantuml)
   exit 0
 fi
 
-# Allow deleting temp PlantUML diagram files
-if [[ -n "$COMMAND" ]] && echo "$COMMAND" | grep -qE 'rm .*/tmp/(diagram|plantuml).*\.puml'; then
+# Allow deleting temp PlantUML files
+if [[ -n "$COMMAND" ]] && echo "$COMMAND" | grep -qE 'rm /tmp/.*\.puml'; then
   jq -n '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
@@ -55,13 +55,13 @@ if [[ -n "$COMMAND" ]] && echo "$COMMAND" | grep -qE 'rm .*/tmp/(diagram|plantum
   exit 0
 fi
 
-# Allow Write tool for PlantUML diagram files in /tmp
-if [[ -n "$FILE_PATH" ]] && echo "$FILE_PATH" | grep -qE '^/tmp/.*diagram.*\.puml$'; then
+# Allow Write tool for PlantUML files in /tmp
+if [[ -n "$FILE_PATH" ]] && echo "$FILE_PATH" | grep -qE '^/tmp/.*\.puml$'; then
   jq -n '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
       permissionDecision: "allow",
-      permissionDecisionReason: "PlantUML plugin temp diagram file"
+      permissionDecisionReason: "PlantUML plugin temp file"
     }
   }'
   exit 0
