@@ -1161,11 +1161,13 @@ bash scripts/inject-base-rules.sh | grep -A 10 "Proactive usage"
 
 ---
 
-#### 8.9 ASCII Text Renderer in Terminal
+#### 8.9 ASCII Text Renderer in Terminal (v1.5.6+)
 
-**Objective:** Verify Claude uses PlantUML text renderer API for terminal diagrams instead of manually drawing ASCII art
+**Objective:** Verify Claude uses WebFetch approach for ASCII rendering without UI collapse or permission prompts
 
 **Automation status:** ⚠️ **Manual only** (requires fresh session to verify SessionStart rule)
+
+**Version requirements:** v1.5.6+ (WebFetch approach)
 
 **Manual test procedure:**
 
@@ -1184,24 +1186,37 @@ Ask Claude:
 explain how a simple client-server authentication flow works
 ```
 
-**Expected behavior:**
+**Expected behavior (v1.5.6+):**
 - ✅ Claude creates PlantUML source code internally
-- ✅ Pipes it to `plantuml-encode.py --render-ascii` via Bash tool
-- ✅ Displays perfectly aligned ASCII diagram using box-drawing characters (`┌─┐│└┘`)
-- ✅ Entire process happens in one command (no separate encode + fetch steps)
+- ✅ Encodes source via `plantuml-encode.py` (may use Bash heredoc or echo)
+- ✅ Fetches ASCII via WebFetch from `plantuml.com/txt/<encoded>`
+- ✅ Displays full ASCII diagram (NOT collapsed — WebFetch results don't collapse in UI)
+- ✅ **No permission prompts** (PreToolUse hooks auto-allow)
+- ❌ Does NOT use Bash tool for rendering (would cause UI collapse)
 - ❌ Does NOT paste raw PlantUML source (`@startuml`, `Alice -> Bob`, etc.)
 - ❌ Does NOT manually draw ASCII art (would have alignment issues)
 
-**Example command used by Claude:**
+**Example workflow used by Claude (v1.5.6+):**
 ```bash
-echo "@startuml
+# Step 1: Encode (may use heredoc for large diagrams)
+cat > /tmp/auth_flow.puml << 'EOF'
+@startuml
 Client -> Server: Login request
 Server -> DB: Check password
 Server --> Client: Response
-@enduml" | bash ${CLAUDE_PLUGIN_ROOT}/scripts/render-ascii.sh
+@enduml
+EOF
+
+cat /tmp/auth_flow.puml | python3 /path/to/plantuml-encode.py
+# Returns: https://www.plantuml.com/plantuml/svg/SoWk...
+
+# Step 2: WebFetch ASCII (NOT Bash)
+# WebFetch from: https://www.plantuml.com/plantuml/txt/SoWk...
 ```
 
-**Note:** The wrapper script `render-ascii.sh` keeps commands short to reduce permission prompts.
+**Key difference from v1.4.0-1.5.5 (regression):**
+- ❌ Old: Used Bash commands → UI collapsed output ("… +60 lines")
+- ✅ New: Uses WebFetch → Full diagram always visible
 
 **Expected ASCII output example:**
 ```
@@ -1627,6 +1642,302 @@ This allows only the PlantUML render script, not all Bash commands.
 - Risk of data loss if Claude hallucinates destructive commands
 
 **Use granular permissions (Option 1) instead.**
+
+---
+
+### 9. PreToolUse Hooks Auto-Allow (v1.5.0-1.5.8)
+
+**Objective:** Verify PreToolUse hooks auto-allow all PlantUML operations without permission prompts
+
+**Automation status:** ✅ **Fully automated**
+
+**Version requirements:** v1.5.0+
+
+#### 9.1 Encoding Commands Auto-Allow
+
+**Test:** Verify `plantuml-encode.py` commands don't prompt
+
+**Steps:**
+```bash
+# Test encoding (no flags)
+echo "@startuml\nAlice -> Bob\n@enduml" | python3 plugins/plantuml/scripts/plantuml-encode.py
+
+# Test with --render-ascii flag (legacy support)
+echo "@startuml\nAlice -> Bob\n@enduml" | python3 plugins/plantuml/scripts/plantuml-encode.py --render-ascii
+```
+
+**Expected:**
+- ✅ Both commands execute without permission prompts
+- ✅ PreToolUse hook matches pattern `plantuml-encode.py` (any flags)
+
+**Acceptance criteria:**
+- ✅ No user prompt appears for encoding commands
+- ✅ Hook reason: "PlantUML plugin encoding/rendering command"
+
+#### 9.2 Temp File Creation Auto-Allow (Bash)
+
+**Test:** Verify `/tmp/*.puml` file creation via Bash doesn't prompt
+
+**Steps:**
+```bash
+# Test heredoc (v1.5.8 pattern)
+cat > /tmp/test_diagram.puml << 'EOF'
+@startuml
+Alice -> Bob: Test
+@enduml
+EOF
+
+# Test with any filename (not just "diagram" or "plantuml" keywords)
+cat > /tmp/auth_flow.puml << 'EOF'
+@startuml
+User -> Server: Login
+@enduml
+EOF
+```
+
+**Expected:**
+- ✅ Both commands execute without permission prompts
+- ✅ PreToolUse hook matches pattern `cat > /tmp/*.puml`
+
+**Acceptance criteria:**
+- ✅ Works with any filename in `/tmp` ending with `.puml`
+- ✅ v1.5.8 relaxed pattern from restrictive (diagram/plantuml keywords) to permissive (any .puml)
+
+#### 9.3 Temp File Creation Auto-Allow (Write tool)
+
+**Test:** Verify Write tool for `/tmp/*.puml` doesn't prompt
+
+**Steps:**
+```bash
+# Would be executed via Write tool in Claude
+# Test by checking if pattern matches
+```
+
+**Pattern to verify:**
+```bash
+# In allow-rendering.sh:
+if [[ -n "$FILE_PATH" ]] && echo "$FILE_PATH" | grep -qE '^/tmp/.*\.puml$'; then
+```
+
+**Expected:**
+- ✅ Write tool to `/tmp/*.puml` auto-allowed
+- ✅ Works with any filename (v1.5.8+)
+
+**Acceptance criteria:**
+- ✅ Pattern matches `/tmp/anything.puml`
+- ✅ Restricted to `/tmp` directory only (security)
+
+#### 9.4 Cleanup Commands Auto-Allow
+
+**Test:** Verify `rm /tmp/*.puml` doesn't prompt
+
+**Steps:**
+```bash
+# Create test file first
+echo "test" > /tmp/test_cleanup.puml
+
+# Test cleanup
+rm /tmp/test_cleanup.puml
+```
+
+**Expected:**
+- ✅ rm command executes without permission prompt
+- ✅ PreToolUse hook matches pattern `rm /tmp/*.puml`
+
+**Acceptance criteria:**
+- ✅ Works with any `.puml` filename in `/tmp`
+- ✅ Hook reason: "PlantUML plugin temp file cleanup"
+
+#### 9.5 Security Validation
+
+**Test:** Verify patterns are restricted to `/tmp` and `.puml` extension
+
+**Attack scenarios (should NOT be auto-allowed):**
+```bash
+# Should prompt (not in /tmp)
+cat > /home/user/malicious.puml << 'EOF'
+malicious content
+EOF
+
+# Should prompt (not .puml extension)
+cat > /tmp/malicious.txt << 'EOF'
+malicious content
+EOF
+
+# Should prompt (wrong directory)
+rm /etc/passwd
+```
+
+**Expected:**
+- ❌ All attack scenarios should trigger permission prompts
+- ✅ Only `/tmp/*.puml` operations are auto-allowed
+
+**Acceptance criteria:**
+- ✅ Pattern regex enforces `/tmp` prefix: `^/tmp/.*\.puml$`
+- ✅ Extension check prevents arbitrary file operations
+- ✅ No directory traversal possible (`/tmp/../etc/passwd` fails regex)
+
+---
+
+### 10. SessionStart Path Resolution (v1.5.2+)
+
+**Objective:** Verify `${CLAUDE_PLUGIN_ROOT}` resolution in SessionStart hook output
+
+**Automation status:** ⚠️ **Manual only** (requires fresh session)
+
+**Version requirements:** v1.5.2+
+
+#### 10.1 Dynamic Path Resolution Verification
+
+**Test:** Verify SessionStart hook outputs absolute paths, not unresolved variables
+
+**Manual test procedure:**
+
+**Step 1: Start fresh session**
+```bash
+mkdir /tmp/path-resolution-test
+cd /tmp/path-resolution-test
+git init
+claude
+```
+
+**Step 2: Check SessionStart hook output**
+
+Look for PlantUML rules in system prompt (visible in first user interaction). Should contain:
+
+**Expected (v1.5.2+):**
+```
+Encode it: echo "$source" | python3 /Users/USER/.claude/plugins/cache/tribe-coding/plantuml/1.5.8/scripts/plantuml-encode.py
+```
+
+**Not expected (broken):**
+```
+Encode it: echo "$source" | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plantuml-encode.py
+```
+
+**Root cause of old bug:**
+- `${CLAUDE_PLUGIN_ROOT}` only resolves in hooks.json `command` fields
+- Does NOT resolve in SessionStart hook text output (heredoc)
+- Caused Claude to see literal `${CLAUDE_PLUGIN_ROOT}` and fail
+
+**Fix (v1.5.2):**
+```bash
+# In inject-base-rules.sh:
+PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
+
+cat <<RULES  # Note: NO quotes around RULES (was <<'RULES' before)
+...use ${PLUGIN_ROOT}/scripts/...
+RULES
+```
+
+**Acceptance criteria:**
+- ✅ Absolute path shown in SessionStart output
+- ✅ Path matches actual plugin location in cache
+- ✅ Version number in path matches installed version
+
+#### 10.2 Heredoc Variable Substitution
+
+**Test:** Verify heredoc allows variable substitution (no single quotes)
+
+**Check script:**
+```bash
+cat plugins/plantuml/scripts/inject-base-rules.sh | grep "cat <<"
+```
+
+**Expected:**
+```bash
+cat <<RULES      # ✅ Correct (allows substitution)
+```
+
+**Not expected:**
+```bash
+cat <<'RULES'    # ❌ Wrong (blocks substitution)
+```
+
+**Acceptance criteria:**
+- ✅ Heredoc uses `<<RULES` (no quotes)
+- ✅ All backticks and `$` escaped: `\`\`\`` and `\$`
+- ✅ `${PLUGIN_ROOT}` variable substitutes correctly
+
+---
+
+### 11. UI Collapse Regression (v1.4.0-1.5.5)
+
+**Objective:** Verify ASCII diagrams display fully without UI collapse
+
+**Automation status:** ⚠️ **Manual only** (requires fresh session + visual verification)
+
+**Version requirements:** v1.5.6+ (fixed regression)
+
+#### 11.1 WebFetch vs Bash Output
+
+**Background:**
+- v1.4.0-1.5.5: Used Bash commands for ASCII rendering → UI collapsed output ("… +60 lines")
+- v1.5.6+: Reverted to WebFetch approach → Full diagram always visible
+
+**Test:** Verify large diagrams (>50 lines) display fully
+
+**Manual test procedure:**
+
+**Step 1: Start fresh session with v1.5.6+**
+```bash
+claude
+```
+
+**Step 2: Request complex diagram**
+```
+explain OAuth 2.0 authorization code flow with detailed steps
+```
+
+**Expected behavior (v1.5.6+):**
+- ✅ Claude uses WebFetch to fetch ASCII from plantuml.com/txt/{encoded}
+- ✅ Full diagram displayed (60-80 lines visible)
+- ✅ NO collapse indicator ("… +60 lines (ctrl+o to expand)")
+- ✅ Diagram readable without user interaction
+
+**Regression check (v1.4.0-1.5.5 behavior):**
+- ❌ Would use: `bash render-ascii.sh` or `python3 plantuml-encode.py --render-ascii`
+- ❌ Would show: "… +60 lines (ctrl+o to expand)"
+- ❌ Would require: User press ctrl+o to see full diagram
+
+**Acceptance criteria:**
+- ✅ Diagrams >50 lines display fully without collapse
+- ✅ WebFetch tool used (check tool calls in UI)
+- ✅ No Bash tool used for ASCII rendering step
+- ✅ URL pattern: `plantuml.com/txt/{encoded}` (not `/svg/` or `/png/`)
+
+#### 11.2 Permission Prompts Eliminated
+
+**Test:** Verify NO permission prompts appear for entire PlantUML workflow
+
+**Manual test procedure:**
+
+**Step 1: Start fresh session**
+```bash
+claude
+```
+
+**Step 2: Request terminal explanation**
+```
+explain microservices architecture with API gateway
+```
+
+**Expected:**
+- ✅ **Zero permission prompts** from start to finish
+- ✅ Encoding step auto-allowed (PreToolUse hook)
+- ✅ Temp file creation auto-allowed (if used)
+- ✅ WebFetch executes without prompt
+- ✅ Cleanup auto-allowed (if used)
+
+**What was prompting before (v1.5.0-1.5.1):**
+- ❌ `rm /tmp/diagram*.puml` prompted (fixed in v1.5.3)
+- ❌ `plantuml-encode.py` without flags prompted (fixed in v1.5.7)
+- ❌ Files without "diagram" keyword prompted (fixed in v1.5.8)
+
+**Acceptance criteria:**
+- ✅ Complete workflow executes with 0 user prompts
+- ✅ Diagram appears automatically without interruption
+- ✅ PreToolUse hook log shows auto-allow decisions (if debug enabled)
 
 ---
 
