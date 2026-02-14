@@ -321,7 +321,7 @@ Exhausted icons (❌) found: 3 (expected: 3)
 
 #### 3.3 Extra Usage Status Icon
 
-**Objective:** Verify ▶️/⏸️ status icon logic
+**Objective:** Verify ▶️/⏸️ status icon logic (icon appears between progress bar and money)
 
 **Automation:** ✅
 
@@ -329,44 +329,67 @@ Exhausted icons (❌) found: 3 (expected: 3)
 ```bash
 cd plugins/statusline
 
-# Test case 1: 5h and 7d not exhausted (⏸️ paused)
+# Test case 1: Limits not exhausted (⏸️ paused)
 echo "Test 1: Limits not exhausted (⏸️ paused)"
 cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
 {"five_hour":{"utilization":50.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1000.0,"utilization":50.0,"monthly_limit":5000}}
 EOF
 output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
-echo "$output" | grep -q "💸 ⏸️" && echo "✅ PASS: ⏸️ (paused)" || echo "❌ FAIL"
+echo "$output" | grep -q "💸.*⏸️.*¤" && echo "✅ PASS: ⏸️ (paused)" || echo "❌ FAIL"
 
-# Test case 2: 5h exhausted (▶️ active)
-echo "Test 2: 5h limit exhausted (▶️ active)"
+# Test case 2: 5h exhausted, extra<100 (▶️ active)
+echo "Test 2: 5h exhausted, extra<100 (▶️ active)"
 cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
 {"five_hour":{"utilization":100.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1000.0,"utilization":50.0,"monthly_limit":5000}}
 EOF
 output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
-echo "$output" | grep -q "💸 ▶️" && echo "✅ PASS: ▶️ (active)" || echo "❌ FAIL"
+echo "$output" | grep -q "💸.*▶️.*¤" && echo "✅ PASS: ▶️ (active)" || echo "❌ FAIL"
 
-# Test case 3: 7d exhausted (▶️ active)
-echo "Test 3: 7d limit exhausted (▶️ active)"
+# Test case 3: 7d exhausted, extra<100 (▶️ active)
+echo "Test 3: 7d exhausted, extra<100 (▶️ active)"
 cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
 {"five_hour":{"utilization":50.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":100.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1000.0,"utilization":50.0,"monthly_limit":5000}}
 EOF
 output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
-echo "$output" | grep -q "💸 ▶️" && echo "✅ PASS: ▶️ (active)" || echo "❌ FAIL"
+echo "$output" | grep -q "💸.*▶️.*¤" && echo "✅ PASS: ▶️ (active)" || echo "❌ FAIL"
+
+# Test case 4: 5h exhausted, extra=100 (⏸️ paused)
+echo "Test 4: 5h exhausted, extra=100 (⏸️ paused, extra exhausted)"
+cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
+{"five_hour":{"utilization":100.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":5000.0,"utilization":100.0,"monthly_limit":5000}}
+EOF
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+echo "$output" | grep -q "💸.*⏸️.*¤" && echo "✅ PASS: ⏸️ (paused)" || echo "❌ FAIL"
+
+# Test case 5: 5h exhausted, extra=null (⏸️ paused, unlimited)
+echo "Test 5: 5h exhausted, extra=null (⏸️ paused, unlimited)"
+cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
+{"five_hour":{"utilization":100.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1000.0,"utilization":null}}
+EOF
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+echo "$output" | grep -q "💸.*⏸️.*¤" && echo "✅ PASS: ⏸️ (paused)" || echo "❌ FAIL"
 ```
 
 **Expected result:**
 ```
 Test 1: Limits not exhausted (⏸️ paused)
 ✅ PASS: ⏸️ (paused)
-Test 2: 5h limit exhausted (▶️ active)
+Test 2: 5h exhausted, extra<100 (▶️ active)
 ✅ PASS: ▶️ (active)
-Test 3: 7d limit exhausted (▶️ active)
+Test 3: 7d exhausted, extra<100 (▶️ active)
 ✅ PASS: ▶️ (active)
+Test 4: 5h exhausted, extra=100 (⏸️ paused, extra exhausted)
+✅ PASS: ⏸️ (paused)
+Test 5: 5h exhausted, extra=null (⏸️ paused, unlimited)
+✅ PASS: ⏸️ (paused)
 ```
 
 **Acceptance criteria:**
+- ✅ Icon appears between progress bar and money amount (💸 ... icon ... ¤)
+- ✅ ▶️ when (5h=100 OR 7d=100) AND extra_utilization exists AND extra_utilization<100
 - ✅ ⏸️ when both 5h and 7d < 100%
-- ✅ ▶️ when 5h = 100% OR 7d = 100%
+- ✅ ⏸️ when extra_utilization = 100% (even if 5h/7d exhausted)
+- ✅ ⏸️ when extra_utilization = null (unlimited)
 
 ---
 
