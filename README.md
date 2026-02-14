@@ -116,7 +116,7 @@ Claude Code has a bug where auto-updating a marketplace does not invalidate the 
 - [anthropics/claude-code#15621](https://github.com/anthropics/claude-code/issues/15621) — old versions not removed, their hooks still run
 - [anthropics/claude-code#15642](https://github.com/anthropics/claude-code/issues/15642) — `CLAUDE_PLUGIN_ROOT` points to stale version
 
-### The fix: `claude-sync`
+### The fix: `claude-marketplace-sync`
 
 A standalone script that runs _before_ Claude Code starts. It pulls marketplace repos with `autoUpdate: true` and rsyncs their plugin directories into the cache.
 
@@ -127,16 +127,27 @@ A standalone script that runs _before_ Claude Code starts. It pulls marketplace 
 ./scripts/install-sync.sh
 ```
 
-This copies `claude-sync` to `~/.local/bin/`, adds it to `PATH`, and configures a shell alias so that `claude` automatically syncs before starting.
+This copies `claude-marketplace-sync` to `~/.local/bin/`, adds it to `PATH`, and configures a shell alias so that `claude` automatically syncs before starting.
 
 **Usage:**
 
 ```bash
-claude-sync              # Sync (skips if ran in last 5 min)
-claude-sync --force      # Ignore freshness window
-claude-sync --all        # Sync all marketplaces, not just autoUpdate ones
-claude-sync --verbose    # Print detailed progress
+claude-marketplace-sync              # Sync (skips if ran in last 5 min)
+claude-marketplace-sync --force      # Ignore freshness window
+claude-marketplace-sync --all        # Sync all marketplaces, not just autoUpdate ones
+claude-marketplace-sync --verbose    # Print detailed progress
 ```
+
+**Output:**
+
+By default, `claude-marketplace-sync` shows:
+- Sync status (`🔄 Syncing...` or `⏭️ Skipping...`)
+- Plugin version updates (`✅ Updated: plugin@marketplace version X.Y.Z`)
+- Sync errors (`❌ Failed to sync...`)
+
+With `--verbose`, also shows git pull and rsync operations.
+
+For silent operation: `claude-marketplace-sync 2>/dev/null`
 
 The workaround will be removed once the upstream bugs are fixed.
 
@@ -161,7 +172,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for deta
 6. **Bump version before merge** (see [Version Bump Requirements](CLAUDE.md#version-bump-requirements))
 7. Submit PR using the [template](.github/pull_request_template.md)
 
-**Important:** Version bumps are **required** before merging any PR that changes plugin code. Without version bumps, `claude-sync` won't pick up your changes. See [CLAUDE.md](CLAUDE.md#version-bump-requirements) for semantic versioning rules.
+**Important:** Version bumps are **required** before merging any PR that changes plugin code. Without version bumps, `claude-marketplace-sync` won't pick up your changes. See [CLAUDE.md](CLAUDE.md#version-bump-requirements) for semantic versioning rules.
 
 ## License
 

@@ -66,7 +66,7 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 
 See [Version Bump Requirements](CLAUDE.md#version-bump-requirements) for detailed examples.
 
-**Why this matters:** Without version bump, `claude-sync` won't update plugin cache and users won't see your changes.
+**Why this matters:** Without version bump, `claude-marketplace-sync` won't update plugin cache and users won't see your changes.
 
 ### 5. Create Pull Request
 
@@ -95,7 +95,7 @@ git checkout main
 git pull origin main
 
 # Update plugin cache to test
-claude-sync --force --verbose
+claude-marketplace-sync --force --verbose
 
 # Verify new version
 ls ~/.claude/plugins/cache/tribe-coding/<plugin-name>/
@@ -127,7 +127,7 @@ claude code
 1. Make changes
 2. Update acceptance tests if behavior changed
 3. **Bump version** (MAJOR/MINOR/PATCH based on change type)
-4. Test with `claude-sync --force`
+4. Test with `claude-marketplace-sync --force`
 5. Create PR
 
 ### Fixing Bugs
@@ -184,7 +184,7 @@ Run the acceptance tests from plugins/<name>/docs/ACCEPTANCE_TESTS.md
 ### Manual Testing
 
 For SessionStart hooks and fresh session behavior:
-1. Update plugin cache: `claude-sync --force`
+1. Update plugin cache: `claude-marketplace-sync --force`
 2. Start fresh session in test directory
 3. Follow manual test procedures in ACCEPTANCE_TESTS.md
 

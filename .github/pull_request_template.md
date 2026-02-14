@@ -38,7 +38,7 @@
 
 <!-- Describe how you tested these changes -->
 - [ ] Ran acceptance tests (if applicable)
-- [ ] Tested in fresh Claude Code session after `claude-sync --force`
+- [ ] Tested in fresh Claude Code session after `claude-marketplace-sync --force`
 - [ ] Verified new version appears in plugin cache
 
 ## Checklist

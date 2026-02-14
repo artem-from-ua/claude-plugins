@@ -1338,7 +1338,7 @@ Should produce identical ASCII to what Claude showed.
 | `sizeCalculation return invalid` | WebFetch to PlantUML text API fails | PlantUML source has incorrect escaping (e.g., `\n` instead of `\\n` in Python heredoc) | Claude should retry with `\\n` for line breaks in labels |
 | `Error: ...` on first WebFetch | First attempt fails, second succeeds | Python string escaping issue or overly complex diagram | SessionStart rule now includes retry guidance |
 | No ASCII shown | Claude doesn't use WebFetch | SessionStart rule not loaded or ignored | Verify version 1.3.0 installed; run `/clear` |
-| Raw PlantUML source shown | Claude pastes `@startuml` instead of ASCII | Old SessionStart rule (pre-1.3.0) | Run `claude-sync --force` to update |
+| Raw PlantUML source shown | Claude pastes `@startuml` instead of ASCII | Old SessionStart rule (pre-1.3.0) | Run `claude-marketplace-sync --force` to update |
 
 **Debugging steps if WebFetch fails:**
 

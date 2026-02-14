@@ -259,7 +259,7 @@ fi
 
 Claude Code has a bug where the plugin cache is not invalidated on auto-update ([#14061](https://github.com/anthropics/claude-code/issues/14061), [#15621](https://github.com/anthropics/claude-code/issues/15621), [#15642](https://github.com/anthropics/claude-code/issues/15642)).
 
-**Solution:** The standalone `scripts/claude-sync` script runs _before_ Claude Code starts, pulling marketplace repos and rsyncing into cache. Run `scripts/install-sync.sh` to install — it configures PATH and shell alias automatically. See README for details.
+**Solution:** The standalone `scripts/claude-marketplace-sync` script runs _before_ Claude Code starts, pulling marketplace repos and rsyncing into cache. Run `scripts/install-sync.sh` to install — it configures PATH and shell alias automatically. See README for details.
 
 ## Adding a New Plugin
 
@@ -272,7 +272,7 @@ Claude Code has a bug where the plugin cache is not invalidated on auto-update (
 
 ## Version Bump Requirements
 
-**CRITICAL:** Before merging any PR to `main`, you MUST bump the version of affected plugins. This is required for `claude-sync` to pick up changes (see Plugin Cache Sync section).
+**CRITICAL:** Before merging any PR to `main`, you MUST bump the version of affected plugins. This is required for `claude-marketplace-sync` to pick up changes (see Plugin Cache Sync section).
 
 ### When to Bump Version
 
@@ -344,7 +344,7 @@ Examples:
    ```
 
 3. **Merge to main** (version bump included)
-4. **Sync plugin cache:** Run `claude-sync --force` after merge
+4. **Sync plugin cache:** Run `claude-marketplace-sync --force` after merge
 
 ### Multiple Plugins Changed
 
@@ -371,13 +371,13 @@ statusline 1.0.3 → 1.1.0:
 
 After version bump:
 1. Check `plugin.json` contains new version
-2. After merge, run `claude-sync --force --verbose`
+2. After merge, run `claude-marketplace-sync --force --verbose`
 3. Verify new version appears in `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`
 4. Test in fresh Claude Code session
 
 ### Why This Matters
 
-Without version bumps, `claude-sync` won't update plugin files in cache because it only syncs when version changes. This means:
+Without version bumps, `claude-marketplace-sync` won't update plugin files in cache because it only syncs when version changes. This means:
 - ❌ Users won't see your changes (old version still loaded)
 - ❌ Manual testing becomes invalid (testing old code)
 - ❌ Bug fixes won't reach users
