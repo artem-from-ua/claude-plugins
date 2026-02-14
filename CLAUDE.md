@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ CRITICAL: Version Bump Requirement
+
+**BEFORE merging ANY plugin changes to `main`: MUST bump version in `plugins/<name>/.claude-plugin/plugin.json`**
+
+- ANY change to plugin files merged to main (code, docs, config) → version bump REQUIRED
+- Semantic versioning: MAJOR.MINOR.PATCH (see [Version Bump Requirements](#version-bump-requirements))
+- Commit version bump in feature branch before merging
+- **Without version bump, `claude-marketplace-sync` won't update plugin cache**
+
 ## What This Is
 
 A marketplace of reusable Claude Code plugins (`Tribe Coding`). Each plugin lives under `plugins/<name>/` and follows the Claude Code plugin spec. The marketplace manifest is `.claude-plugin/marketplace.json`.
