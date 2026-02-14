@@ -185,10 +185,35 @@ for key in $plugin_keys; do
         # Show update message only if version changed
         if [ -n "$old_version" ] && [ "$old_version" != "$new_version" ]; then
             log_always "✅ Updated: ${key} version ${new_version}"
+            version_changed=true
         elif [ -z "$old_version" ]; then
             log_always "✅ Installed: ${key} version ${new_version}"
+            version_changed=true
+        else
+            version_changed=false
         fi
         log "  synced OK"
+
+        # Run SessionStart hooks if version changed (to update installed files)
+        if [ "$version_changed" = true ]; then
+            hooks_json="${cache_dir}/hooks/hooks.json"
+            if [ -f "$hooks_json" ]; then
+                session_start_hooks=$(jq -r '.hooks.SessionStart[]?.hooks[]? | select(.type == "command") | .command' "$hooks_json" 2>/dev/null || true)
+                if [ -n "$session_start_hooks" ]; then
+                    log "Running SessionStart hooks for ${key}..."
+                    while IFS= read -r hook_command; do
+                        # Expand ${CLAUDE_PLUGIN_ROOT} to actual cache directory
+                        expanded_command=$(echo "$hook_command" | sed "s|\${CLAUDE_PLUGIN_ROOT}|${cache_dir}|g")
+                        log "  Executing: $expanded_command"
+                        if eval "$expanded_command" > /dev/null 2>&1; then
+                            log "  ✅ Hook executed successfully"
+                        else
+                            log "  ⚠️ Hook failed (non-critical)"
+                        fi
+                    done <<< "$session_start_hooks"
+                fi
+            fi
+        fi
     else
         log_always "❌ Failed to sync ${key} → ${cache_dir}"
     fi
