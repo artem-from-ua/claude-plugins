@@ -5,6 +5,25 @@ All notable changes to the PlantUML plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.9] - 2026-02-14
+
+### Removed
+- **BREAKING:** Removed deprecated `scripts/render-ascii.sh` wrapper (unused since v1.5.6)
+- Removed obsolete permission prompt workaround documentation from ACCEPTANCE_TESTS.md
+
+### Changed
+- PreToolUse hook: Removed `render-ascii.sh` pattern (no longer needed)
+- Updated hook comment to reflect current operations (encoding, temp files)
+
+### Fixed
+- Cleaned up outdated test sections referencing removed wrapper script
+
+### Technical Details
+- `render-ascii.sh` was wrapper for v1.4.1-1.5.5 to reduce command length
+- v1.5.6+ uses WebFetch approach which doesn't need wrapper
+- PreToolUse hooks (v1.5.0+) eliminate permission prompts entirely
+- No functionality lost — all operations work via direct `plantuml-encode.py` calls
+
 ## [1.5.8] - 2026-02-14
 
 ### Fixed
