@@ -9,12 +9,13 @@ A marketplace of reusable Claude Code plugins (`Tribe Coding`). Each plugin live
 ## Plugins
 
 ### plantuml
-Keeps PlantUML diagram image URLs in sync with their source blocks in markdown files.
+Keeps PlantUML diagram image URLs in sync with their source blocks in markdown files. Provides ASCII diagram rendering in terminal without permission prompts.
 
 Key components:
 - `scripts/plantuml-encode.py` — core encoder/validator. Modes: `--sync` (auto-fix), `--check` (CI validation), stdin (encode raw text). Uses zlib deflate + PlantUML's custom base64 alphabet.
 - `scripts/sync-plantuml.sh` — PostToolUse hook (runs after every Write/Edit on `.md` files), calls `plantuml-encode.py --sync`
-- `scripts/inject-base-rules.sh` — SessionStart hook, outputs ~200 tokens of formatting rules so Claude knows the two-part pattern (code block + image link)
+- `scripts/inject-base-rules.sh` — SessionStart hook, outputs ~200 tokens of formatting rules. Includes ASCII rendering workflow: encode source → WebFetch from plantuml.com/txt/{encoded} → display diagram.
+- `scripts/allow-rendering.sh` — PreToolUse hook, auto-allows PlantUML operations without prompts: encoding commands, /tmp/*.puml file operations (create/delete via Bash or Write tool)
 - `scripts/setup-project.sh` — SessionStart hook, installs git pre-commit hook in `.githooks/` and sets `core.hooksPath`
 - `templates/pre-commit` — blocks commits when PlantUML URLs are stale
 - `templates/plantuml.yml` — GitHub Actions workflow for PR checks
@@ -209,6 +210,32 @@ When designing a new plugin, combine these layers. Typical setup:
 1. SessionStart injects **base rules** (what to always do)
 2. Skill descriptions provide **trigger signals** (when to load more context)
 3. PostToolUse hooks handle **automatic actions** (no Claude involvement needed)
+
+### PlantUML ASCII Rendering (v1.5.6+)
+
+**Problem solved:** ASCII diagrams in terminal without permission prompts or UI collapse.
+
+**Workflow:**
+1. SessionStart hook (inject-base-rules.sh) outputs instructions: encode PlantUML source → WebFetch from `plantuml.com/txt/{encoded}` → display
+2. PreToolUse hook (allow-rendering.sh) auto-allows all PlantUML operations without prompts
+
+**Why WebFetch, not Bash:**
+- Claude Code UI automatically **collapses all Bash tool results >40-50 lines** ("… +60 lines (ctrl+o to expand)")
+- **WebFetch results are NOT collapsed** — full ASCII diagram always visible
+- Versions 1.4.0-1.5.5 used Bash commands (regression), 1.5.6+ reverted to WebFetch
+
+**PreToolUse auto-allow patterns:**
+- `plantuml-encode.py` (encoding, with or without flags)
+- `cat > /tmp/*.puml` (Bash heredoc/redirect for temp files)
+- `rm /tmp/*.puml` (cleanup)
+- Write tool for `/tmp/*.puml` files
+
+**Security:** Patterns restricted to `/tmp` directory and `.puml` extension only.
+
+**SessionStart path resolution:**
+- Script resolves `PLUGIN_ROOT` dynamically: `${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}`
+- Outputs absolute paths in heredoc (e.g., `/Users/.../cache/tribe-coding/plantuml/1.5.8/scripts/plantuml-encode.py`)
+- Never use `${CLAUDE_PLUGIN_ROOT}` in heredoc text (only works in hooks.json command fields)
 
 ## Hook Scripts Convention
 

@@ -1,0 +1,109 @@
+# Changelog
+
+All notable changes to the PlantUML plugin will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.5.8] - 2026-02-14
+
+### Fixed
+- Relaxed PreToolUse hook patterns to allow any `/tmp/*.puml` files (not just files with "diagram"/"plantuml" keywords in name)
+- Eliminates permission prompts for temp file operations with any naming convention
+
+### Changed
+- PreToolUse patterns now match:
+  - `cat > /tmp/*.puml` (any .puml file creation via Bash)
+  - `rm /tmp/*.puml` (any .puml file deletion)
+  - Write tool for `/tmp/*.puml` (any .puml file via Write tool)
+
+## [1.5.7] - 2026-02-14
+
+### Fixed
+- PreToolUse hook now auto-allows `plantuml-encode.py` without `--render-ascii` flag
+- Eliminates permission prompts for encoding step in WebFetch workflow
+
+## [1.5.6] - 2026-02-14
+
+### Fixed
+- **CRITICAL:** Reverted to WebFetch approach for ASCII rendering (fixes UI collapse regression)
+- ASCII diagrams now display fully without "… +60 lines (ctrl+o to expand)" collapse
+
+### Changed
+- ASCII rendering workflow: encode → WebFetch from `plantuml.com/txt/{encoded}` → display
+- Reverts breaking change from v1.4.0-1.5.5 which used Bash commands
+
+### Technical Details
+- Claude Code UI automatically collapses ALL Bash tool results >40-50 lines
+- WebFetch results are NOT collapsed by UI
+- Pre-1.4.0 used WebFetch (worked), 1.4.0-1.5.5 used Bash (broke), 1.5.6+ reverted to WebFetch
+
+## [1.5.5] - 2026-02-14
+
+### Fixed (unsuccessful)
+- Attempted file-based output with Read tool to avoid UI collapse
+- Did not resolve issue — Bash tool results still collapsed
+
+## [1.5.4] - 2026-02-14
+
+### Changed (unsuccessful)
+- Attempted switch back to direct `python3 plantuml-encode.py --render-ascii` call
+- Wrapper removed from SessionStart instructions
+- Did not resolve UI collapse issue
+
+## [1.5.3] - 2026-02-14
+
+### Added
+- PreToolUse hook pattern for auto-allowing `rm /tmp/(diagram|plantuml)*.puml` cleanup commands
+
+### Fixed
+- Eliminates permission prompts for temp file cleanup step
+
+## [1.5.2] - 2026-02-14
+
+### Fixed
+- **CRITICAL:** SessionStart hook now dynamically resolves plugin path at runtime
+- Fixed `${CLAUDE_PLUGIN_ROOT}` variable not resolving in SessionStart heredoc output
+- Prevents fallback to wrong plugin versions
+
+### Changed
+- `inject-base-rules.sh` now uses `PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"`
+- Outputs absolute paths like `/Users/.../cache/tribe-coding/plantuml/1.5.2/scripts/plantuml-encode.py`
+- Heredoc changed from `<<'RULES'` to `<<RULES` to enable variable substitution
+- Escaped all backticks and `$` symbols in heredoc to prevent command execution
+
+### Technical Details
+- `${CLAUDE_PLUGIN_ROOT}` only works in hooks.json `command` fields, NOT in text output
+- SessionStart hooks output text that becomes part of system prompt
+- Variables must be resolved at script execution time, not by Claude Code
+
+## [1.5.1] - 2026-02-13
+
+### Added
+- PreToolUse hook for Write tool to auto-allow PlantUML diagram files in `/tmp`
+- Pattern: `/tmp/.*diagram.*\.puml`
+
+### Fixed
+- Eliminates permission prompts when using Write tool for temp PlantUML files
+
+## [1.5.0] - 2026-02-13
+
+### Added
+- PreToolUse hook for Bash tool to auto-allow PlantUML rendering commands
+- `scripts/allow-rendering.sh` — hook script with patterns for:
+  - `render-ascii.sh` wrapper commands
+  - `plantuml-encode.py --render-ascii` commands
+  - `cat > .*(diagram|plantuml).*\.puml` temp file creation
+
+### Changed
+- All PlantUML rendering operations now execute without permission prompts
+- Hook timeout: 5 seconds
+
+### Technical Details
+- PreToolUse hooks intercept tool calls before execution
+- Return `permissionDecision: "allow"` for matching patterns
+- Passthrough (exit 0) for non-matching commands to maintain security
+
+## Earlier Versions
+
+See git history for versions 1.0.0 - 1.4.2.
