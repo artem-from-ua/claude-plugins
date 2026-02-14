@@ -1,21 +1,23 @@
 #!/bin/bash
 # PreToolUse hook: Auto-allow PlantUML rendering commands without prompts
 #
-# This hook runs before every Bash tool use and automatically allows
-# PlantUML-related commands (render-ascii.sh, temp file creation) without
+# This hook runs before Bash and Write tool use and automatically allows
+# PlantUML-related operations (render-ascii.sh, temp file creation) without
 # permission prompts, while maintaining security for other commands.
 #
-# Input: JSON from stdin with tool_input.command
+# Input: JSON from stdin with tool_input.command (Bash) or tool_input.file_path (Write)
 # Output: JSON with permissionDecision (allow/deny/ask) or exit 0 for passthrough
 
 set -euo pipefail
 
 # Read tool input from stdin
 INPUT=$(cat)
+
+# For Bash tool: check command
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null || echo "")
 
-# Exit early if no command (passthrough to normal permission system)
-[[ -z "$COMMAND" ]] && exit 0
+# For Write tool: check file_path
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null || echo "")
 
 # Allow PlantUML rendering commands
 if echo "$COMMAND" | grep -qE '(render-ascii\.sh|plantuml-encode\.py --render-ascii)'; then
@@ -29,13 +31,25 @@ if echo "$COMMAND" | grep -qE '(render-ascii\.sh|plantuml-encode\.py --render-as
   exit 0
 fi
 
-# Allow creating temp files for PlantUML diagrams
-if echo "$COMMAND" | grep -qE 'cat > .*(diagram|plantuml).*\.puml'; then
+# Allow creating temp files for PlantUML diagrams via Bash
+if [[ -n "$COMMAND" ]] && echo "$COMMAND" | grep -qE 'cat > .*(diagram|plantuml).*\.puml'; then
   jq -n '{
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
       permissionDecision: "allow",
       permissionDecisionReason: "PlantUML plugin temp file creation"
+    }
+  }'
+  exit 0
+fi
+
+# Allow Write tool for PlantUML diagram files in /tmp
+if [[ -n "$FILE_PATH" ]] && echo "$FILE_PATH" | grep -qE '^/tmp/.*diagram.*\.puml$'; then
+  jq -n '{
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "allow",
+      permissionDecisionReason: "PlantUML plugin temp diagram file"
     }
   }'
   exit 0
