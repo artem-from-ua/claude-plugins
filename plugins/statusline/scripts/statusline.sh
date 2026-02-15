@@ -325,26 +325,29 @@ model_colored=$(colorize_model "$model")
 model_with_dim=$(echo "$model_colored" | sed -E "s/([0-9]+\.[0-9]+)/${dim}\1${rst}/g")
 model_display=$(echo "$model_with_dim" | sed "s/ /${SEP}/g")
 
-# Context: build warning indicator
-context_int=${used_pct%.*}
-context_warning=""
-if [ "$context_int" -ge 80 ] 2>/dev/null; then
-  ctx_color=$(printf '\033[38;5;167m')
-  context_warning="🛑"
-elif [ "$context_int" -ge 60 ] 2>/dev/null; then
-  ctx_color=$(printf '\033[38;5;178m')
-  context_warning="⚠️"
-else
-  ctx_color=""
+# Context: build warning indicator (only if context data available)
+context_display=""
+if [ -n "$used_pct" ]; then
+  context_int=${used_pct%.*}
+  context_warning=""
+  if [ "$context_int" -ge 80 ] 2>/dev/null; then
+    ctx_color=$(printf '\033[38;5;167m')
+    context_warning="🛑"
+  elif [ "$context_int" -ge 60 ] 2>/dev/null; then
+    ctx_color=$(printf '\033[38;5;178m')
+    context_warning="⚠️"
+  else
+    ctx_color=""
+  fi
+
+  if [ -n "$context_warning" ]; then
+    context_display="   📚${SEP}${ctx_color}${used_pct}${dim}%${rst}${SEP}${context_warning}"
+  else
+    context_display="   📚${SEP}${ctx_color}${used_pct}${dim}%${rst}"
+  fi
 fi
 
-if [ -n "$context_warning" ]; then
-  context_display="📚${SEP}${ctx_color}${used_pct}${dim}%${rst}${SEP}${context_warning}"
-else
-  context_display="📚${SEP}${ctx_color}${used_pct}${dim}%${rst}"
-fi
-
-line1="${five_block}   🤖${SEP}${model_display}   ${context_display}"
+line1="${five_block}   🤖${SEP}${model_display}${context_display}"
 
 # ===== BUILD LINE 2: 7d limit + directory =====
 
