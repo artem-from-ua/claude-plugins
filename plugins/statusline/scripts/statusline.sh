@@ -29,7 +29,13 @@
 #           ▶️ when (5h=100 OR 7d=100) AND extra_utilization exists AND extra_utilization<100
 #           ⏸️ otherwise (extra=100, extra=null, or limits not exhausted)
 #
-# Progress bar (20 blocks for 5h, 21 blocks for 7d):
+# Progress bar resolution:
+#   5h:    20 blocks → 15 minutes per block (5h / 20 = 900s)
+#   7d:    21 blocks → 8 hours per block (7d / 21 = 28800s)
+#   Extra: N blocks (days in month) → 1 day per block (month / N = 86400s)
+#   Cache: 60s refresh rate (minimum resolution for all bars)
+#
+# Progress bar colors (20 blocks for 5h, 21 blocks for 7d, N blocks for extra):
 #   When usage ≤ time elapsed (under/on pace):
 #     dark gray  — consumed portion
 #     green      — buffer (ahead of schedule)

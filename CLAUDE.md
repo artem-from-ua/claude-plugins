@@ -66,6 +66,12 @@ Two-line Claude Code statusline: progress bars (line 1) + session info (line 2).
 - **Line 1:** ⏳ 5h limit | 📅 7d limit | 💸 extra usage (status icon, progress bar, money spent)
 - **Line 2:** 📁 directory | 🌿 branch | 🤖 model | 📚 context%
 
+**Progress bar resolution:**
+- **5h**: 20 blocks → 15 minutes per block (5h / 20 = 900s)
+- **7d**: 21 blocks → 8 hours per block (7d / 21 = 28800s)
+- **Extra**: N blocks (days in month) → 1 day per block (month / N = 86400s)
+- **Cache**: 60s refresh rate (minimum resolution for all bars)
+
 **Key components:**
 - `scripts/statusline.sh` — main script, reads JSON from stdin (piped by Claude Code), outputs two ANSI-colored lines. Fetches Anthropic OAuth usage API (cached 60s in `/tmp/claude-statusline-usage-cache`), reads OAuth token from macOS Keychain or Linux credentials file
 - `scripts/setup-statusline.sh` — SessionStart hook, copies `statusline.sh` to `~/.claude/statusline.sh`

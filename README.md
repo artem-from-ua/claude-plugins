@@ -70,8 +70,15 @@ Custom Claude Code statusline with real-time API usage info.
 - Model name, color-coded (Opus=red, Sonnet=green, Haiku=blue)
 - Context window usage with thresholds (yellow ≥60%, red ≥80%)
 - 5-hour and 7-day rate limit progress bars with time remaining
+- Extra usage (monthly billing) progress bar with money spent
 - Anthropic OAuth usage API integration (cached 60s)
 - Setup command: `/statusline:statusline-setup`
+
+**Progress bar resolution:**
+- 5h: 15 min/block (20 blocks) — updates every 15 minutes
+- 7d: 8 hours/block (21 blocks) — updates every 8 hours
+- Extra: 1 day/block (28-31 blocks) — updates daily
+- Cache: 60s refresh rate (all bars)
 
 ## Plugin Structure
 
