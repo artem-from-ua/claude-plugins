@@ -1,55 +1,33 @@
 #!/bin/bash
-# Claude Code statusline script
+# Claude Code statusline script (THREE-LINE LAYOUT)
 # Reads JSON from stdin (piped by Claude Code)
 #
-# Layout (two lines):
-#   Line 1: ⏳ <bar> [icon] <time>   📅 <bar> [icon] <time>   💸 <bar> [warning] <status> <money>
-#   Line 2: 📁 <dir>   🌿 <branch>   🤖 <model>   📚 <ctx>%
-#
-# Fields:
-#   📁  Current directory (basename)
-#   🌿  Git branch (if in a repo); yellow + ⚠️  when dirty (uncommitted changes or
-#         untracked files)
-#   🤖  Model name, color-coded: Opus=red, Sonnet=green, Haiku=blue
-#   📚  Context window usage %:
-#         <60%  — default (no color)
-#         ≥60%  — yellow + ⚠️  — first compression likely, wrap up current task
-#         ≥80%  — red + 🛑 — context degraded, start a new session
-#   ⏳  5-hour rate limit: progress bar, optional icon, time remaining
-#   📅  7-day rate limit: progress bar, optional icon, time remaining
-#         Icons: ❌ when usage =100% (limit exhausted), ⚠️ when usage >90%
-#         Time format (simplified for less noise):
-#           5h: >=2h shows ~Xh (approximate, ~ dimmed), <2h shows XhYm (exact)
-#           7d: >=2d shows ~Xd (approximate, ~ dimmed), <2d shows XdYh or XhYm (exact)
-#         When API returns resets_at=null (window inactive, no usage yet),
-#         shows yellow "idle" instead of icon+time (bar needs time_pct to colorize)
-#   💸  Extra usage (monthly billing): progress bar, warning icon, status icon (▶️/⏸️), money spent
-#         Money format: ¤X.YZ where ¤ is dimmed, X is integer part, .YZ is dimmed fractional part
-#         Status icon (between bar and money):
-#           ▶️ when (5h=100 OR 7d=100) AND extra_utilization exists AND extra_utilization<100
-#           ⏸️ otherwise (extra=100, extra=null, or limits not exhausted)
+# Layout (three lines):
+#   Line 1: 5h/10m････[bar-30]･[ind]･[time-11]   🤖･[model]   📚･[ctx]%
+#   Line 2: 7d/4h･･･････[bar-28]･[ind]･[time-11]   📁･[dir]
+#   Line 3: 1M/1d･[icon]･[padding][bar-N]･[ind]･[money-11]   🌿･[branch]
 #
 # Progress bar resolution:
-#   5h:    20 blocks → 15 minutes per block (5h / 20 = 900s)
-#   7d:    21 blocks → 8 hours per block (7d / 21 = 28800s)
-#   Extra: N blocks (days in month) → 1 day per block (month / N = 86400s)
-#   Cache: 60s refresh rate (minimum resolution for all bars)
-#
-# Progress bar colors (20 blocks for 5h, 21 blocks for 7d, N blocks for extra):
-#   When usage ≤ time elapsed (under/on pace):
-#     dark gray  — consumed portion
-#     green      — buffer (ahead of schedule)
-#     dark blue  — remaining to 100%
-#   When usage > time elapsed (over pace):
-#     dark gray  — time elapsed portion
-#     red        — over-consumption
-#     dark blue  — remaining to 100%
-#
-# Dim units: %, d, h, m — slightly muted to reduce visual noise
+#   5h:    30 blocks → 10 minutes per block (5h / 30 = 600s)
+#   7d:    28 blocks → 6 hours per block (7d / 28 = 21600s)
+#   Extra: N blocks (days in month) → 1 day per block
 #
 # Data source: Anthropic OAuth usage API, cached for 60s
 
 input=$(cat)
+
+# ANSI colors
+rst=$(printf '\033[0m')
+dim=$(printf '\033[38;5;242m')
+very_dim=$(printf '\033[38;5;237m')
+dark_gray=$(printf '\033[38;5;236m')
+bright_green=$(printf '\033[38;5;71m')
+bright_red=$(printf '\033[38;5;167m')
+dark_blue=$(printf '\033[38;5;23m')
+yellow=$(printf '\033[38;5;178m')
+
+# Separator
+SEP="${very_dim}･${rst}"
 
 # Extract basic fields from statusline JSON
 cwd=$(echo "$input" | jq -r '.workspace.current_dir')
@@ -57,24 +35,103 @@ model=$(echo "$input" | jq -r '.model.display_name')
 used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 
 # Git branch + dirty indicator
-git_info=""
-dirty_info=""
+branch=""
+dirty=""
 if git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
   branch=$(git -C "$cwd" branch --show-current 2>/dev/null)
   if [ -n "$branch" ]; then
     git_status_output=$(git -C "$cwd" status --porcelain=v1 --untracked-files=normal 2>/dev/null)
     if [ -n "$git_status_output" ]; then
-      git_info="   🌿 $(printf '\033[38;5;178m')${branch}$(printf '\033[0m')"
-      dirty_info=" ⚠️"
-    else
-      git_info="   🌿 ${branch}"
+      dirty="⚠"
     fi
   fi
 fi
 
 short_dir=$(basename "$cwd")
 
-# Colorize model name (only the model name part, not "Claude" or version)
+# Calculate display width (visual width in terminal, handles wide characters)
+# ⏰ (alarm clock emoji) takes 2 columns, regular ASCII takes 1
+calc_display_width() {
+  local str="$1"
+  local char_count=${#str}
+  # Check if string contains ⏰ (wide emoji, takes 2 terminal columns)
+  if echo "$str" | grep -q '⏰'; then
+    echo $((char_count + 1))
+  else
+    echo "$char_count"
+  fi
+}
+
+# Format resolution display (e.g., "5h/10m" with /10m dimmed)
+format_resolution() {
+  local interval=$1
+  local resolution=$2
+  echo "${interval}${dim}/${resolution}${rst}"
+}
+
+# Get limit indicator based on usage vs time pacing
+get_limit_indicator() {
+  local usage_pct=$1
+  local time_pct=$2
+  local usage_int=${usage_pct%.*}
+  local time_int=${time_pct%.*}
+
+  if [ "$usage_int" -eq 100 ] 2>/dev/null; then
+    echo "❌"
+  elif [ "$usage_int" -gt 90 ] 2>/dev/null && [ "$time_int" -le 90 ] 2>/dev/null; then
+    echo "⚠️"
+  else
+    echo "${very_dim}･･${rst}"
+  fi
+}
+
+# Build progress bar
+build_progress_bar() {
+  local u_pct="$1"
+  local t_pct="$2"
+  local total="${3:-20}"
+
+  u_pct=${u_pct%.*}
+  t_pct=${t_pct%.*}
+
+  [ "$u_pct" -lt 0 ] 2>/dev/null && u_pct=0; [ "$u_pct" -gt 100 ] 2>/dev/null && u_pct=100
+  [ "$t_pct" -lt 0 ] 2>/dev/null && t_pct=0; [ "$t_pct" -gt 100 ] 2>/dev/null && t_pct=100
+
+  local u_blocks=$(( (u_pct * total + 50) / 100 ))
+  local t_blocks=$(( (t_pct * total + 50) / 100 ))
+  local bar=""
+  local block="■"
+
+  if [ "$u_blocks" -le "$t_blocks" ]; then
+    local i=0
+    while [ "$i" -lt "$total" ]; do
+      if [ "$i" -lt "$u_blocks" ]; then
+        bar="${bar}${dark_gray}${block}"
+      elif [ "$i" -lt "$t_blocks" ]; then
+        bar="${bar}${bright_green}${block}"
+      else
+        bar="${bar}${dark_blue}${block}"
+      fi
+      i=$(( i + 1 ))
+    done
+  else
+    local i=0
+    while [ "$i" -lt "$total" ]; do
+      if [ "$i" -lt "$t_blocks" ]; then
+        bar="${bar}${dark_gray}${block}"
+      elif [ "$i" -lt "$u_blocks" ]; then
+        bar="${bar}${bright_red}${block}"
+      else
+        bar="${bar}${dark_blue}${block}"
+      fi
+      i=$(( i + 1 ))
+    done
+  fi
+  bar="${bar}${rst}"
+  echo -n "$bar"
+}
+
+# Colorize model name
 colorize_model() {
   local name="$1"
   local color=""
@@ -87,41 +144,96 @@ colorize_model() {
     color=$(printf '\033[38;5;33m'); keyword="Haiku"
   fi
   if [ -n "$color" ]; then
-    echo "$name" | sed "s/$keyword/${color}${keyword}$(printf '\033[0m')/"
+    echo "$name" | sed "s/$keyword/${color}${keyword}${rst}/"
   else
     echo "$name"
   fi
 }
-model_colored=$(colorize_model "$model")
 
-# Build line 2 (info line)
-line2="📁 ${short_dir}${git_info}${dirty_info}   🤖 ${model_colored}"
-
-# Build line 1 (progress bars line) - will be populated later
-line1=""
-
-# Dim color for units (%, d, h, m)
-dim=$(printf '\033[38;5;242m')
-rst=$(printf '\033[0m')
-
-# Context window (yellow ≥60%, red ≥80%) - goes to line 2
-if [ -n "$used_pct" ]; then
-  ctx_int=${used_pct%.*}
-  if [ "$ctx_int" -ge 80 ] 2>/dev/null; then
-    ctx_color=$(printf '\033[38;5;167m')
-  elif [ "$ctx_int" -ge 60 ] 2>/dev/null; then
-    ctx_color=$(printf '\033[38;5;178m')
-  else
-    ctx_color=""
+# Parse reset timestamp to epoch seconds
+parse_reset_epoch() {
+  local resets_at="$1"
+  if [ -z "$resets_at" ] || [ "$resets_at" = "null" ]; then
+    echo ""
+    return
   fi
-  if [ "$ctx_int" -ge 80 ] 2>/dev/null; then
-    line2="${line2}   📚 ${ctx_color}${used_pct}${dim}%${rst} 🛑"
-  elif [ "$ctx_int" -ge 60 ] 2>/dev/null; then
-    line2="${line2}   📚 ${ctx_color}${used_pct}${dim}%${rst} ⚠️"
+  local normalized
+  normalized=$(echo "$resets_at" | sed 's/\.[0-9]*+00:00$//' | sed 's/+00:00$//')
+  if [ "$(uname)" = "Darwin" ]; then
+    date -juf "%Y-%m-%dT%H:%M:%S" "$normalized" +%s 2>/dev/null
   else
-    line2="${line2}   📚 ${used_pct}${dim}%${rst}"
+    date -ud "$normalized" +%s 2>/dev/null
   fi
-fi
+}
+
+# Format time remaining
+format_time_remaining() {
+  local resets_at="$1"
+  local threshold_hours="$2"
+  local reset_epoch
+  reset_epoch=$(parse_reset_epoch "$resets_at")
+  if [ -z "$reset_epoch" ]; then
+    echo ""
+    return
+  fi
+  local now=$(date +%s)
+  local diff=$(( reset_epoch - now ))
+  if [ "$diff" -le 0 ]; then
+    echo "⏰"
+    return
+  fi
+  local days=$(( diff / 86400 ))
+  local hours=$(( (diff % 86400) / 3600 ))
+  local mins=$(( (diff % 3600) / 60 ))
+
+  local total_hours=$(( days * 24 + hours ))
+
+  if [ "$total_hours" -ge "$threshold_hours" ]; then
+    if [ "$days" -gt 0 ]; then
+      if [ "$hours" -ge 12 ]; then
+        days=$(( days + 1 ))
+      fi
+      echo "~${days}d"
+    else
+      if [ "$mins" -ge 30 ]; then
+        hours=$(( hours + 1 ))
+      fi
+      echo "~${hours}h"
+    fi
+  else
+    if [ "$days" -gt 0 ]; then
+      echo "${days}d${hours}h"
+    elif [ "$hours" -gt 0 ]; then
+      echo "${hours}h${mins}m"
+    else
+      echo "${mins}m"
+    fi
+  fi
+}
+
+# Calculate time elapsed percentage
+calc_time_pct() {
+  local resets_at="$1"
+  local window_seconds="$2"
+  local reset_epoch
+  reset_epoch=$(parse_reset_epoch "$resets_at")
+  if [ -z "$reset_epoch" ]; then
+    echo "0"
+    return
+  fi
+  local now=$(date +%s)
+  local diff=$(( reset_epoch - now ))
+  if [ "$diff" -le 0 ]; then
+    echo "100"
+    return
+  fi
+  local elapsed=$(( window_seconds - diff ))
+  if [ "$elapsed" -le 0 ]; then
+    echo "0"
+    return
+  fi
+  echo $(( elapsed * 100 / window_seconds ))
+}
 
 # Fetch usage data from Anthropic API (cached for 60 seconds)
 cache_file="/tmp/claude-statusline-usage-cache-${UID}"
@@ -145,7 +257,6 @@ usage_json=""
 if [ "$use_cache" = true ]; then
   usage_json=$(cat "$cache_file" 2>/dev/null)
 else
-  # Cross-platform OAuth token retrieval
   token=""
   if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
     token="$CLAUDE_CODE_OAUTH_TOKEN"
@@ -163,7 +274,6 @@ else
       echo "$usage_json" > "$cache_file"
     else
       usage_json=""
-      # Use stale cache if API failed
       if [ -f "$cache_file" ]; then
         usage_json=$(cat "$cache_file" 2>/dev/null)
       fi
@@ -171,297 +281,230 @@ else
   fi
 fi
 
-# Parse reset timestamp to epoch seconds
-parse_reset_epoch() {
-  local resets_at="$1"
-  if [ -z "$resets_at" ] || [ "$resets_at" = "null" ]; then
-    echo ""
-    return
-  fi
-  local normalized
-  normalized=$(echo "$resets_at" | sed 's/\.[0-9]*+00:00$//' | sed 's/+00:00$//')
-  if [ "$(uname)" = "Darwin" ]; then
-    date -juf "%Y-%m-%dT%H:%M:%S" "$normalized" +%s 2>/dev/null
-  else
-    date -ud "$normalized" +%s 2>/dev/null
-  fi
-}
+# ===== BUILD LINE 1: 5h limit + model + context =====
 
-# Format time remaining as human-readable string
-# Args: $1=resets_at, $2=threshold_hours (if >= threshold, show approximate rounded time)
-format_time_remaining() {
-  local resets_at="$1"
-  local threshold_hours="$2"
-  local reset_epoch
-  reset_epoch=$(parse_reset_epoch "$resets_at")
-  if [ -z "$reset_epoch" ]; then
-    echo ""
-    return
-  fi
-  local diff=$(( reset_epoch - now ))
-  if [ "$diff" -le 0 ]; then
-    echo "⏰"
-    return
-  fi
-  local days=$(( diff / 86400 ))
-  local hours=$(( (diff % 86400) / 3600 ))
-  local mins=$(( (diff % 3600) / 60 ))
-  local dim=$(printf '\033[38;5;242m')
-  local rst=$(printf '\033[0m')
-
-  # Calculate total hours for threshold check
-  local total_hours=$(( days * 24 + hours ))
-
-  # If >= threshold, show approximate rounded time
-  if [ "$total_hours" -ge "$threshold_hours" ]; then
-    if [ "$days" -gt 0 ]; then
-      # Round to nearest day (hours >= 12 rounds up)
-      if [ "$hours" -ge 12 ]; then
-        days=$(( days + 1 ))
-      fi
-      echo "${dim}~${rst}${days}${dim}d${rst}"
-    else
-      # Round to nearest hour (mins >= 30 rounds up)
-      if [ "$mins" -ge 30 ]; then
-        hours=$(( hours + 1 ))
-      fi
-      echo "${dim}~${rst}${hours}${dim}h${rst}"
-    fi
-  else
-    # Show exact time
-    if [ "$days" -gt 0 ]; then
-      echo "${days}${dim}d${rst}${hours}${dim}h${rst}"
-    elif [ "$hours" -gt 0 ]; then
-      echo "${hours}${dim}h${rst}${mins}${dim}m${rst}"
-    else
-      echo "${mins}${dim}m${rst}"
-    fi
-  fi
-}
-
-# Calculate time elapsed percentage for a window
-# Args: $1=resets_at, $2=window_seconds
-calc_time_pct() {
-  local resets_at="$1"
-  local window_seconds="$2"
-  local reset_epoch
-  reset_epoch=$(parse_reset_epoch "$resets_at")
-  if [ -z "$reset_epoch" ]; then
-    echo "0"
-    return
-  fi
-  local diff=$(( reset_epoch - now ))
-  if [ "$diff" -le 0 ]; then
-    echo "100"
-    return
-  fi
-  local elapsed=$(( window_seconds - diff ))
-  if [ "$elapsed" -le 0 ]; then
-    echo "0"
-    return
-  fi
-  echo $(( elapsed * 100 / window_seconds ))
-}
-
-# Build progress bar
-# Args: $1=usage_pct (0-100), $2=time_pct (0-100), $3=bar_length (default 20)
-# Colors: dark gray=used, green/red=gap, dark blue=remaining
-build_progress_bar() {
-  local u_pct="$1"
-  local t_pct="$2"
-  local total="${3:-20}"
-  # Clamp percentages to 0-100
-  [ "$u_pct" -lt 0 ] 2>/dev/null && u_pct=0; [ "$u_pct" -gt 100 ] 2>/dev/null && u_pct=100
-  [ "$t_pct" -lt 0 ] 2>/dev/null && t_pct=0; [ "$t_pct" -gt 100 ] 2>/dev/null && t_pct=100
-  # Convert pct to blocks with rounding: (pct * total + 50) / 100
-  local u_blocks=$(( (u_pct * total + 50) / 100 ))
-  local t_blocks=$(( (t_pct * total + 50) / 100 ))
-  local bar=""
-  local block="■"
-  # ANSI colors (use printf to produce real escape bytes)
-  local dark_gray=$(printf '\033[38;5;236m')
-  local bright_green=$(printf '\033[38;5;71m')
-  local bright_red=$(printf '\033[38;5;167m')
-  local dark_blue=$(printf '\033[38;5;23m')
-  local reset=$(printf '\033[0m')
-
-  if [ "$u_blocks" -le "$t_blocks" ]; then
-    # Usage <= Time: gray[0..u] green[u..t] blue[t..100]
-    local i=0
-    while [ "$i" -lt "$total" ]; do
-      if [ "$i" -lt "$u_blocks" ]; then
-        bar="${bar}${dark_gray}${block}"
-      elif [ "$i" -lt "$t_blocks" ]; then
-        bar="${bar}${bright_green}${block}"
-      else
-        bar="${bar}${dark_blue}${block}"
-      fi
-      i=$(( i + 1 ))
-    done
-  else
-    # Usage > Time: gray[0..t] red[t..u] blue[u..100]
-    local i=0
-    while [ "$i" -lt "$total" ]; do
-      if [ "$i" -lt "$t_blocks" ]; then
-        bar="${bar}${dark_gray}${block}"
-      elif [ "$i" -lt "$u_blocks" ]; then
-        bar="${bar}${bright_red}${block}"
-      else
-        bar="${bar}${dark_blue}${block}"
-      fi
-      i=$(( i + 1 ))
-    done
-  fi
-  bar="${bar}${reset}"
-  echo -n "$bar"
-}
+resolution_5h=$(format_resolution "5h" "10m")
+padding_5h="${very_dim}････${rst}"
 
 if [ -n "$usage_json" ]; then
   five_hour_pct=$(echo "$usage_json" | jq -r '.five_hour.utilization // empty')
   five_hour_resets=$(echo "$usage_json" | jq -r '.five_hour.resets_at // empty')
-  seven_day_pct=$(echo "$usage_json" | jq -r '.seven_day.utilization // empty')
-  seven_day_resets=$(echo "$usage_json" | jq -r '.seven_day.resets_at // empty')
 
   if [ -n "$five_hour_pct" ]; then
     five_int=${five_hour_pct%.*}
     five_remaining=$(format_time_remaining "$five_hour_resets" 2)
     five_time_pct=$(calc_time_pct "$five_hour_resets" 18000)
-    five_bar=$(build_progress_bar "$five_int" "$five_time_pct")
+    five_bar=$(build_progress_bar "$five_int" "$five_time_pct" 30)
+    five_indicator=$(get_limit_indicator "$five_int" "$five_time_pct")
 
-    # Determine icon: ❌ if limit exhausted (exactly 100%), ⚠️ if >90%, none otherwise
-    five_icon=""
-    if [ "$five_int" -eq 100 ] 2>/dev/null; then
-      five_icon="❌ "
-    elif [ "$five_int" -gt 90 ] 2>/dev/null; then
-      five_icon="⚠️ "
-    fi
+    # Apply dim to units: ~, h, m, d
+    five_time_with_dim=""
+    for ((i=0; i<${#five_remaining}; i++)); do
+      char="${five_remaining:$i:1}"
+      case "$char" in
+        ~|h|m|d) five_time_with_dim="${five_time_with_dim}${dim}${char}${rst}" ;;
+        *) five_time_with_dim="${five_time_with_dim}${char}" ;;
+      esac
+    done
 
-    if [ -n "$five_remaining" ]; then
-      line1="${line1}⏳ ${five_bar} ${five_icon}${five_remaining}"
-    else
-      yellow=$(printf '\033[38;5;178m')
-      line1="${line1}⏳ ${five_bar} ${yellow}idle${rst}"
-    fi
+    # Pad to 8 characters (11 total - 3 spaces in line1 before emoji)
+    five_display_width=$(calc_display_width "$five_remaining")
+    five_padding=$((8 - five_display_width))
+    five_time_fmt="${five_time_with_dim}$(printf "%${five_padding}s" "")"
+
+    five_block="${resolution_5h}${padding_5h}${five_bar}${SEP}${five_indicator}${SEP}${five_time_fmt}"
+  else
+    five_block=""
   fi
+else
+  five_block=""
+fi
+
+# Model: colorize keyword, dim version number, replace spaces with SEP
+model_colored=$(colorize_model "$model")
+model_with_dim=$(echo "$model_colored" | sed -E "s/([0-9]+\.[0-9]+)/${dim}\1${rst}/g")
+model_display=$(echo "$model_with_dim" | sed "s/ /${SEP}/g")
+
+# Context: build warning indicator
+context_int=${used_pct%.*}
+context_warning=""
+if [ "$context_int" -ge 80 ] 2>/dev/null; then
+  ctx_color=$(printf '\033[38;5;167m')
+  context_warning="🛑"
+elif [ "$context_int" -ge 60 ] 2>/dev/null; then
+  ctx_color=$(printf '\033[38;5;178m')
+  context_warning="⚠️"
+else
+  ctx_color=""
+fi
+
+if [ -n "$context_warning" ]; then
+  context_display="📚${SEP}${ctx_color}${used_pct}${dim}%${rst}${SEP}${context_warning}"
+else
+  context_display="📚${SEP}${ctx_color}${used_pct}${dim}%${rst}"
+fi
+
+line1="${five_block}   🤖${SEP}${model_display}   ${context_display}"
+
+# ===== BUILD LINE 2: 7d limit + directory =====
+
+resolution_7d=$(format_resolution "7d" "4h")
+padding_7d=$(printf "${very_dim}%s${rst}" "･･･････")
+
+if [ -n "$usage_json" ]; then
+  seven_day_pct=$(echo "$usage_json" | jq -r '.seven_day.utilization // empty')
+  seven_day_resets=$(echo "$usage_json" | jq -r '.seven_day.resets_at // empty')
 
   if [ -n "$seven_day_pct" ]; then
     seven_int=${seven_day_pct%.*}
     seven_remaining=$(format_time_remaining "$seven_day_resets" 48)
     seven_time_pct=$(calc_time_pct "$seven_day_resets" 604800)
-    seven_bar=$(build_progress_bar "$seven_int" "$seven_time_pct" 21)
+    seven_bar=$(build_progress_bar "$seven_int" "$seven_time_pct" 28)
+    seven_indicator=$(get_limit_indicator "$seven_int" "$seven_time_pct")
 
-    # Determine icon: ❌ if limit exhausted (exactly 100%), ⚠️ if >90%, none otherwise
-    seven_icon=""
-    if [ "$seven_int" -eq 100 ] 2>/dev/null; then
-      seven_icon="❌ "
-    elif [ "$seven_int" -gt 90 ] 2>/dev/null; then
-      seven_icon="⚠️ "
-    fi
+    # Apply dim to units
+    seven_time_with_dim=""
+    for ((i=0; i<${#seven_remaining}; i++)); do
+      char="${seven_remaining:$i:1}"
+      case "$char" in
+        ~|h|m|d) seven_time_with_dim="${seven_time_with_dim}${dim}${char}${rst}" ;;
+        *) seven_time_with_dim="${seven_time_with_dim}${char}" ;;
+      esac
+    done
 
-    if [ -n "$seven_remaining" ]; then
-      line1="${line1}   📅 ${seven_bar} ${seven_icon}${seven_remaining}"
-    else
-      yellow=$(printf '\033[38;5;178m')
-      line1="${line1}   📅 ${seven_bar} ${yellow}idle${rst}"
+    # Pad to 8 characters (11 total - 3 spaces in line2 before emoji)
+    seven_display_width=$(calc_display_width "$seven_remaining")
+    seven_padding=$((8 - seven_display_width))
+    seven_time_fmt="${seven_time_with_dim}$(printf "%${seven_padding}s" "")"
+
+    seven_block="${resolution_7d}${padding_7d}${seven_bar}${SEP}${seven_indicator}${SEP}${seven_time_fmt}"
+  else
+    seven_block=""
+  fi
+else
+  seven_block=""
+fi
+
+# Directory: replace spaces with SEP
+dir_display=$(echo "$short_dir" | sed "s/ /${SEP}/g")
+dir_with_warning="📁${SEP}${dir_display}"
+
+line2="${seven_block}   ${dir_with_warning}"
+
+# ===== BUILD LINE 3: Extra usage + git branch =====
+
+resolution_1m=$(format_resolution "1M" "1d")
+
+# Calculate days in current month (UTC)
+if [ "$(uname)" = "Darwin" ]; then
+  current_year=$(date -u +%Y)
+  current_month=$(date -u +%m)
+  days_in_month=$(date -u -v1d -v+1m -v-1d +%d 2>/dev/null)
+else
+  current_year=$(date -u +%Y)
+  current_month=$(date -u +%m)
+  days_in_month=$(date -u -d "$(date -u +%Y-%m-01) +1 month -1 day" +%d 2>/dev/null)
+fi
+days_in_month=${days_in_month:-30}
+
+# Padding based on days in month: 31→1, 30→2, 29→3, 28→4
+padding_extra_count=$((32 - days_in_month))
+padding_extra=$(printf "${very_dim}%s${rst}" "$(printf '･%.0s' $(seq 1 $padding_extra_count))")
+
+# Determine status icon (play/pause)
+status_icon="⏸️"
+if [ -n "$usage_json" ]; then
+  extra_enabled=$(echo "$usage_json" | jq -r '.extra_usage.is_enabled // empty')
+  if [ "$extra_enabled" = "true" ]; then
+    extra_utilization=$(echo "$usage_json" | jq -r '.extra_usage.utilization // empty')
+    if [ -n "$extra_utilization" ] && [ "$extra_utilization" != "null" ]; then
+      extra_int=${extra_utilization%.*}
+      if [ "$extra_int" -lt 100 ] 2>/dev/null; then
+        if [ "$five_int" -eq 100 ] 2>/dev/null || [ "$seven_int" -eq 100 ] 2>/dev/null; then
+          status_icon="▶️"
+        fi
+      fi
     fi
   fi
+fi
 
-  # Extra usage block (only if enabled)
+# Build extra block
+if [ -n "$usage_json" ]; then
   extra_enabled=$(echo "$usage_json" | jq -r '.extra_usage.is_enabled // empty')
   if [ "$extra_enabled" = "true" ]; then
     used_credits=$(echo "$usage_json" | jq -r '.extra_usage.used_credits // empty')
     extra_utilization=$(echo "$usage_json" | jq -r '.extra_usage.utilization // empty')
 
     if [ -n "$used_credits" ]; then
-      # Convert API credits to money amount (credits / 100)
+      # Money formatting
       money_raw=$(echo "$used_credits" | awk '{printf "%.2f", $1/100}')
-
-      # Split into integer and fractional parts
       money_int=$(echo "$money_raw" | cut -d'.' -d',' -f1)
       money_frac=$(echo "$money_raw" | grep -o '[.,][0-9]*$')
 
-      # Format: integer part normal, decimal separator + fractional part dimmed
-      money_display="${money_int}${dim}${money_frac}${rst}"
+      # Calculate visible length (without ANSI codes)
+      money_visible="¤${money_int}${money_frac}"
+      money_visible_len=$(printf "%s" "$money_visible" | wc -m | tr -d ' ')
+      # Pad to 8 chars (11 total - 3 spaces added in line3 before branch emoji)
+      money_padding=$((8 - money_visible_len))
+      money_spaces=""
+      for ((i=0; i<money_padding; i++)); do money_spaces="${money_spaces} "; done
+      money_fmt="${dim}¤${rst}${money_int}${dim}${money_frac}${rst}${money_spaces}"
 
-      # Start building extra usage block
-      extra_block="💸"
-
-      # Add progress bar if utilization is available (not null)
+      # Progress bar
       if [ -n "$extra_utilization" ] && [ "$extra_utilization" != "null" ]; then
         extra_int=${extra_utilization%.*}
 
-        # Calculate days in current month (UTC)
-        if [ "$(uname)" = "Darwin" ]; then
-          current_year=$(date -u +%Y)
-          current_month=$(date -u +%m)
-          days_in_month=$(date -u -v1d -v+1m -v-1d +%d 2>/dev/null)
-        else
-          current_year=$(date -u +%Y)
-          current_month=$(date -u +%m)
-          days_in_month=$(date -u -d "$(date -u +%Y-%m-01) +1 month -1 day" +%d 2>/dev/null)
-        fi
-        days_in_month=${days_in_month:-30}
-
-        # Calculate month time percentage by seconds
-        # Start of current month (UTC midnight)
+        # Calculate month time percentage
         if [ "$(uname)" = "Darwin" ]; then
           month_start=$(date -ju -f "%Y-%m-%d %H:%M:%S" "${current_year}-${current_month}-01 00:00:00" +%s 2>/dev/null)
-          # Start of next month
           next_month_start=$(date -ju -v1d -v+1m -f "%Y-%m-%d %H:%M:%S" "${current_year}-${current_month}-01 00:00:00" +%s 2>/dev/null)
         else
           month_start=$(date -u -d "${current_year}-${current_month}-01 00:00:00" +%s 2>/dev/null)
           next_month_start=$(date -u -d "$(date -u +%Y-%m-01) +1 month" +%s 2>/dev/null)
         fi
 
-        # Current time (UTC)
         now_utc=$(date -u +%s)
-
-        # Calculate elapsed and total seconds in month
         month_elapsed=$((now_utc - month_start))
         month_total=$((next_month_start - month_start))
 
-        # Time percentage
         if [ "$month_total" -gt 0 ]; then
           month_time_pct=$((month_elapsed * 100 / month_total))
         else
           month_time_pct=0
         fi
 
-        # Build progress bar with month-specific length
         extra_bar=$(build_progress_bar "$extra_int" "$month_time_pct" "$days_in_month")
+        extra_indicator=$(get_limit_indicator "$extra_int" "$month_time_pct")
 
-        # Determine warning icon
-        extra_warning=""
-        if [ "$extra_int" -eq 100 ] 2>/dev/null; then
-          extra_warning=" ❌"
-        elif [ "$extra_int" -gt 90 ] 2>/dev/null; then
-          extra_warning=" ⚠️"
-        fi
-
-        extra_block="${extra_block} ${extra_bar}${extra_warning}"
+        extra_block="${resolution_1m}${SEP}${status_icon}${padding_extra}${extra_bar}${SEP}${extra_indicator}${SEP}${money_fmt}"
+      else
+        extra_block="${resolution_1m}${SEP}${status_icon}${padding_extra}                              ${SEP}${money_fmt}"
       fi
-
-      # Determine status icon (placed between progress bar and money):
-      # ▶️ if (5h=100 OR 7d=100) AND extra_utilization exists AND extra_utilization<100
-      # ⏸️ otherwise
-      status_icon="⏸️"
-      if [ -n "$extra_utilization" ] && [ "$extra_utilization" != "null" ]; then
-        extra_int_check=${extra_utilization%.*}
-        if [ "$extra_int_check" -lt 100 ] 2>/dev/null; then
-          if [ "$five_int" -eq 100 ] 2>/dev/null || [ "$seven_int" -eq 100 ] 2>/dev/null; then
-            status_icon="▶️"
-          fi
-        fi
-      fi
-
-      # Add status icon and money spent with currency symbol
-      extra_block="${extra_block} ${status_icon} ${dim}¤${rst}${money_display}"
-
-      line1="${line1}   ${extra_block}"
+    else
+      extra_block="                                                    "
     fi
+  else
+    extra_block="                                                    "
   fi
+else
+  extra_block="                                                    "
 fi
 
-# Output two lines
+# Git branch: replace spaces with SEP, colorize yellow if dirty, add ⚠️ emoji
+if [ -n "$branch" ]; then
+  branch_display=$(echo "$branch" | sed "s/ /${SEP}/g")
+  if [ -n "$dirty" ]; then
+    branch_with_warning="🌿${SEP}${yellow}${branch_display}${SEP}⚠️${rst}"
+  else
+    branch_with_warning="🌿${SEP}${branch_display}"
+  fi
+  line3="${extra_block}   ${branch_with_warning}"
+else
+  # Not in a git repository - no branch block
+  line3="${extra_block}"
+fi
+
+# Output three lines
 echo "$line1"
 echo "$line2"
+echo "$line3"
