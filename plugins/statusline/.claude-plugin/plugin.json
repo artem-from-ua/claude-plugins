@@ -1,7 +1,7 @@
 {
   "name": "statusline",
-  "version": "1.1.2",
-  "description": "Two-line Claude Code statusline: progress bars (5h/7d limits, extra usage) + session info (dir, branch, model, context). Features warning icons, monthly billing tracking (money spent), and pacing visualization.",
+  "version": "1.2.0",
+  "description": "Three-line Claude Code statusline with enhanced resolution: 5h (30 blocks/10m), 7d (28 blocks/6h), extra usage (N blocks/1d). Features improved alignment, dimmed separators, and wide character support.",
   "author": { "name": "Tribe Coding" },
   "license": "MIT",
   "commands": ["./commands/"]
