@@ -441,7 +441,7 @@ if [ -n "$usage_json" ]; then
     if [ -n "$used_credits" ]; then
       # Money formatting
       money_raw=$(echo "$used_credits" | awk '{printf "%.2f", $1/100}')
-      money_int=$(echo "$money_raw" | cut -d'.' -d',' -f1)
+      money_int=$(echo "$money_raw" | cut -d'.' -f1)
       money_frac=$(echo "$money_raw" | grep -o '[.,][0-9]*$')
 
       # Calculate visible length (without ANSI codes)
