@@ -4,7 +4,7 @@
 #
 # Layout (three lines):
 #   Line 1: 5h/10m････[bar-30]･[ind]･[time-11]   🤖･[model]   📚･[ctx]%
-#   Line 2: 7d/4h･･･････[bar-28]･[ind]･[time-11]   📁･[dir]
+#   Line 2: 7d/6h･･･････[bar-28]･[ind]･[time-11]   📁･[dir]
 #   Line 3: 1M/1d･[icon]･[padding][bar-N]･[ind]･[money-11]   🌿･[branch]
 #
 # Progress bar resolution:
@@ -302,7 +302,7 @@ if [ -n "$usage_json" ]; then
     for ((i=0; i<${#five_remaining}; i++)); do
       char="${five_remaining:$i:1}"
       case "$char" in
-        ~|h|m|d) five_time_with_dim="${five_time_with_dim}${dim}${char}${rst}" ;;
+        '~'|h|m|d) five_time_with_dim="${five_time_with_dim}${dim}${char}${rst}" ;;
         *) five_time_with_dim="${five_time_with_dim}${char}" ;;
       esac
     done
@@ -351,7 +351,7 @@ line1="${five_block}   🤖${SEP}${model_display}${context_display}"
 
 # ===== BUILD LINE 2: 7d limit + directory =====
 
-resolution_7d=$(format_resolution "7d" "4h")
+resolution_7d=$(format_resolution "7d" "6h")
 padding_7d=$(printf "${very_dim}%s${rst}" "･･･････")
 
 if [ -n "$usage_json" ]; then
@@ -370,7 +370,7 @@ if [ -n "$usage_json" ]; then
     for ((i=0; i<${#seven_remaining}; i++)); do
       char="${seven_remaining:$i:1}"
       case "$char" in
-        ~|h|m|d) seven_time_with_dim="${seven_time_with_dim}${dim}${char}${rst}" ;;
+        '~'|h|m|d) seven_time_with_dim="${seven_time_with_dim}${dim}${char}${rst}" ;;
         *) seven_time_with_dim="${seven_time_with_dim}${char}" ;;
       esac
     done
