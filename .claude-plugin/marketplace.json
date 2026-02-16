@@ -12,6 +12,11 @@
       "name": "statusline",
       "source": "./plugins/statusline",
       "description": "Custom Claude Code statusline with API rate limits, context window, git info"
+    },
+    {
+      "name": "statusline-compact",
+      "source": "./plugins/statusline-compact",
+      "description": "Compact single-line Claude Code statusline with brightness-coded API usage"
     }
   ]
 }
