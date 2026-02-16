@@ -10,10 +10,10 @@
 # Layout (three lines) - text preset:
 #   Line 1: 5h: 73% resets 2h14m   MDL:･Opus･4.6   CTX:･42%
 #   Line 2: 7d: 45% resets 3d5h   DIR:･my-project
-#   Line 3: 1M: ⏸️ ¤4.79   BR:･main
+#   Line 3: 1M: ⏸️ $4.79   BR:･main
 #
 # Config: ~/.claude/statusline.json
-#   {"preset": "classic"|"text", "emojis": bool, "progress_bars": bool}
+#   {"preset": "classic"|"text"|"compact", "emojis": bool, "progress_bars": bool}
 #
 # Progress bar resolution:
 #   5h:    30 blocks → 10 minutes per block (5h / 30 = 600s)
@@ -39,10 +39,16 @@ if [ -f "$config_file" ]; then
 fi
 
 # Apply preset defaults, then overrides
+use_compact=false
 case "$cfg_preset" in
   text)
     use_emojis=false
     use_progress_bars=false
+    ;;
+  compact)
+    use_emojis=false
+    use_progress_bars=false
+    use_compact=true
     ;;
   *)
     use_emojis=true
@@ -68,6 +74,24 @@ yellow=$(printf '\033[38;5;178m')
 
 # Separator
 SEP="${very_dim}･${rst}"
+DOLLAR='$'
+
+# Brightness gradient for percentage values (compact mode)
+# Low usage fades into background, high usage draws attention
+pct_color() {
+  local val=$1
+  if [ "$val" -ge 100 ] 2>/dev/null; then
+    printf '\033[38;5;167m'    # red - exhausted
+  elif [ "$val" -gt 90 ] 2>/dev/null; then
+    printf '\033[38;5;178m'    # yellow - warning
+  elif [ "$val" -ge 60 ] 2>/dev/null; then
+    printf '\033[0m'           # default - notable
+  elif [ "$val" -ge 30 ] 2>/dev/null; then
+    printf '\033[38;5;246m'    # light dim - moderate
+  else
+    printf '\033[38;5;240m'    # dim - low, fade out
+  fi
+}
 
 # Icons (emoji or text based on config)
 if [ "$use_emojis" = "true" ]; then
@@ -193,12 +217,13 @@ colorize_model() {
   local name="$1"
   local color=""
   local keyword=""
+  # Brightness = capability tier: Opus bright, Sonnet default, Haiku dim
   if echo "$name" | grep -qi "opus"; then
-    color=$(printf '\033[38;5;167m'); keyword="Opus"
+    color=$(printf '\033[1;97m'); keyword="Opus"
   elif echo "$name" | grep -qi "sonnet"; then
-    color=$(printf '\033[38;5;71m'); keyword="Sonnet"
+    color=$(printf '\033[38;5;252m'); keyword="Sonnet"
   elif echo "$name" | grep -qi "haiku"; then
-    color=$(printf '\033[38;5;33m'); keyword="Haiku"
+    color=$(printf '\033[38;5;245m'); keyword="Haiku"
   fi
   if [ -n "$color" ]; then
     echo "$name" | sed "s/$keyword/${color}${keyword}${rst}/"
@@ -505,13 +530,13 @@ if [ -n "$usage_json" ]; then
       money_frac=$(echo "$money_raw" | grep -o '[.,][0-9]*$')
 
       # Calculate visible length (without ANSI codes)
-      money_visible="¤${money_int}${money_frac}"
+      money_visible="${DOLLAR}${money_int}${money_frac}"
       money_visible_len=$(printf "%s" "$money_visible" | wc -m | tr -d ' ')
       # Pad to 8 chars (11 total - 3 spaces added in line3 before branch emoji)
       money_padding=$((8 - money_visible_len))
       money_spaces=""
       for ((i=0; i<money_padding; i++)); do money_spaces="${money_spaces} "; done
-      money_fmt="${dim}¤${rst}${money_int}${dim}${money_frac}${rst}${money_spaces}"
+      money_fmt="${dim}${DOLLAR}${rst}${money_int}${dim}${money_frac}${rst}${money_spaces}"
 
       if [ "$use_progress_bars" = "true" ]; then
         resolution_1m=$(format_resolution "1M" "1d")
@@ -577,7 +602,101 @@ else
   line3="${extra_block}"
 fi
 
-# Output three lines
-echo "$line1"
-echo "$line2"
-echo "$line3"
+# Output
+if [ "$use_compact" = "true" ]; then
+  # === COMPACT: single-line output ===
+
+  # 5h segment
+  compact_5h=""
+  if [ -n "$usage_json" ] && [ -n "$five_hour_pct" ]; then
+    c5_color=$(pct_color "$five_int")
+    c5_pct="${c5_color}${five_int}%${rst}"
+    c5_suffix=""
+    [ "$five_int" -ge 100 ] 2>/dev/null && c5_suffix=" ${bright_red}XX${rst}"
+    [ "$five_int" -gt 90 ] 2>/dev/null && [ "$five_int" -lt 100 ] 2>/dev/null && c5_suffix=" ${yellow}!!${rst}"
+    c5_time=""
+    if [ -n "$five_remaining" ] && [ "$five_int" -lt 100 ] 2>/dev/null; then
+      c5_time=" ${five_time_with_dim}"
+    fi
+    compact_5h="${dim}5h${rst} ${c5_pct}${c5_time}${c5_suffix}"
+  fi
+
+  # 7d segment
+  compact_7d=""
+  if [ -n "$usage_json" ] && [ -n "$seven_day_pct" ]; then
+    c7_color=$(pct_color "$seven_int")
+    c7_pct="${c7_color}${seven_int}%${rst}"
+    c7_suffix=""
+    [ "$seven_int" -ge 100 ] 2>/dev/null && c7_suffix=" ${bright_red}XX${rst}"
+    [ "$seven_int" -gt 90 ] 2>/dev/null && [ "$seven_int" -lt 100 ] 2>/dev/null && c7_suffix=" ${yellow}!!${rst}"
+    c7_time=""
+    if [ -n "$seven_remaining" ] && [ "$seven_int" -lt 100 ] 2>/dev/null; then
+      c7_time=" ${seven_time_with_dim}"
+    fi
+    compact_7d="${dim}7d${rst} ${c7_pct}${c7_time}${c7_suffix}"
+  fi
+
+  # MO segment: "MO $4.79" or "MO>> $13.87"
+  compact_mo=""
+  if [ -n "$usage_json" ]; then
+    extra_enabled_c=$(echo "$usage_json" | jq -r '.extra_usage.is_enabled // empty')
+    if [ "$extra_enabled_c" = "true" ]; then
+      used_credits_c=$(echo "$usage_json" | jq -r '.extra_usage.used_credits // empty')
+      if [ -n "$used_credits_c" ]; then
+        money_raw_c=$(echo "$used_credits_c" | awk '{printf "%.2f", $1/100}')
+        money_int_c=$(echo "$money_raw_c" | sed 's/[.,].*//')
+        money_frac_c=$(echo "$money_raw_c" | grep -o '[.,][0-9]*$')
+        mo_suffix=""
+        if [ "$status_icon" = "$ICON_PLAY" ]; then
+          mo_suffix="${bright_red}>>${rst}"
+        fi
+        compact_mo="${dim}extra${rst}${mo_suffix} ${dim}${DOLLAR}${rst}${money_int_c}${dim}${money_frac_c}${rst}"
+      fi
+    fi
+  fi
+
+  # Model segment: strip "Claude " prefix for compactness
+  compact_model_name=$(echo "$model" | sed 's/^Claude //')
+  compact_model_colored=$(colorize_model "$compact_model_name")
+  compact_model=$(echo "$compact_model_colored" | sed -E "s/([0-9]+\.[0-9]+)/${dim}\1${rst}/g")
+
+  # Context segment
+  compact_ctx=""
+  if [ -n "$used_pct" ]; then
+    context_int_c=${used_pct%.*}
+    ctx_c=$(pct_color "$context_int_c")
+    compact_ctx="${dim}context${rst} ${ctx_c}${used_pct}%${rst}"
+    [ "$context_int_c" -ge 80 ] 2>/dev/null && compact_ctx="${compact_ctx} ${bright_red}!!${rst}"
+  fi
+
+  # Dir segment: trailing / signals it's a directory
+  compact_dir="${short_dir}${dim}/${rst}"
+
+  # Branch segment: "main" or "main*" (yellow if dirty)
+  compact_branch=""
+  if [ -n "$branch" ]; then
+    if [ -n "$dirty" ]; then
+      compact_branch="${yellow}${branch}*${rst}"
+    else
+      compact_branch="${branch}"
+    fi
+  fi
+
+  # Assemble single line with 3-space gaps
+  compact_line=""
+  for seg in "$compact_5h" "$compact_7d" "$compact_mo" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch"; do
+    if [ -n "$seg" ]; then
+      if [ -n "$compact_line" ]; then
+        compact_line="${compact_line}   ${seg}"
+      else
+        compact_line="${seg}"
+      fi
+    fi
+  done
+
+  echo "$compact_line"
+else
+  echo "$line1"
+  echo "$line2"
+  echo "$line3"
+fi

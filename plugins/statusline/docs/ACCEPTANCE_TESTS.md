@@ -8,7 +8,7 @@ The statusline plugin provides a custom three-line status display for Claude Cod
 - **Line 3:** Monthly extra usage + git branch
 
 Features:
-- Two presets: "classic" (emoji + progress bars) and "text" (percentages only, no emoji)
+- Three presets: "classic" (emoji + progress bars), "text" (percentages only), and "compact" (single-line, color-coded)
 - Per-field overrides via `~/.claude/statusline.json`
 - Percentage display and time-to-reset for 5h and 7d limits
 - Simplified time display: approximate (~Xh/~Xd) when far from reset, exact (XhYm) when close
@@ -227,6 +227,79 @@ rm ~/.claude/statusline.json
 **Acceptance criteria:**
 - ✅ No crash
 - ✅ Falls back to classic preset (emoji + progress bars)
+
+---
+
+#### 2.6 Compact preset
+
+**Objective:** Verify compact preset renders a single line with dim labels, no emoji, no progress bars
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+cd plugins/statusline
+echo '{"preset":"compact"}' > ~/.claude/statusline.json
+output=$(echo '{"model":{"display_name":"Claude Sonnet 4.5"},"workspace":{"current_dir":"/tmp/my-project"},"context_window":{"used_percentage":52}}' | bash scripts/statusline.sh)
+clean=$(echo "$output" | sed 's/\x1b\[[0-9;]*m//g')
+
+# Single line
+line_count=$(echo "$clean" | wc -l | tr -d ' ')
+[ "$line_count" -eq 1 ] && echo "✅ Single line output" || echo "❌ Expected 1 line, got $line_count"
+
+# No emoji
+if echo "$clean" | grep -qP '[\x{1F000}-\x{1FFFF}]'; then
+  echo "❌ Emoji found in compact mode"
+else
+  echo "✅ No emoji"
+fi
+
+# No progress bars
+if echo "$clean" | grep -q '■'; then
+  echo "❌ Progress bars found in compact mode"
+else
+  echo "✅ No progress bars"
+fi
+
+# Has dim labels
+echo "$clean" | grep -q '5h' && echo "✅ 5h label present" || echo "❌ Missing 5h label"
+echo "$clean" | grep -q '7d' && echo "✅ 7d label present" || echo "❌ Missing 7d label"
+echo "$clean" | grep -q 'context' && echo "✅ context label present" || echo "❌ Missing context label"
+
+# Has model
+echo "$clean" | grep -q 'Sonnet' && echo "✅ Model present" || echo "❌ Missing model"
+
+# Has directory
+echo "$clean" | grep -q 'my-project' && echo "✅ Directory present" || echo "❌ Missing directory"
+
+rm ~/.claude/statusline.json
+```
+
+**Acceptance criteria:**
+- ✅ Exactly one line of output
+- ✅ No emoji characters
+- ✅ No progress bar characters (■)
+- ✅ Dim labels present (5h, 7d, context, extra)
+- ✅ Model name shown
+- ✅ Directory shown
+- ✅ Branch shown (when in git repo)
+
+---
+
+#### 2.7 Compact preset warning indicators
+
+**Objective:** Verify !! and XX indicators appear at correct thresholds
+
+**Automation:** 🟡 (requires API data at specific thresholds)
+
+**Steps:**
+Manually set usage to >90% and verify `!!` appears, set to 100% and verify `XX` appears. Context at >=80% should show `!!`.
+
+**Acceptance criteria:**
+- ✅ `!!` appears when 5h or 7d usage >90%
+- ✅ `XX` appears when 5h or 7d usage at 100%
+- ✅ `!!` appears when context >=80%
+- ✅ Branch shows yellow with `*` when dirty
 
 ---
 
@@ -713,7 +786,20 @@ rm -f ~/.claude/statusline.json
 
 ## Version history
 
-### 1.3.0 (Current)
+### 1.4.0 (Current)
+
+New features:
+- Compact preset: single-line, text-only, color-coded statusline
+- Dim uppercase labels (5H, 7D, MO, ctx) with bright values
+- Warning indicators: `!!` at >90%, `XX` at 100%, context `!!` at >=80%
+- Branch shown yellow with `*` when dirty
+- `>>` suffix on MO label when extra usage actively consumed
+
+Tests added:
+- Compact preset test (2.6): single line, no emoji, no bars, all info present
+- Compact warning indicators test (2.7): threshold-based indicators
+
+### 1.3.0
 
 New features:
 - Customizable presets: "classic" (default) and "text" (no emoji, no progress bars)

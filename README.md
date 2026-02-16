@@ -63,21 +63,33 @@ PlantUML diagram automation for markdown documentation.
 
 ### statusline
 
-Custom Claude Code statusline with real-time API usage info.
+Custom Claude Code statusline with real-time API usage info. Three presets to fit your workflow.
+
+**Presets:**
+- **Classic** - emoji icons + progress bars + percentage + time-to-reset (3 lines)
+- **Text** - ASCII labels, no emoji, no progress bars (3 lines)
+- **Compact** - single-line, all info at a glance with brightness-coded values
+
+**Compact example:**
+```
+5h 92% 50m !!   7d 22% ~5d   extra $4.79   Sonnet 4.5   context 30%   my-project/   main*
+```
 
 **Features:**
+- 5-hour and 7-day rate limit tracking with time-to-reset
+- Extra usage (monthly billing) with dollar amount
+- Context window usage percentage
 - Current directory and git branch (yellow when dirty)
-- Model name, color-coded (Opus=red, Sonnet=green, Haiku=blue)
-- Context window usage with thresholds (yellow ≥60%, red ≥80%)
-- 5-hour and 7-day rate limit progress bars with time remaining
-- Extra usage (monthly billing) progress bar with money spent
+- Model name with brightness = capability tier (Opus bright, Sonnet default, Haiku dim)
+- Brightness gradient on all percentages: dim at low usage, brighter as values climb, yellow >90%, red at 100%
+- Text indicators for accessibility: `!!` warning, `XX` exhausted (not color-only)
 - Anthropic OAuth usage API integration (cached 60s)
 - Setup command: `/statusline:statusline-setup`
 
-**Progress bar resolution:**
-- 5h: 15 min/block (20 blocks) — updates every 15 minutes
-- 7d: 8 hours/block (21 blocks) — updates every 8 hours
-- Extra: 1 day/block (28-31 blocks) — updates daily
+**Progress bar resolution (classic preset):**
+- 5h: 10 min/block (30 blocks)
+- 7d: 6 hours/block (28 blocks)
+- Extra: 1 day/block (28-31 blocks)
 - Cache: 60s refresh rate (all bars)
 
 ## Plugin Structure

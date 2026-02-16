@@ -1,7 +1,7 @@
 {
   "name": "statusline",
-  "version": "1.3.0",
-  "description": "Customizable three-line Claude Code statusline with two presets (classic with progress bars, text-only). Shows 5h/7d rate limits with percentage and time-to-reset, extra usage, context window, git branch, and model. Configurable via ~/.claude/statusline.json.",
+  "version": "1.4.0",
+  "description": "Customizable Claude Code statusline with three presets: classic (emoji + progress bars), text (ASCII labels), and compact (single-line, color-coded). Shows 5h/7d rate limits, extra usage, context window, git branch, and model. Configurable via ~/.claude/statusline.json.",
   "author": { "name": "Tribe Coding" },
   "license": "MIT",
   "commands": ["./commands/"]
