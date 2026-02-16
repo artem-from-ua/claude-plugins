@@ -1,20 +1,20 @@
 ---
 name: statusline-setup
 description: >
-  Configure the Claude Code custom statusline showing API rate limits,
-  context window usage, git branch, and model info.
+  Configure the compact Claude Code statusline showing API rate limits,
+  context window usage, git branch, and model info on a single line.
 compatibility: Requires jq and curl. macOS and Linux supported.
 ---
 
-# Statusline Setup
+# Statusline setup (compact)
 
-Configure the Claude Code custom statusline with API rate limits, context window usage, git branch, and model info.
+Configure the compact single-line Claude Code statusline with brightness-coded API usage values.
 
 ## Instructions
 
 1. Check if `~/.claude/statusline.sh` exists. If not, copy it from the plugin:
    ```bash
-   cp "$(dirname "$0")/../../scripts/statusline.sh" ~/.claude/statusline.sh
+   cp "${SKILL_DIR}/../../scripts/statusline.sh" ~/.claude/statusline.sh
    chmod +x ~/.claude/statusline.sh
    ```
 
@@ -37,11 +37,11 @@ Configure the Claude Code custom statusline with API rate limits, context window
    - Preserve all other existing settings in the file
 
 5. Confirm the setup is complete and explain what the statusline shows:
-   - 📁 Current directory
-   - 🌿 Git branch (yellow when dirty)
-   - 🤖 Model name (color-coded: Opus=red, Sonnet=green, Haiku=blue)
-   - 📚 Context window usage (yellow ≥60%, red ≥80%)
-   - ⏳ 5-hour rate limit with progress bar
-   - 📅 7-day rate limit with progress bar
+
+   **Compact statusline:**
+   - Single line: `5h 12% ~2h14m   7d 45% ~3d5h   extra $4.79   Sonnet 4.5   context 52%   claude-plugins/   main`
+   - Dim labels, brightness-coded values (dim at low usage, brighter as they climb, yellow >90%, red 100%)
+   - Branch shown yellow with `*` suffix when dirty
+   - Text indicators: `!!` warning at >90%, `XX` exhausted at 100%
 
 6. Note: The statusline requires `jq` and `curl` to be installed. Check if they're available and warn if not.

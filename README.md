@@ -12,6 +12,8 @@ A marketplace of reusable plugins for [Claude Code](https://docs.anthropic.com/e
 | | skill | [`plantuml-diagram-guide`](plugins/plantuml/skills/plantuml-diagram-guide/SKILL.md) | *on-demand* | Full catalog of 16 diagram types with selection guide |
 | **statusline** | hook | SessionStart | *automatic* | Install statusline script to `~/.claude/` |
 | | command | [`statusline-setup`](plugins/statusline/commands/statusline-setup/SKILL.md) | `/statusline:statusline-setup` | Configure statusline in `~/.claude/settings.json` |
+| **statusline-compact** | hook | SessionStart | *automatic* | Install compact statusline script to `~/.claude/` |
+| | command | [`statusline-setup`](plugins/statusline-compact/commands/statusline-setup/SKILL.md) | `/statusline-compact:statusline-setup` | Configure compact statusline |
 
 > - **hook** — runs automatically in response to events (e.g. after every file edit or on session start). No user action needed.
 > - **command** — a `/slash-command` that the user invokes explicitly when needed.
@@ -30,6 +32,7 @@ A marketplace of reusable plugins for [Claude Code](https://docs.anthropic.com/e
 ```bash
 /plugin install plantuml@tribe-coding
 /plugin install statusline@tribe-coding
+/plugin install statusline-compact@tribe-coding
 ```
 
 ### Enable auto-updates
@@ -49,6 +52,7 @@ Then select the installed plugin and enable **auto-update**. Updates are applied
 PlantUML diagram automation for markdown documentation.
 
 **Features:**
+
 - Auto-sync PlantUML image URLs after every Write/Edit (PostToolUse hook)
 - ASCII text diagrams in terminal via PlantUML text renderer API
 - Git pre-commit hook blocks commits with stale diagram URLs
@@ -58,39 +62,53 @@ PlantUML diagram automation for markdown documentation.
 - GitHub Actions CI workflow template
 
 **What it does:**
+
 - **In markdown files**: Every PlantUML diagram has two parts — a fenced code block with raw source and an image link pointing to plantuml.com. This plugin keeps them in sync automatically.
 - **In terminal**: When you ask Claude to explain architecture or flows, it uses PlantUML's ASCII text renderer (`https://www.plantuml.com/plantuml/txt/<encoded>`) to show perfectly aligned ASCII diagrams instead of pasting raw PlantUML source or manually drawing ASCII art.
 
 ### statusline
 
-Custom Claude Code statusline with real-time API usage info. Three presets to fit your workflow.
+Custom Claude Code statusline with real-time API usage info.
 
-**Presets:**
-- **Classic** - emoji icons + progress bars + percentage + time-to-reset (3 lines)
-- **Text** - ASCII labels, no emoji, no progress bars (3 lines)
-- **Compact** - single-line, all info at a glance with brightness-coded values
+**Features:**
 
-**Compact example:**
+- Current directory and git branch (yellow when dirty)
+- Model name, color-coded (Opus=red, Sonnet=green, Haiku=blue)
+- Context window usage with thresholds (yellow >=60%, red >=80%)
+- 5-hour and 7-day rate limit progress bars with time remaining
+- Extra usage (monthly billing) progress bar with money spent
+- Anthropic OAuth usage API integration (cached 60s)
+- Setup command: `/statusline:statusline-setup`
+
+**Progress bar resolution:**
+
+- 5h: 15 min/block (20 blocks) - updates every 15 minutes
+- 7d: 8 hours/block (21 blocks) - updates every 8 hours
+- Extra: 1 day/block (28-31 blocks) - updates daily
+- Cache: 60s refresh rate (all bars)
+
+### statusline-compact
+
+Compact single-line Claude Code statusline with brightness-coded API usage values.
+
+**Example:**
+
 ```
 5h 92% 50m !!   7d 22% ~5d   extra $4.79   Sonnet 4.5   context 30%   my-project/   main*
 ```
 
 **Features:**
+
+- Single-line layout - most space-efficient option
 - 5-hour and 7-day rate limit tracking with time-to-reset
 - Extra usage (monthly billing) with dollar amount
 - Context window usage percentage
 - Current directory and git branch (yellow when dirty)
 - Model name with brightness = capability tier (Opus bright, Sonnet default, Haiku dim)
-- Brightness gradient on all percentages: dim at low usage, brighter as values climb, yellow >90%, red at 100%
-- Text indicators for accessibility: `!!` warning, `XX` exhausted (not color-only)
+- Brightness-coded values: dim at low usage, brighter as they climb, yellow >90%, red at 100%
+- Text indicators: `!!` warning, `XX` exhausted
 - Anthropic OAuth usage API integration (cached 60s)
-- Setup command: `/statusline:statusline-setup`
-
-**Progress bar resolution (classic preset):**
-- 5h: 10 min/block (30 blocks)
-- 7d: 6 hours/block (28 blocks)
-- Extra: 1 day/block (28-31 blocks)
-- Cache: 60s refresh rate (all bars)
+- Setup command: `/statusline-compact:statusline-setup`
 
 ## Plugin Structure
 
@@ -115,10 +133,12 @@ plugins/<name>/
 ## Requirements
 
 ### plantuml
+
 - Python 3.x (for the encoder script)
 - Git (for pre-commit hook)
 
-### statusline
+### statusline / statusline-compact
+
 - `jq` — JSON processing
 - `curl` — API requests
 - `python3` — OAuth token parsing (macOS)
@@ -131,13 +151,14 @@ plugins/<name>/
 Claude Code has a bug where auto-updating a marketplace does not invalidate the plugin cache. `CLAUDE_PLUGIN_ROOT` continues to point at stale cached files, so updated scripts, skills, and commands are not picked up.
 
 **Upstream issues:**
+
 - [anthropics/claude-code#14061](https://github.com/anthropics/claude-code/issues/14061) — `/plugin update` doesn't invalidate cache
 - [anthropics/claude-code#15621](https://github.com/anthropics/claude-code/issues/15621) — old versions not removed, their hooks still run
 - [anthropics/claude-code#15642](https://github.com/anthropics/claude-code/issues/15642) — `CLAUDE_PLUGIN_ROOT` points to stale version
 
 ### The fix: `claude-marketplace-sync`
 
-A standalone script that runs _before_ Claude Code starts. It pulls marketplace repos with `autoUpdate: true` and rsyncs their plugin directories into the cache.
+A standalone script that runs *before* Claude Code starts. It pulls marketplace repos with `autoUpdate: true` and rsyncs their plugin directories into the cache.
 
 **Install:**
 
@@ -160,6 +181,7 @@ claude-marketplace-sync --verbose    # Print detailed progress
 **Output:**
 
 By default, `claude-marketplace-sync` shows:
+
 - Sync status (`🔄 Syncing...` or `⏭️ Skipping...`)
 - Plugin version updates (`✅ Updated: plugin@marketplace version X.Y.Z`)
 - Sync errors (`❌ Failed to sync...`)
@@ -175,6 +197,7 @@ The workaround will be removed once the upstream bugs are fixed.
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 **Quick links:**
+
 - [CONTRIBUTING.md](CONTRIBUTING.md) — Full contribution workflow
 - [CLAUDE.md](CLAUDE.md) — Complete technical guidelines
 - [Version Bump Requirements](CLAUDE.md#version-bump-requirements) — **CRITICAL**: Required before merge

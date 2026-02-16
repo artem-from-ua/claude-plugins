@@ -1,51 +1,45 @@
-# Statusline plugin acceptance tests
+# Statusline Plugin Acceptance Tests
 
 ## Purpose
 
-The statusline plugin provides a custom three-line status display for Claude Code, showing:
-- **Line 1:** 5h rate limit (progress bar or percentage) + model + context%
-- **Line 2:** 7d rate limit (progress bar or percentage) + directory
-- **Line 3:** Monthly extra usage + git branch
+The statusline plugin provides a custom two-line status display for Claude Code, showing:
+- **Line 1:** Progress bars for rate limits (5h, 7d) and extra usage (monthly billing)
+- **Line 2:** Directory, git branch, model, and context window information
 
 Features:
-- Three presets: "classic" (emoji + progress bars), "text" (percentages only), and "compact" (single-line, color-coded)
-- Per-field overrides via `~/.claude/statusline.json`
-- Percentage display and time-to-reset for 5h and 7d limits
 - Simplified time display: approximate (~Xh/~Xd) when far from reset, exact (XhYm) when close
 - Warning icons: ❌ at 100%, ⚠️ at >90%
 - Money tracking: ¤X.YZ format with dimmed currency symbol and fractional part
 - Progress bar pacing visualization
 
 Acceptance tests are critical to ensure:
-- Correct layout rendering (three lines)
+- Correct layout rendering (two lines)
 - Accurate API data parsing and display
 - Cross-platform compatibility (macOS, Linux)
-- Config loading and preset switching
 - Progress bar pacing calculations
 - Warning icon logic
 - Time format simplification logic
 
-## Test execution order
+## Test Execution Order
 
 1. Static checks (automated)
-2. Config tests (automated)
-3. Unit tests (automated)
-4. Integration tests (automated)
-5. Manual visual verification tests (manual)
+2. Unit tests (automated)
+3. Integration tests (automated)
+4. Manual visual verification tests (manual)
 
-## Automation status
+## Automation Status
 
-- ✅ **Fully automated**: Tests 1-7
-- 🟡 **Partially automated**: Tests 8-9 (require fresh session for full verification)
-- ⚠️ **Manual only**: Test 10 (visual verification in Claude Code UI)
+- ✅ **Fully automated**: Tests 1-6
+- 🟡 **Partially automated**: Test 7 (requires fresh session for full verification)
+- ⚠️ **Manual only**: Test 8 (visual verification in Claude Code UI)
 
 ---
 
-## Test categories
+## Test Categories
 
-### 1. Static checks
+### 1. Static Checks
 
-#### 1.1 Plugin manifest validation
+#### 1.1 Plugin Manifest Validation
 
 **Objective:** Verify plugin.json is valid and contains required fields
 
@@ -60,15 +54,23 @@ jq -r '.version' .claude-plugin/plugin.json
 jq -r '.description' .claude-plugin/plugin.json
 ```
 
+**Expected result:**
+```
+✅ Valid JSON
+statusline
+1.1.0
+Custom Claude Code statusline with API rate limits, context window, git branch, model info
+```
+
 **Acceptance criteria:**
 - ✅ plugin.json is valid JSON
 - ✅ name = "statusline"
-- ✅ version follows semver
+- ✅ version follows semver (e.g., 1.1.0)
 - ✅ description is present
 
 ---
 
-#### 1.2 Script permissions
+#### 1.2 Script Permissions
 
 **Objective:** Verify scripts are executable
 
@@ -80,232 +82,20 @@ test -x plugins/statusline/scripts/statusline.sh && echo "✅ statusline.sh is e
 test -x plugins/statusline/scripts/setup-statusline.sh && echo "✅ setup-statusline.sh is executable"
 ```
 
+**Expected result:**
+```
+✅ statusline.sh is executable
+✅ setup-statusline.sh is executable
+```
+
 **Acceptance criteria:**
 - ✅ All scripts have executable bit set
 
 ---
 
-### 2. Config loading tests
+### 2. Unit Tests
 
-#### 2.1 Default config (no file)
-
-**Objective:** Verify classic preset is used when no config file exists
-
-**Automation:** ✅
-
-**Steps:**
-```bash
-cd plugins/statusline
-rm -f ~/.claude/statusline.json
-output=$(echo '{"model":{"display_name":"Test"},"workspace":{"current_dir":"/tmp"},"context_window":{"used_percentage":42}}' | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g')
-
-# Should have emoji icons and progress bars
-echo "$output" | grep -q '🤖' && echo "✅ Emoji icons present" || echo "❌ Missing emoji"
-echo "$output" | grep -q '■' && echo "✅ Progress bars present" || echo "❌ Missing bars"
-```
-
-**Acceptance criteria:**
-- ✅ Emoji icons shown (🤖, 📁, 🌿, 📚)
-- ✅ Progress bars shown (■ characters)
-- ✅ No errors on stderr
-
----
-
-#### 2.2 Text preset
-
-**Objective:** Verify text preset disables emoji and progress bars
-
-**Automation:** ✅
-
-**Steps:**
-```bash
-cd plugins/statusline
-echo '{"preset":"text"}' > ~/.claude/statusline.json
-output=$(echo '{"model":{"display_name":"Claude Opus 4.6"},"workspace":{"current_dir":"/tmp"},"context_window":{"used_percentage":42}}' | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g')
-
-echo "$output"
-
-# Should have text labels, no emoji
-echo "$output" | grep -q 'MDL:' && echo "✅ Text label MDL:" || echo "❌ Missing MDL:"
-echo "$output" | grep -q 'DIR:' && echo "✅ Text label DIR:" || echo "❌ Missing DIR:"
-echo "$output" | grep -q 'BR:' && echo "✅ Text label BR:" || echo "❌ Missing BR:"
-echo "$output" | grep -q 'CTX:' && echo "✅ Text label CTX:" || echo "❌ Missing CTX:"
-
-# Should NOT have progress bars
-if echo "$output" | grep -q '■'; then
-  echo "❌ Progress bars should not appear in text mode"
-else
-  echo "✅ No progress bars"
-fi
-
-# Should show percentage and resets
-echo "$output" | grep -q '%.*resets' && echo "✅ Percentage + resets shown" || echo "❌ Missing percentage/resets"
-
-rm ~/.claude/statusline.json
-```
-
-**Acceptance criteria:**
-- ✅ Text labels used instead of emoji (MDL:, DIR:, BR:, CTX:)
-- ✅ No progress bar characters (■)
-- ✅ Percentage and "resets" text shown for 5h and 7d limits
-- ✅ Three lines of output
-
----
-
-#### 2.3 Override: emojis=false
-
-**Objective:** Verify emoji override works independently of preset
-
-**Automation:** ✅
-
-**Steps:**
-```bash
-cd plugins/statusline
-echo '{"emojis":false}' > ~/.claude/statusline.json
-output=$(echo '{"model":{"display_name":"Claude Opus 4.6"},"workspace":{"current_dir":"/tmp"},"context_window":{"used_percentage":42}}' | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g')
-
-# Text labels but with progress bars
-echo "$output" | grep -q 'MDL:' && echo "✅ Text labels" || echo "❌ Missing text labels"
-echo "$output" | grep -q '■' && echo "✅ Progress bars still present" || echo "❌ Missing progress bars"
-
-rm ~/.claude/statusline.json
-```
-
-**Acceptance criteria:**
-- ✅ Text labels (MDL:, DIR:, BR:, CTX:) instead of emoji
-- ✅ Progress bars still displayed
-- ✅ Dirty indicator uses `*` instead of ⚠️
-
----
-
-#### 2.4 Override: text preset with emojis=true
-
-**Objective:** Verify overrides take precedence over preset defaults
-
-**Automation:** ✅
-
-**Steps:**
-```bash
-cd plugins/statusline
-echo '{"preset":"text","emojis":true}' > ~/.claude/statusline.json
-output=$(echo '{"model":{"display_name":"Claude Opus 4.6"},"workspace":{"current_dir":"/tmp"},"context_window":{"used_percentage":42}}' | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g')
-
-# Emoji icons but no progress bars
-echo "$output" | grep -q '🤖' && echo "✅ Emoji icons" || echo "❌ Missing emoji"
-if echo "$output" | grep -q '■'; then
-  echo "❌ Progress bars should not appear"
-else
-  echo "✅ No progress bars"
-fi
-
-rm ~/.claude/statusline.json
-```
-
-**Acceptance criteria:**
-- ✅ Emoji icons present (override wins over preset)
-- ✅ No progress bars (from text preset)
-
----
-
-#### 2.5 Invalid JSON config
-
-**Objective:** Verify graceful fallback on invalid config
-
-**Automation:** ✅
-
-**Steps:**
-```bash
-cd plugins/statusline
-echo 'not valid json' > ~/.claude/statusline.json
-output=$(echo '{"model":{"display_name":"Test"},"workspace":{"current_dir":"/tmp"},"context_window":{"used_percentage":42}}' | bash scripts/statusline.sh 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
-
-echo "$output" | grep -q '🤖' && echo "✅ Falls back to classic" || echo "❌ Did not fall back"
-
-rm ~/.claude/statusline.json
-```
-
-**Acceptance criteria:**
-- ✅ No crash
-- ✅ Falls back to classic preset (emoji + progress bars)
-
----
-
-#### 2.6 Compact preset
-
-**Objective:** Verify compact preset renders a single line with dim labels, no emoji, no progress bars
-
-**Automation:** ✅
-
-**Steps:**
-```bash
-cd plugins/statusline
-echo '{"preset":"compact"}' > ~/.claude/statusline.json
-output=$(echo '{"model":{"display_name":"Claude Sonnet 4.5"},"workspace":{"current_dir":"/tmp/my-project"},"context_window":{"used_percentage":52}}' | bash scripts/statusline.sh)
-clean=$(echo "$output" | sed 's/\x1b\[[0-9;]*m//g')
-
-# Single line
-line_count=$(echo "$clean" | wc -l | tr -d ' ')
-[ "$line_count" -eq 1 ] && echo "✅ Single line output" || echo "❌ Expected 1 line, got $line_count"
-
-# No emoji
-if echo "$clean" | grep -qP '[\x{1F000}-\x{1FFFF}]'; then
-  echo "❌ Emoji found in compact mode"
-else
-  echo "✅ No emoji"
-fi
-
-# No progress bars
-if echo "$clean" | grep -q '■'; then
-  echo "❌ Progress bars found in compact mode"
-else
-  echo "✅ No progress bars"
-fi
-
-# Has dim labels
-echo "$clean" | grep -q '5h' && echo "✅ 5h label present" || echo "❌ Missing 5h label"
-echo "$clean" | grep -q '7d' && echo "✅ 7d label present" || echo "❌ Missing 7d label"
-echo "$clean" | grep -q 'context' && echo "✅ context label present" || echo "❌ Missing context label"
-
-# Has model
-echo "$clean" | grep -q 'Sonnet' && echo "✅ Model present" || echo "❌ Missing model"
-
-# Has directory
-echo "$clean" | grep -q 'my-project' && echo "✅ Directory present" || echo "❌ Missing directory"
-
-rm ~/.claude/statusline.json
-```
-
-**Acceptance criteria:**
-- ✅ Exactly one line of output
-- ✅ No emoji characters
-- ✅ No progress bar characters (■)
-- ✅ Dim labels present (5h, 7d, context, extra)
-- ✅ Model name shown
-- ✅ Directory shown
-- ✅ Branch shown (when in git repo)
-
----
-
-#### 2.7 Compact preset warning indicators
-
-**Objective:** Verify !! and XX indicators appear at correct thresholds
-
-**Automation:** 🟡 (requires API data at specific thresholds)
-
-**Steps:**
-Manually set usage to >90% and verify `!!` appears, set to 100% and verify `XX` appears. Context at >=80% should show `!!`.
-
-**Acceptance criteria:**
-- ✅ `!!` appears when 5h or 7d usage >90%
-- ✅ `XX` appears when 5h or 7d usage at 100%
-- ✅ `!!` appears when context >=80%
-- ✅ Branch shows yellow with `*` when dirty
-
----
-
-### 3. Unit tests
-
-#### 3.1 Progress bar block count
+#### 2.1 Progress Bar Block Count
 
 **Objective:** Verify progress bar generates correct number of blocks
 
@@ -315,22 +105,74 @@ Manually set usage to >90% and verify `!!` appears, set to 100% and verify `XX` 
 ```bash
 cd plugins/statusline
 
-# Test 5h bar (30 blocks)
-block_count=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
+# Test 5h bar (20 blocks)
+test_output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
   bash scripts/statusline.sh | head -1 | grep -o '■' | wc -l | tr -d ' ')
-echo "5h bar blocks: $block_count (expected: 30)"
-test "$block_count" -eq 30 && echo "✅ PASS" || echo "❌ FAIL"
+echo "5h bar blocks: $test_output (expected: 20)"
+
+# Test 7d bar (21 blocks)
+test_output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
+  bash scripts/statusline.sh | head -1 | tail -c 50 | grep -o '■' | head -21 | wc -l | tr -d ' ')
+echo "7d bar blocks: $test_output (expected: 21)"
+```
+
+**Expected result:**
+```
+5h bar blocks: 20 (expected: 20)
+7d bar blocks: 21 (expected: 21)
 ```
 
 **Acceptance criteria:**
-- ✅ 5-hour rate limit bar has exactly 30 blocks
-- ✅ 7-day rate limit bar has exactly 28 blocks
+- ✅ 5-hour rate limit bar has exactly 20 blocks
+- ✅ 7-day rate limit bar has exactly 21 blocks
 
 ---
 
-#### 3.2 Three-line output format
+#### 2.2 Extra Usage Monthly Bar Length
 
-**Objective:** Verify output has exactly three lines
+**Objective:** Verify extra usage bar matches days in current month
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+cd plugins/statusline
+
+# Calculate expected days in current month (UTC)
+if [ "$(uname)" = "Darwin" ]; then
+  expected_days=$(date -u -v1d -v+1m -v-1d +%d 2>/dev/null)
+else
+  expected_days=$(date -u -d "$(date -u +%Y-%m-01) +1 month -1 day" +%d 2>/dev/null)
+fi
+echo "Expected days in month: $expected_days"
+
+# Count blocks in extra usage bar (after 💸)
+actual_blocks=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
+  bash scripts/statusline.sh | head -1 | grep -o '💸.*' | grep -o '■' | wc -l | tr -d ' ')
+echo "Actual blocks in extra usage bar: $actual_blocks"
+
+if [ "$expected_days" = "$actual_blocks" ]; then
+  echo "✅ Match!"
+else
+  echo "❌ Mismatch!"
+fi
+```
+
+**Expected result:**
+```
+Expected days in month: 28
+Actual blocks in extra usage bar: 28
+✅ Match!
+```
+
+**Acceptance criteria:**
+- ✅ Extra usage bar length equals days in current month (28-31 blocks)
+
+---
+
+#### 2.3 Two-Line Output Format
+
+**Objective:** Verify output has exactly two lines
 
 **Automation:** ✅
 
@@ -340,48 +182,27 @@ cd plugins/statusline
 
 line_count=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
   bash scripts/statusline.sh | wc -l | tr -d ' ')
-echo "Line count: $line_count (expected: 3)"
+echo "Line count: $line_count (expected: 2)"
 
-test "$line_count" -eq 3 && echo "✅ Correct" || echo "❌ Incorrect"
+test "$line_count" -eq 2 && echo "✅ Correct" || echo "❌ Incorrect"
+```
+
+**Expected result:**
+```
+Line count: 2 (expected: 2)
+✅ Correct
 ```
 
 **Acceptance criteria:**
-- ✅ Output contains exactly 3 lines
-- ✅ Line 1 contains 5h limit + model + context
-- ✅ Line 2 contains 7d limit + directory
-- ✅ Line 3 contains extra usage + branch
+- ✅ Output contains exactly 2 lines
+- ✅ Line 1 contains progress bars (⏳, 📅, 💸)
+- ✅ Line 2 contains info (📁, 🌿, 🤖, 📚)
 
 ---
 
-#### 3.3 Percentage display in classic mode
+### 3. Integration Tests
 
-**Objective:** Verify percentage is shown alongside progress bars in classic preset
-
-**Automation:** ✅
-
-**Steps:**
-```bash
-cd plugins/statusline
-rm -f ~/.claude/statusline.json
-
-output=$(echo '{"model":{"display_name":"Test"},"workspace":{"current_dir":"/tmp"},"context_window":{"used_percentage":42}}' | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g')
-
-# Check line 1 has percentage for 5h
-echo "$output" | head -1 | grep -qE '[0-9]+%' && echo "✅ 5h percentage shown" || echo "❌ Missing 5h percentage"
-
-# Check line 2 has percentage for 7d
-echo "$output" | head -2 | tail -1 | grep -qE '[0-9]+%' && echo "✅ 7d percentage shown" || echo "❌ Missing 7d percentage"
-```
-
-**Acceptance criteria:**
-- ✅ Percentage (e.g., "22%") appears on 5h line
-- ✅ Percentage (e.g., "14%") appears on 7d line
-
----
-
-### 4. Integration tests
-
-#### 4.1 API cache integration
+#### 3.1 API Cache Integration
 
 **Objective:** Verify API caching works (60s cache)
 
@@ -395,11 +216,29 @@ cd plugins/statusline
 rm -f /tmp/claude-statusline-usage-cache-${UID}
 
 # First call (should fetch from API)
-echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
+echo "First call (fetching from API)..."
+time echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
   bash scripts/statusline.sh > /dev/null
 
 # Check cache exists
-test -f /tmp/claude-statusline-usage-cache-${UID} && echo "✅ Cache file created" || echo "❌ No cache"
+test -f /tmp/claude-statusline-usage-cache-${UID} && echo "✅ Cache file created"
+
+# Second call (should use cache)
+echo "Second call (using cache)..."
+time echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
+  bash scripts/statusline.sh > /dev/null
+
+echo "Second call should be faster (cached)"
+```
+
+**Expected result:**
+```
+First call (fetching from API)...
+real    0m0.XXXs
+✅ Cache file created
+Second call (using cache)...
+real    0m0.0XXs
+Second call should be faster (cached)
 ```
 
 **Acceptance criteria:**
@@ -409,7 +248,7 @@ test -f /tmp/claude-statusline-usage-cache-${UID} && echo "✅ Cache file create
 
 ---
 
-#### 4.2 Warning icons logic
+#### 3.2 Warning Icons Logic
 
 **Objective:** Verify warning icons appear at correct thresholds
 
@@ -419,32 +258,142 @@ test -f /tmp/claude-statusline-usage-cache-${UID} && echo "✅ Cache file create
 ```bash
 cd plugins/statusline
 
+# Create mock API responses with different utilization levels
 create_mock_cache() {
   local five_h=$1
+  local seven_d=$2
+  local extra=$3
   cat > /tmp/claude-statusline-usage-cache-${UID} <<EOF
-{"five_hour":{"utilization":$five_h,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":false}}
+{
+  "five_hour": {"utilization": $five_h, "resets_at": "2026-02-20T12:00:00+00:00"},
+  "seven_day": {"utilization": $seven_d, "resets_at": "2026-02-25T12:00:00+00:00"},
+  "extra_usage": {"is_enabled": true, "used_credits": 1000.0, "utilization": $extra, "monthly_limit": 5000}
+}
 EOF
 }
 
-# Test: 50% (no icons)
-create_mock_cache 50.0
+# Test case 1: 50% (no icons)
+echo "Test 1: 50% utilization (no warning icons)"
+create_mock_cache 50.0 50.0 50.0
 output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
-echo "$output" | grep -q "⚠️\|❌" && echo "❌ FAIL: Should not have warning" || echo "✅ No warning at 50%"
+if echo "$output" | grep -q "⚠️\|❌"; then
+  echo "❌ FAIL: Should not have warning icons"
+else
+  echo "✅ PASS: No warning icons"
+fi
 
-# Test: 100% (❌)
-create_mock_cache 100.0
+# Test case 2: 91% (⚠️ icons)
+echo "Test 2: 91% utilization (⚠️ warning icons)"
+create_mock_cache 91.0 91.0 91.0
 output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
-echo "$output" | grep -q "❌" && echo "✅ ❌ at 100%" || echo "❌ FAIL: Missing ❌"
+warning_count=$(echo "$output" | grep -o "⚠️" | wc -l | tr -d ' ')
+echo "Warning icons (⚠️) found: $warning_count (expected: 3)"
+test "$warning_count" -eq 3 && echo "✅ PASS" || echo "❌ FAIL"
+
+# Test case 3: 100% (❌ icons)
+echo "Test 3: 100% utilization (❌ exhausted icons)"
+create_mock_cache 100.0 100.0 100.0
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+exhausted_count=$(echo "$output" | grep -o "❌" | wc -l | tr -d ' ')
+echo "Exhausted icons (❌) found: $exhausted_count (expected: 3)"
+test "$exhausted_count" -eq 3 && echo "✅ PASS" || echo "❌ FAIL"
+```
+
+**Expected result:**
+```
+Test 1: 50% utilization (no warning icons)
+✅ PASS: No warning icons
+Test 2: 91% utilization (⚠️ warning icons)
+Warning icons (⚠️) found: 3 (expected: 3)
+✅ PASS
+Test 3: 100% utilization (❌ exhausted icons)
+Exhausted icons (❌) found: 3 (expected: 3)
+✅ PASS
 ```
 
 **Acceptance criteria:**
-- ✅ No icons when utilization <= 90%
+- ✅ No icons when utilization ≤ 90%
 - ✅ ⚠️ icon when 90% < utilization < 100%
 - ✅ ❌ icon when utilization = 100%
+- ✅ Icons appear for all three bars (5h, 7d, extra)
 
 ---
 
-#### 4.3 Extra usage money display
+#### 3.3 Extra Usage Status Icon
+
+**Objective:** Verify ▶️/⏸️ status icon logic (icon appears between progress bar and money)
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+cd plugins/statusline
+
+# Test case 1: Limits not exhausted (⏸️ paused)
+echo "Test 1: Limits not exhausted (⏸️ paused)"
+cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
+{"five_hour":{"utilization":50.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1000.0,"utilization":50.0,"monthly_limit":5000}}
+EOF
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+echo "$output" | grep -q "💸.*⏸️.*¤" && echo "✅ PASS: ⏸️ (paused)" || echo "❌ FAIL"
+
+# Test case 2: 5h exhausted, extra<100 (▶️ active)
+echo "Test 2: 5h exhausted, extra<100 (▶️ active)"
+cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
+{"five_hour":{"utilization":100.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1000.0,"utilization":50.0,"monthly_limit":5000}}
+EOF
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+echo "$output" | grep -q "💸.*▶️.*¤" && echo "✅ PASS: ▶️ (active)" || echo "❌ FAIL"
+
+# Test case 3: 7d exhausted, extra<100 (▶️ active)
+echo "Test 3: 7d exhausted, extra<100 (▶️ active)"
+cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
+{"five_hour":{"utilization":50.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":100.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1000.0,"utilization":50.0,"monthly_limit":5000}}
+EOF
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+echo "$output" | grep -q "💸.*▶️.*¤" && echo "✅ PASS: ▶️ (active)" || echo "❌ FAIL"
+
+# Test case 4: 5h exhausted, extra=100 (⏸️ paused)
+echo "Test 4: 5h exhausted, extra=100 (⏸️ paused, extra exhausted)"
+cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
+{"five_hour":{"utilization":100.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":5000.0,"utilization":100.0,"monthly_limit":5000}}
+EOF
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+echo "$output" | grep -q "💸.*⏸️.*¤" && echo "✅ PASS: ⏸️ (paused)" || echo "❌ FAIL"
+
+# Test case 5: 5h exhausted, extra=null (⏸️ paused, unlimited)
+echo "Test 5: 5h exhausted, extra=null (⏸️ paused, unlimited)"
+cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
+{"five_hour":{"utilization":100.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1000.0,"utilization":null}}
+EOF
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+echo "$output" | grep -q "💸.*⏸️.*¤" && echo "✅ PASS: ⏸️ (paused)" || echo "❌ FAIL"
+```
+
+**Expected result:**
+```
+Test 1: Limits not exhausted (⏸️ paused)
+✅ PASS: ⏸️ (paused)
+Test 2: 5h exhausted, extra<100 (▶️ active)
+✅ PASS: ▶️ (active)
+Test 3: 7d exhausted, extra<100 (▶️ active)
+✅ PASS: ▶️ (active)
+Test 4: 5h exhausted, extra=100 (⏸️ paused, extra exhausted)
+✅ PASS: ⏸️ (paused)
+Test 5: 5h exhausted, extra=null (⏸️ paused, unlimited)
+✅ PASS: ⏸️ (paused)
+```
+
+**Acceptance criteria:**
+- ✅ Icon appears between progress bar and money amount (💸 ... icon ... ¤)
+- ✅ ▶️ when (5h=100 OR 7d=100) AND extra_utilization exists AND extra_utilization<100
+- ✅ ⏸️ when both 5h and 7d < 100%
+- ✅ ⏸️ when extra_utilization = 100% (even if 5h/7d exhausted)
+- ✅ ⏸️ when extra_utilization = null (unlimited)
+
+---
+
+#### 3.4 Extra Usage Money Display
 
 **Objective:** Verify API credits convert correctly to money amount (credits / 100)
 
@@ -454,73 +403,61 @@ echo "$output" | grep -q "❌" && echo "✅ ❌ at 100%" || echo "❌ FAIL: Miss
 ```bash
 cd plugins/statusline
 
+# Test various credit amounts
 test_credits() {
   local credits=$1
   local expected=$2
+
   cat > /tmp/claude-statusline-usage-cache-${UID} <<EOF
 {"five_hour":{"utilization":50.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":$credits,"utilization":null}}
 EOF
-  output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g')
-  echo "$output" | grep -q "$expected" && echo "✅ $credits -> $expected" || echo "❌ FAIL: $credits -> expected $expected"
+
+  output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+
+  # Extract money spent (last field after 💸)
+  actual=$(echo "$output" | grep -o '💸.*' | awk '{print $NF}')
+
+  echo "Credits: $credits → $actual (expected: $expected)"
+
+  # Compare (allowing comma or dot as decimal separator)
+  if echo "$actual" | grep -qE "^${expected//./[.,]}$"; then
+    echo "✅ PASS"
+  else
+    echo "❌ FAIL"
+  fi
 }
 
 test_credits 1251.0 "12.51"
 test_credits 100.0 "1.00"
+test_credits 99.5 "1.00"
 test_credits 0.0 "0.00"
-test_credits 47900.0 "479.00"
+test_credits 12345.67 "123.46"
+```
+
+**Expected result:**
+```
+Credits: 1251.0 → 12.51 (expected: 12.51)
+✅ PASS
+Credits: 100.0 → 1.00 (expected: 1.00)
+✅ PASS
+Credits: 99.5 → 1.00 (expected: 1.00)
+✅ PASS
+Credits: 0.0 → 0.00 (expected: 0.00)
+✅ PASS
+Credits: 12345.67 → 123.46 (expected: 123.46)
+✅ PASS
 ```
 
 **Acceptance criteria:**
 - ✅ Conversion formula: `credits / 100`
 - ✅ Always 2 decimal places
-- ✅ No duplicated decimals (e.g., "4.79" not "4.79.79")
+- ✅ Works with user locale (comma or dot separator)
 
 ---
 
-#### 4.4 Simplified time display format
+### 4. Cross-Platform Tests
 
-**Objective:** Verify time remaining uses simplified format
-
-**Automation:** ✅
-
-**Steps:**
-```bash
-cd plugins/statusline
-
-create_time_test() {
-  local hours_left=$1
-  local now=$(date -u +%s)
-  local reset_time=$((now + hours_left * 3600))
-  if [ "$(uname)" = "Darwin" ]; then
-    local reset_iso=$(date -ju -f %s $reset_time +%Y-%m-%dT%H:%M:%S+00:00)
-  else
-    local reset_iso=$(date -u -d "@$reset_time" +%Y-%m-%dT%H:%M:%S+00:00)
-  fi
-  cat > /tmp/claude-statusline-usage-cache-${UID} <<EOF
-{"five_hour":{"utilization":50.0,"resets_at":"$reset_iso"},"seven_day":{"utilization":50.0,"resets_at":"$reset_iso"},"extra_usage":{"is_enabled":false}}
-EOF
-  echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1 | sed 's/\x1b\[[0-9;]*m//g'
-}
-
-# Far from reset: approximate
-output=$(create_time_test 4.5)
-echo "$output" | grep -q '~' && echo "✅ Approximate format (~) at 4.5h" || echo "❌ FAIL"
-
-# Close to reset: exact
-output=$(create_time_test 1.5)
-echo "$output" | grep -qE '[0-9]+h[0-9]+m' && echo "✅ Exact format (XhYm) at 1.5h" || echo "❌ FAIL"
-```
-
-**Acceptance criteria:**
-- ✅ 5h limit: >=2h shows ~Xh (approximate), <2h shows exact XhYm
-- ✅ 7d limit: >=2d shows ~Xd (approximate), <2d shows exact XdYh or XhYm
-- ✅ Tilde (~) character is dimmed
-
----
-
-### 5. Cross-platform tests
-
-#### 5.1 macOS compatibility
+#### 4.1 macOS Compatibility
 
 **Objective:** Verify script works on macOS
 
@@ -528,15 +465,34 @@ echo "$output" | grep -qE '[0-9]+h[0-9]+m' && echo "✅ Exact format (XhYm) at 1
 
 **Steps:**
 ```bash
-if [ "$(uname)" != "Darwin" ]; then echo "⏭️ SKIP: Not macOS"; exit 0; fi
+if [ "$(uname)" != "Darwin" ]; then
+  echo "⏭️ SKIP: Not running on macOS"
+  exit 0
+fi
+
 cd plugins/statusline
+
+# Test date commands (macOS-specific flags)
+date -u -v1d -v+1m -v-1d +%d > /dev/null 2>&1 && echo "✅ macOS date commands work"
+
+# Test full statusline
 echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
   bash scripts/statusline.sh > /dev/null && echo "✅ Statusline executes without errors"
 ```
 
+**Expected result:**
+```
+✅ macOS date commands work
+✅ Statusline executes without errors
+```
+
+**Acceptance criteria:**
+- ✅ No errors on macOS
+- ✅ Date calculations correct
+
 ---
 
-#### 5.2 Linux compatibility
+#### 4.2 Linux Compatibility
 
 **Objective:** Verify script works on Linux
 
@@ -544,39 +500,209 @@ echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"cont
 
 **Steps:**
 ```bash
-if [ "$(uname)" = "Darwin" ]; then echo "⏭️ SKIP: Not Linux"; exit 0; fi
+if [ "$(uname)" = "Darwin" ]; then
+  echo "⏭️ SKIP: Not running on Linux"
+  exit 0
+fi
+
 cd plugins/statusline
+
+# Test date commands (Linux-specific flags)
+date -u -d "2026-02-01 +1 month -1 day" +%d > /dev/null 2>&1 && echo "✅ Linux date commands work"
+
+# Test full statusline
 echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
   bash scripts/statusline.sh > /dev/null && echo "✅ Statusline executes without errors"
 ```
 
+**Expected result:**
+```
+✅ Linux date commands work
+✅ Statusline executes without errors
+```
+
+**Acceptance criteria:**
+- ✅ No errors on Linux
+- ✅ Date calculations correct
+
 ---
 
-### 6. Edge cases
+#### 4.3 Simplified Time Display Format
 
-#### 6.1 Extra usage disabled
-
-**Objective:** Verify no extra usage data when `is_enabled: false`
+**Objective:** Verify time remaining uses simplified format to reduce visual noise
 
 **Automation:** ✅
 
 **Steps:**
 ```bash
 cd plugins/statusline
-cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
-{"five_hour":{"utilization":50.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":false}}
+
+# Helper to create mock cache with specific reset time
+create_time_test() {
+  local hours_left=$1
+  local expected_format="$2"
+
+  local now=$(date -u +%s)
+  local reset_time=$((now + hours_left * 3600))
+
+  if [ "$(uname)" = "Darwin" ]; then
+    local reset_iso=$(date -ju -f %s $reset_time +%Y-%m-%dT%H:%M:%S+00:00)
+  else
+    local reset_iso=$(date -u -d "@$reset_time" +%Y-%m-%dT%H:%M:%S+00:00)
+  fi
+
+  cat > /tmp/claude-statusline-usage-cache-${UID} <<EOF
+{"five_hour":{"utilization":50.0,"resets_at":"$reset_iso"},"seven_day":{"utilization":50.0,"resets_at":"$reset_iso"},"extra_usage":{"is_enabled":false}}
 EOF
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g' | tail -1)
-if echo "$output" | grep -q "¤"; then
-  echo "❌ FAIL: Money should not appear when extra disabled"
-else
-  echo "✅ PASS: No extra usage data shown"
-fi
+
+  local output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+
+  echo "Test: ${hours_left}h left"
+  echo "Output: $output"
+  echo "Expected format: $expected_format"
+  echo ""
+}
+
+# 5h limit tests
+echo "=== 5h limit (threshold: >=2h) ==="
+create_time_test 4.5 "~Xh (approximate)"
+create_time_test 2.5 "~Xh (approximate)"
+create_time_test 1.5 "XhYm (exact)"
+create_time_test 0.5 "Xm (exact)"
+
+echo ""
+echo "=== 7d limit (threshold: >=48h = 2d) ==="
+create_time_test 96 "~Xd (approximate, >=2d)"
+create_time_test 48 "~Xd (approximate, >=2d)"
+create_time_test 36 "XdYh or XhYm (exact, <2d)"
+create_time_test 12 "XhYm (exact, <1d)"
 ```
+
+**Expected result:**
+```
+=== 5h limit (threshold: >=2h) ===
+Test: 4.5h left
+Expected format: ~Xh (approximate)
+Output contains: ~5h or ~4h (with ~ dimmed)
+
+Test: 2.5h left
+Expected format: ~Xh (approximate)
+Output contains: ~3h or ~2h (with ~ dimmed)
+
+Test: 1.5h left
+Expected format: XhYm (exact)
+Output contains: 1h30m (no ~)
+
+Test: 0.5h left
+Expected format: Xm (exact)
+Output contains: 30m (no ~)
+
+=== 7d limit (threshold: >=48h = 2d) ===
+Test: 96h left
+Expected format: ~Xd (approximate, >=2d)
+Output contains: ~4d (with ~ dimmed)
+
+Test: 48h left
+Expected format: ~Xd (approximate, >=2d)
+Output contains: ~2d (with ~ dimmed)
+
+Test: 36h left
+Expected format: XdYh or XhYm (exact, <2d)
+Output contains: 1d12h (no ~)
+
+Test: 12h left
+Expected format: XhYm (exact, <1d)
+Output contains: 12h0m (no ~)
+```
+
+**Acceptance criteria:**
+- ✅ 5h limit: >=2h shows ~Xh (approximate), <2h shows exact XhYm
+- ✅ 7d limit: >=2d shows ~Xd (approximate), <2d shows exact XdYh or XhYm
+- ✅ Tilde (~) character is dimmed (ANSI color 242)
+- ✅ Honest rounding: >=0.5 rounds up, <0.5 rounds down
 
 ---
 
-#### 6.2 API timeout/failure
+### 5. Edge Cases
+
+#### 5.1 Extra Usage Disabled
+
+**Objective:** Verify no extra usage block when `is_enabled: false`
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+cd plugins/statusline
+
+cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
+{"five_hour":{"utilization":50.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":false,"used_credits":1000.0,"utilization":null}}
+EOF
+
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+
+if echo "$output" | grep -q "💸"; then
+  echo "❌ FAIL: Extra usage block should not appear"
+else
+  echo "✅ PASS: Extra usage block correctly hidden"
+fi
+```
+
+**Expected result:**
+```
+✅ PASS: Extra usage block correctly hidden
+```
+
+**Acceptance criteria:**
+- ✅ No 💸 block when `is_enabled: false`
+
+---
+
+#### 5.2 Extra Usage Unlimited (null limit)
+
+**Objective:** Verify extra usage displays without utilization when `monthly_limit: null`
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+cd plugins/statusline
+
+cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
+{"five_hour":{"utilization":50.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1251.0,"utilization":null,"monthly_limit":null}}
+EOF
+
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+
+echo "$output"
+
+# Should have 💸 block with money spent but no progress bar
+if echo "$output" | grep -q "💸.*12"; then
+  echo "✅ PASS: Shows money spent"
+else
+  echo "❌ FAIL: Missing money spent"
+fi
+
+# Count progress bars (should be only 2: 5h and 7d, not 3)
+bar_count=$(echo "$output" | grep -o '⏳\|📅\|💸' | wc -l | tr -d ' ')
+echo "Icon count: $bar_count"
+```
+
+**Expected result:**
+```
+💸 ⏸️ 12.51
+✅ PASS: Shows money spent
+Icon count: 3
+```
+
+**Acceptance criteria:**
+- ✅ Shows 💸 block with money spent
+- ✅ No progress bar when `utilization: null`
+- ✅ No warning icons
+
+---
+
+#### 5.3 API Timeout/Failure
 
 **Objective:** Verify graceful degradation when API fails
 
@@ -585,17 +711,40 @@ fi
 **Steps:**
 ```bash
 cd plugins/statusline
+
+# Remove cache and token to simulate API failure
 rm -f /tmp/claude-statusline-usage-cache-${UID}
 unset CLAUDE_CODE_OAUTH_TOKEN
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
-echo "$output" | grep -q "🤖\|MDL:" && echo "✅ Shows basic info despite API failure" || echo "❌ FAIL"
+
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh 2>&1)
+
+echo "$output"
+
+# Should still show basic info (line 2) even if API fails
+if echo "$output" | grep -q "📁"; then
+  echo "✅ PASS: Shows directory info despite API failure"
+else
+  echo "❌ FAIL: Should still show basic info"
+fi
 ```
+
+**Expected result:**
+```
+
+📁 test   🤖 Test   📚 50.0%
+✅ PASS: Shows directory info despite API failure
+```
+
+**Acceptance criteria:**
+- ✅ No crash when API unavailable
+- ✅ Line 1 may be empty or minimal
+- ✅ Line 2 always shows basic info
 
 ---
 
-### 7. Git integration
+### 6. Git Integration
 
-#### 7.1 Git branch detection
+#### 6.1 Git Branch Detection
 
 **Objective:** Verify git branch shows in statusline
 
@@ -603,19 +752,109 @@ echo "$output" | grep -q "🤖\|MDL:" && echo "✅ Shows basic info despite API 
 
 **Steps:**
 ```bash
+# Create temp git repo
 test_dir=$(mktemp -d)
-cd "$test_dir" && git init -q && git checkout -b test-branch 2>/dev/null
+cd "$test_dir"
+git init -q
+git checkout -b test-branch 2>/dev/null
+
+# Run statusline
 output=$(echo "{\"workspace\":{\"current_dir\":\"$test_dir\"},\"model\":{\"display_name\":\"Test\"},\"context_window\":{\"used_percentage\":50}}" | \
-  bash plugins/statusline/scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g' | tail -1)
-echo "$output" | grep -q "test-branch" && echo "✅ Branch detected" || echo "❌ FAIL"
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | tail -1)
+
+echo "$output"
+
+if echo "$output" | grep -q "🌿.*test-branch"; then
+  echo "✅ PASS: Branch name detected"
+else
+  echo "❌ FAIL: Branch name not shown"
+fi
+
+# Cleanup
+cd /
 rm -rf "$test_dir"
 ```
 
+**Expected result:**
+```
+📁 tmp.XXXXXX   🌿 test-branch   🤖 Test   📚 50.0%
+✅ PASS: Branch name detected
+```
+
+**Acceptance criteria:**
+- ✅ Branch name appears after 🌿
+- ✅ No branch shown when not in git repo
+
 ---
 
-### 8. Context window warnings
+#### 6.2 Dirty Working Tree Indicator
 
-#### 8.1 Context window color coding
+**Objective:** Verify ⚠️ appears when working tree is dirty
+
+**Automation:** 🟡
+
+**Steps:**
+```bash
+# Create temp git repo
+test_dir=$(mktemp -d)
+cd "$test_dir"
+git init -q
+git checkout -b main 2>/dev/null
+
+# Add some content and commit
+echo "test" > file.txt
+git add file.txt
+git commit -m "Initial commit" -q
+
+# Run statusline (clean tree)
+output_clean=$(echo "{\"workspace\":{\"current_dir\":\"$test_dir\"},\"model\":{\"display_name\":\"Test\"},\"context_window\":{\"used_percentage\":50}}" | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | tail -1)
+
+echo "Clean tree: $output_clean"
+
+if echo "$output_clean" | grep -v "⚠️" | grep -q "🌿.*main"; then
+  echo "✅ PASS: No warning on clean tree"
+else
+  echo "❌ FAIL: Should not show warning"
+fi
+
+# Make working tree dirty
+echo "modified" > file.txt
+
+# Run statusline (dirty tree)
+output_dirty=$(echo "{\"workspace\":{\"current_dir\":\"$test_dir\"},\"model\":{\"display_name\":\"Test\"},\"context_window\":{\"used_percentage\":50}}" | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | tail -1)
+
+echo "Dirty tree: $output_dirty"
+
+if echo "$output_dirty" | grep -q "🌿.*main.*⚠️"; then
+  echo "✅ PASS: Warning shown on dirty tree"
+else
+  echo "❌ FAIL: Should show warning"
+fi
+
+# Cleanup
+cd /
+rm -rf "$test_dir"
+```
+
+**Expected result:**
+```
+Clean tree: 📁 tmp.XXXXXX   🌿 main   🤖 Test   📚 50.0%
+✅ PASS: No warning on clean tree
+Dirty tree: 📁 tmp.XXXXXX   🌿 main ⚠️   🤖 Test   📚 50.0%
+✅ PASS: Warning shown on dirty tree
+```
+
+**Acceptance criteria:**
+- ✅ No ⚠️ when tree is clean
+- ✅ Yellow ⚠️ after branch name when tree is dirty
+
+---
+
+### 7. Context Window Warnings
+
+#### 7.1 Context Window Color Coding
 
 **Objective:** Verify context window colors and warnings
 
@@ -625,213 +864,184 @@ rm -rf "$test_dir"
 ```bash
 cd plugins/statusline
 
-# <60% (no warning)
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50.0}}' | bash scripts/statusline.sh | head -1)
-echo "$output" | grep -q "🛑\|!!" && echo "❌ FAIL" || echo "✅ No warning at 50%"
+# Test case 1: <60% (no color, no warning)
+echo "Test 1: 50% context (no warning)"
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50.0}}' | \
+  bash scripts/statusline.sh | tail -1)
+if echo "$output" | grep "📚 50" | grep -qv "⚠️\|🛑"; then
+  echo "✅ PASS: No warning"
+else
+  echo "❌ FAIL"
+fi
 
-# >=80% (red)
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":85.0}}' | bash scripts/statusline.sh | head -1)
-echo "$output" | grep -q "🛑\|!!" && echo "✅ Warning at 85%" || echo "❌ FAIL"
+# Test case 2: ≥60% (yellow + ⚠️)
+echo "Test 2: 65% context (yellow ⚠️)"
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":65.0}}' | \
+  bash scripts/statusline.sh | tail -1)
+if echo "$output" | grep -q "📚.*65.*⚠️"; then
+  echo "✅ PASS: ⚠️ shown"
+else
+  echo "❌ FAIL"
+fi
+
+# Test case 3: ≥80% (red + 🛑)
+echo "Test 3: 85% context (red 🛑)"
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":85.0}}' | \
+  bash scripts/statusline.sh | tail -1)
+if echo "$output" | grep -q "📚.*85.*🛑"; then
+  echo "✅ PASS: 🛑 shown"
+else
+  echo "❌ FAIL"
+fi
+```
+
+**Expected result:**
+```
+Test 1: 50% context (no warning)
+✅ PASS: No warning
+Test 2: 65% context (yellow ⚠️)
+✅ PASS: ⚠️ shown
+Test 3: 85% context (red 🛑)
+✅ PASS: 🛑 shown
 ```
 
 **Acceptance criteria:**
 - ✅ <60%: no color, no icon
-- ✅ >=60%: yellow + warning
-- ✅ >=80%: red + stop icon
+- ✅ ≥60%: yellow + ⚠️
+- ✅ ≥80%: red + 🛑
 
 ---
 
-### 9. Config via /statusline-setup
+### 8. Visual Verification (Manual)
 
-#### 9.1 Preset selection
-
-**Objective:** Verify /statusline-setup offers preset selection and writes config
-
-**Automation:** ⚠️ Manual only
-
-**Manual test procedure:**
-
-**Step 1:** Start fresh session
-```bash
-claude
-```
-
-**Step 2:** Run setup command
-```
-/statusline-setup
-```
-
-**Step 3:** Verify preset selection is offered (Classic vs Text)
-
-**Step 4:** Select "Text" preset
-
-**Step 5:** Verify config file was created
-```bash
-cat ~/.claude/statusline.json
-# Expected: {"preset": "text"}
-```
-
-**Step 6:** Verify statusline switched to text mode (no emoji, no bars, percentages shown)
-
-**Acceptance criteria:**
-- ✅ /statusline-setup offers preset selection
-- ✅ Selected preset written to ~/.claude/statusline.json
-- ✅ Statusline updates immediately after setup
-
----
-
-### 10. Visual verification (manual)
-
-#### 10.1 Live Claude Code integration
+#### 8.1 Live Claude Code Integration
 
 **Objective:** Verify statusline displays correctly in actual Claude Code UI
 
 **Automation:** ⚠️ Manual only
 
-**Manual test procedure (5 steps):**
+**Manual Test Procedure (5 steps):**
 
-**Step 1:** Install and sync plugin
+**Step 1:** Install plugin
 ```bash
+cd /Users/artem/devel/claude-plugins
+scripts/install-sync.sh
 claude-marketplace-sync --force
 ```
 
-**Step 2:** Configure statusline
+**Step 2:** Configure statusline in Claude Code
 ```bash
 claude
 /statusline-setup
 ```
+Follow prompts to install.
 
-**Step 3:** Verify classic preset visual layout
-
-Expected appearance:
-```
-5h/10m････■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■････22%･~5h        🤖･Claude･Opus･4.6   📚･42%
-7d/6h･･･････■■■■■■■■■■■■■■■■■■■■■■■■■■■■････14%･~5d        📁･claude-plugins
-1M/1d･⏸️････■■■■■■■■■■■■■■■■■■■■■■■■■■■■････¤4.79      🌿･main
-```
-
-**Step 4:** Switch to text preset
+**Step 3:** Restart Claude Code
 ```bash
-echo '{"preset":"text"}' > ~/.claude/statusline.json
+exit
+claude
 ```
 
-Expected appearance:
-```
-5h･22% resets ~5h   MDL:･Claude･Opus･4.6   CTX:･42%
-7d･14% resets ~5d   DIR:･claude-plugins
-1M･⏸️ ¤4.79      BR:･main
-```
+**Step 4:** Verify visual layout
 
-**Step 5:** Verify both presets render correctly across different terminal fonts
+Expected appearance in UI:
+```
+⏳ ■■■■■■■■■■■■■■■■■■■■ 3h15m   📅 ■■■■■■■■■■■■■■■■■■■■■ 2d5h   💸 ⏸️ ■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 12.51
+📁 claude-plugins   🌿 main   🤖 Claude Sonnet 4.5   📚 45.2%
+```
 
 Visual checklist:
-- ✅ Three lines visible
-- ✅ Classic: progress bars with colored blocks
-- ✅ Classic: percentage shown next to bars
-- ✅ Text: no emoji, no progress bars, percentages and "resets" text
+- ✅ Two lines visible
+- ✅ Line 1 shows progress bars with colored blocks
+- ✅ Line 2 shows directory, branch, model, context
+- ✅ Progress bars use ■ symbol (not ▉)
 - ✅ Colors are visible (gray, green/red, blue)
-- ✅ Both presets show time-to-reset
+- ✅ Icons render correctly (⏳, 📅, 💸, 📁, 🌿, 🤖, 📚)
+
+**Step 5:** Test warning icons
+
+Exhaust 5h limit by using Claude extensively, then verify:
+- ✅ ❌ appears after 5h bar when at 100%
+- ✅ 💸 icon changes to ▶️ (active)
+- ✅ Extra usage bar appears (if enabled)
 
 ---
 
-## Known limitations
+## Known Limitations
 
-### API data availability
+### API Data Availability
 
 - **Extra usage data**: Only available when feature is enabled in user account
 - **Null values**: `utilization: null` when `monthly_limit: null` (unlimited)
 - **Reset timestamps**: Extra usage doesn't provide `resets_at` field (inferred as 1st of next month UTC)
 
-### Platform differences
+### Platform Differences
 
 - **Date commands**: macOS uses `-v` flags, Linux uses `-d` flag
 - **Keychain access**: OAuth token from Keychain only on macOS (Linux uses `~/.claude/.credentials.json`)
 - **Locale**: Decimal separator may be comma or dot depending on system locale
 
-### Config
-
-- Config file must be valid JSON. Invalid JSON silently falls back to classic preset.
-- Config is read on every statusline render (no in-process caching of config).
-
 ---
 
-## Regression testing guide
+## Regression Testing Guide
 
-### When to run
+### When to Run
 
 Run full test suite:
 - Before releasing new version
 - After modifying progress bar logic
 - After changing API parsing code
-- After changing config loading or preset logic
 - When updating cross-platform code
 
-### Quick smoke test
+### Quick Smoke Test
 
 ```bash
 cd plugins/statusline
 
-# No config - classic with percentage
-rm -f ~/.claude/statusline.json
-echo '{"model":{"display_name":"Test"},"workspace":{"current_dir":"/tmp"},"context_window":{"used_percentage":42}}' | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g'
+# Run basic tests
+bash docs/ACCEPTANCE_TESTS.md  # If converted to executable test script
+# OR manually run tests 2.1, 2.2, 2.3, 3.2, 3.3
+```
 
-# Text preset
-echo '{"preset":"text"}' > ~/.claude/statusline.json
-echo '{"model":{"display_name":"Test"},"workspace":{"current_dir":"/tmp"},"context_window":{"used_percentage":42}}' | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g'
+### CI/CD Integration
 
-rm -f ~/.claude/statusline.json
+Recommended GitHub Actions workflow:
+
+```yaml
+name: Statusline Tests
+on: [pull_request]
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run acceptance tests
+        run: |
+          cd plugins/statusline
+          # Run automated tests (1-7)
+          bash scripts/run-tests.sh
 ```
 
 ---
 
-## Version history
+## Version History
 
-### 1.4.0 (Current)
-
-New features:
-- Compact preset: single-line, text-only, color-coded statusline
-- Dim uppercase labels (5H, 7D, MO, ctx) with bright values
-- Warning indicators: `!!` at >90%, `XX` at 100%, context `!!` at >=80%
-- Branch shown yellow with `*` when dirty
-- `>>` suffix on MO label when extra usage actively consumed
-
-Tests added:
-- Compact preset test (2.6): single line, no emoji, no bars, all info present
-- Compact warning indicators test (2.7): threshold-based indicators
-
-### 1.3.0
-
-New features:
-- Customizable presets: "classic" (default) and "text" (no emoji, no progress bars)
-- Config file `~/.claude/statusline.json` with preset selection and per-field overrides
-- Percentage display (e.g., "22%") in classic preset alongside progress bars
-- Time-to-reset shown in both presets
-- Text preset: pure ASCII labels (MDL:, DIR:, BR:, CTX:) instead of emoji
-- `/statusline-setup` updated with preset selection step
-
-Tests added:
-- Config loading tests (2.1-2.5): default, text preset, overrides, invalid JSON
-- Percentage display test (3.3)
-- /statusline-setup preset selection test (9.1)
-- Updated visual verification for both presets (10.1)
-
-### 1.2.3
-
-Bug fix:
-- Fixed extra usage money display showing duplicated decimals (e.g., 4.79.79)
-
-### 1.2.0
-
-New features:
-- Three-line layout (5h limit | 7d limit | extra usage)
-- Enhanced resolution: 5h (30 blocks/10m), 7d (28 blocks/6h)
-
-### 1.1.0
+### 1.1.0 (Current)
 
 New features:
 - Two-line layout (progress bars | info)
 - Extra usage (monthly billing) tracking
 - Warning icons (❌ at 100%, ⚠️ at >90%)
+- Changed progress bar symbol (▉ → ■)
+
+Tests added:
+- Extra usage dollar conversion (3.4)
+- Status icon logic (3.3)
+- Monthly bar length verification (2.2)
+- Warning icon thresholds (3.2)
 
 ### 1.0.0
 
