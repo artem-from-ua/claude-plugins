@@ -75,11 +75,15 @@ if [ "$use_emojis" = "true" ]; then
   ICON_DIR="📁"; ICON_BRANCH="🌿"
   ICON_DIRTY="⚠"; ICON_DIRTY_WARN="⚠️"
   ICON_CTX_WARN_HIGH="🛑"; ICON_CTX_WARN_MED="⚠️"
+  ICON_PAUSE="⏸️"; ICON_PLAY="▶️"
+  ICON_EXHAUSTED="❌"; ICON_WARN="⚠️"
 else
   ICON_MODEL="MDL:"; ICON_CTX="CTX:"
   ICON_DIR="DIR:"; ICON_BRANCH="BR:"
   ICON_DIRTY="*"; ICON_DIRTY_WARN="*"
   ICON_CTX_WARN_HIGH="!!"; ICON_CTX_WARN_MED="!"
+  ICON_PAUSE="||"; ICON_PLAY=">>"
+  ICON_EXHAUSTED="XX"; ICON_WARN="!!"
 fi
 
 # Extract basic fields from statusline JSON
@@ -130,9 +134,9 @@ get_limit_indicator() {
   local time_int=${time_pct%.*}
 
   if [ "$usage_int" -eq 100 ] 2>/dev/null; then
-    echo "❌"
+    echo "$ICON_EXHAUSTED"
   elif [ "$usage_int" -gt 90 ] 2>/dev/null && [ "$time_int" -le 90 ] 2>/dev/null; then
-    echo "⚠️"
+    echo "$ICON_WARN"
   else
     echo "${very_dim}･･${rst}"
   fi
@@ -232,7 +236,11 @@ format_time_remaining() {
   local now=$(date +%s)
   local diff=$(( reset_epoch - now ))
   if [ "$diff" -le 0 ]; then
-    echo "⏰"
+    if [ "$use_emojis" = "true" ]; then
+      echo "⏰"
+    else
+      echo "now"
+    fi
     return
   fi
   local days=$(( diff / 86400 ))
@@ -466,7 +474,7 @@ fi
 days_in_month=${days_in_month:-30}
 
 # Determine status icon (play/pause)
-status_icon="⏸️"
+status_icon="$ICON_PAUSE"
 if [ -n "$usage_json" ]; then
   extra_enabled=$(echo "$usage_json" | jq -r '.extra_usage.is_enabled // empty')
   if [ "$extra_enabled" = "true" ]; then
@@ -475,7 +483,7 @@ if [ -n "$usage_json" ]; then
       extra_int=${extra_utilization%.*}
       if [ "$extra_int" -lt 100 ] 2>/dev/null; then
         if [ "$five_int" -eq 100 ] 2>/dev/null || [ "$seven_int" -eq 100 ] 2>/dev/null; then
-          status_icon="▶️"
+          status_icon="$ICON_PLAY"
         fi
       fi
     fi
