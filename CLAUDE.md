@@ -77,6 +77,7 @@ Two-line Claude Code statusline: progress bars (line 1) + session info (line 2).
 - `scripts/setup-statusline.sh` — SessionStart hook, copies `statusline.sh` to `~/.claude/statusline.sh`. Logs all operations to `/tmp/claude-plugin-sync.log`
 - `commands/statusline-setup/` — user-invocable `/statusline-setup` command, configures `~/.claude/settings.json`
 - `docs/ACCEPTANCE_TESTS.md` — comprehensive test documentation (8 categories, 17+ tests)
+- `docs/STDIN_JSON.md` — reference for all JSON fields piped by Claude Code to `statusline.sh`
 
 ## Plugin Structure Convention
 
