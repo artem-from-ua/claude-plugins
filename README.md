@@ -190,6 +190,21 @@ With `--verbose`, also shows git pull and rsync operations.
 
 For silent operation: `claude-marketplace-sync 2>/dev/null`
 
+### Troubleshooting
+
+Both `claude-marketplace-sync` and plugin SessionStart hooks log detailed operations to a shared log file:
+
+```bash
+cat /tmp/claude-plugin-sync.log
+```
+
+The log records: sync decisions (version/SHA comparison), rsync operations, SessionStart hook execution (expanded commands, exit codes, output), and `setup-statusline.sh` operations (`CLAUDE_PLUGIN_ROOT` value, source/target file states, diff results).
+
+To diagnose a stale plugin after sync:
+1. Restart Claude Code (triggers `claude-marketplace-sync` + SessionStart hooks)
+2. Check the log: `cat /tmp/claude-plugin-sync.log`
+3. Look for `[setup-statusline]` entries showing `CLAUDE_PLUGIN_ROOT` path — if it points to an old version directory, Claude Code hasn't picked up the new cache entry
+
 The workaround will be removed once the upstream bugs are fixed.
 
 ## Contributing
