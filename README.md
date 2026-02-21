@@ -167,13 +167,13 @@ A standalone script that runs *before* Claude Code starts. It pulls marketplace 
 ./scripts/install-sync.sh
 ```
 
-This copies `claude-marketplace-sync` to `~/.local/bin/`, adds it to `PATH`, and configures a shell alias so that `claude` automatically syncs before starting.
+This creates a symlink from `~/.local/bin/claude-marketplace-sync` to the script in the repo, adds it to `PATH`, and configures a shell alias so that `claude` automatically syncs before starting. Because it's a symlink, changes to the script in the repo are picked up immediately — no reinstall needed.
 
 **Usage:**
 
 ```bash
 claude-marketplace-sync              # Sync (skips if ran in last 5 min)
-claude-marketplace-sync --force      # Ignore freshness window
+claude-marketplace-sync --force      # Ignore freshness window; also re-runs SessionStart hooks
 claude-marketplace-sync --all        # Sync all marketplaces, not just autoUpdate ones
 claude-marketplace-sync --verbose    # Print detailed progress
 ```

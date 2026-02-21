@@ -14,9 +14,8 @@ if [ ! -f "$SOURCE" ]; then
 fi
 
 mkdir -p "$DEST_DIR"
-cp "$SOURCE" "$DEST"
-chmod +x "$DEST"
-echo "Installed claude-marketplace-sync → ${DEST}"
+ln -sf "$SOURCE" "$DEST"
+echo "Installed claude-marketplace-sync → ${DEST} (symlink)"
 
 # --- Detect shell profile ---
 SHELL_NAME="$(basename "${SHELL:-/bin/bash}")"
