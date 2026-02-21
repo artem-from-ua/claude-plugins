@@ -106,8 +106,6 @@ fi
 # --- Pull marketplaces ---
 marketplace_names=$(jq -r 'keys[]' "$MARKETPLACES_JSON")
 
-echo "claude-marketplace-sync: syncing marketplaces..." >&2
-
 for name in $marketplace_names; do
     auto_update=$(jq -r --arg n "$name" '.[$n].autoUpdate // false' "$MARKETPLACES_JSON")
     install_location=$(jq -r --arg n "$name" '.[$n].installLocation' "$MARKETPLACES_JSON")
