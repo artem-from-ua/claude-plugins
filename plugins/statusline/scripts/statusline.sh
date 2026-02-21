@@ -562,7 +562,7 @@ if [ -n "$session_cost_usd" ] && [ "$session_cost_usd" != "null" ]; then
   # Convert JSON dot-decimal to locale decimal separator, then format with awk
   dec_sep=$(printf "%.1f" 1 | tr -d '01')
   cost_locale=$(echo "$session_cost_usd" | sed "s/\./${dec_sep}/")
-  cost_fmt=$(echo "$cost_locale" | awk '{printf "%.4f", $1}')
+  cost_fmt=$(echo "$cost_locale" | awk '{printf "%.2f", $1}')
   cost_int=$(echo "$cost_fmt" | sed 's/[.,].*//')
   cost_frac=$(echo "$cost_fmt" | grep -o '[.,][0-9]*$')
   session_cost_widget="💵${SEP}${dim}\$${rst}${cost_int}${dim}${cost_frac}${rst}"
