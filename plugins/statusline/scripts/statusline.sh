@@ -608,12 +608,17 @@ cost_pad=$(pad_to "$col2_cost_w" "$col2_max")
 line1="${five_block}${COL2_SEP}🤖${SEP}${model_display}${model_pad}${COL2_SEP}📁${SEP}${dir_display}"
 
 # Line 2: bar + "   📚･ctx%<pad>   🌿･branch"
-if [ -n "$context_widget" ] && [ -n "$branch_widget" ]; then
-  line2="${seven_block}${COL2_SEP}${context_widget}${ctx_pad}${COL2_SEP}${branch_widget}"
+# When context info is missing, use space placeholder to keep col3 aligned
+if [ -z "$context_widget" ]; then
+  ctx_placeholder=$(printf "%${col2_max}s" "")
+else
+  ctx_placeholder="${context_widget}${ctx_pad}"
+fi
+
+if [ -n "$branch_widget" ]; then
+  line2="${seven_block}${COL2_SEP}${ctx_placeholder}${COL2_SEP}${branch_widget}"
 elif [ -n "$context_widget" ]; then
   line2="${seven_block}${COL2_SEP}${context_widget}"
-elif [ -n "$branch_widget" ]; then
-  line2="${seven_block}${COL2_SEP}${branch_widget}"
 else
   line2="${seven_block}"
 fi
