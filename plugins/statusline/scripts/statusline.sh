@@ -32,7 +32,7 @@ yellow=$(printf '\033[38;5;178m')
 SEP="${very_dim}･${rst}"
 
 # Extract basic fields from statusline JSON
-cwd=$(echo "$input" | jq -r '.workspace.current_dir')
+cwd=$(echo "$input" | jq -r '.workspace.project_dir // .workspace.current_dir')
 model=$(echo "$input" | jq -r '.model.display_name')
 used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 
@@ -151,9 +151,11 @@ build_progress_bar() {
   echo -n "$bar"
 }
 
-# Colorize model name
+# Colorize model name (strips leading "Claude " prefix)
 colorize_model() {
   local name="$1"
+  # Strip "Claude " prefix
+  name=$(echo "$name" | sed 's/^Claude //')
   local color=""
   local keyword=""
   if echo "$name" | grep -qi "opus"; then
@@ -167,6 +169,33 @@ colorize_model() {
     echo "$name" | sed "s/$keyword/${color}${keyword}${rst}/"
   else
     echo "$name"
+  fi
+}
+
+# Colorize git branch: dim slash, color prefix by type
+colorize_branch() {
+  local branch="$1"
+  # Colors for branch prefixes
+  local c_feature=$(printf '\033[38;5;114m')   # green
+  local c_fix=$(printf '\033[38;5;203m')        # red
+  local c_release=$(printf '\033[38;5;221m')    # yellow
+  local c_refactor=$(printf '\033[38;5;110m')   # blue
+  local c_default=$(printf '\033[38;5;245m')    # gray
+
+  local prefix color suffix
+  if echo "$branch" | grep -q '/'; then
+    prefix="${branch%%/*}"
+    suffix="${branch#*/}"
+    case "$prefix" in
+      feature|feat)               color="$c_feature" ;;
+      fix|bugfix|hotfix)          color="$c_fix" ;;
+      release|chore|revert)       color="$c_release" ;;
+      refactor|docs|test|ci|wip|exp|experiment|dev|develop) color="$c_refactor" ;;
+      *)                          color="$c_default" ;;
+    esac
+    echo "${color}${prefix}${rst}${dim}/${rst}${suffix}"
+  else
+    echo "$branch"
   fi
 }
 
@@ -353,7 +382,7 @@ dir_display=$(echo "$short_dir" | sed "s/ /${SEP}/g")
 # ===== BUILD LINE 2: 7d limit + context + branch =====
 
 resolution_7d=$(format_resolution "7d" "6h")
-padding_7d=$(printf "${very_dim}%s${rst}" "･･････")
+padding_7d=$(printf "${very_dim}%s${rst}" "･······")
 
 if [ -n "$usage_json" ]; then
   seven_day_pct=$(echo "$usage_json" | jq -r '.seven_day.utilization // empty')
@@ -526,23 +555,27 @@ else
 fi
 
 # Session cost widget: 💵･$X.XX  (from total_cost_usd in stdin JSON)
-session_cost_usd=$(echo "$input" | jq -r '.session_cost_usd // empty')
+session_cost_usd=$(echo "$input" | jq -r '.cost.session_cost_usd // empty')
 session_cost_widget=""
 session_cost_visible_width=0
 if [ -n "$session_cost_usd" ] && [ "$session_cost_usd" != "null" ]; then
-  cost_fmt=$(printf "%.2f" "$session_cost_usd" 2>/dev/null)
-  cost_int=$(echo "$cost_fmt" | sed 's/\..*//')
-  cost_frac=$(echo "$cost_fmt" | grep -o '\.[0-9]*$')
+  # Convert JSON dot-decimal to locale decimal separator, then format with awk
+  dec_sep=$(printf "%.1f" 1 | tr -d '01')
+  cost_locale=$(echo "$session_cost_usd" | sed "s/\./${dec_sep}/")
+  cost_fmt=$(echo "$cost_locale" | awk '{printf "%.4f", $1}')
+  cost_int=$(echo "$cost_fmt" | sed 's/[.,].*//')
+  cost_frac=$(echo "$cost_fmt" | grep -o '[.,][0-9]*$')
   session_cost_widget="💵${SEP}${dim}\$${rst}${cost_int}${dim}${cost_frac}${rst}"
-  session_cost_visible_width=$(calc_display_width "💵･\$${cost_int}${cost_frac}")
+  session_cost_visible_width=$(calc_display_width "💵･\$${cost_int}${cost_frac}" 2>/dev/null || echo $(( 3 + 1 + ${#cost_int} + ${#cost_frac} )))
 fi
 
 # Git branch widget
 branch_widget=""
 if [ -n "$branch" ]; then
-  branch_display=$(echo "$branch" | sed "s/ /${SEP}/g")
+  branch_colored=$(colorize_branch "$branch")
+  branch_display=$(echo "$branch_colored" | sed "s/ /${SEP}/g")
   if [ -n "$dirty" ]; then
-    branch_widget="🌿${SEP}${yellow}${branch_display}${SEP}⚠️${rst}"
+    branch_widget="🌿${SEP}${branch_display}${SEP}⚠️"
   else
     branch_widget="🌿${SEP}${branch_display}"
   fi
