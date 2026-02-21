@@ -3,9 +3,11 @@
 # Reads JSON from stdin (piped by Claude Code)
 #
 # Layout (three lines):
-#   Line 1: 5h/10m････[bar-30]･[ind]･[time-11]   🤖･[model]   📚･[ctx]%
-#   Line 2: 7d/6h･･･････[bar-28]･[ind]･[time-11]   📁･[dir]
-#   Line 3: 1M/1d･[icon]･[padding][bar-N]･[ind]･[money-11]   🌿･[branch]
+#   Line 1: 5h/10m････[bar-30]･[ind]･[time-8]   🤖･[model<padded>]   📁･[dir]
+#   Line 2: 7d/6h･･････[bar-28]･[ind]･[time-8]   📚･[ctx%<padded>]    🌿･[branch]
+#   Line 3: 1M/1d･[icon]･[pad][bar-N]･[ind]･[money-8]   💵･$X.XX
+#
+# Col 2 is padded to model display width so col 3 aligns vertically.
 #
 # Progress bar resolution:
 #   5h:    30 blocks → 10 minutes per block (5h / 30 = 600s)
@@ -30,7 +32,7 @@ yellow=$(printf '\033[38;5;178m')
 SEP="${very_dim}･${rst}"
 
 # Extract basic fields from statusline JSON
-cwd=$(echo "$input" | jq -r '.workspace.current_dir')
+cwd=$(echo "$input" | jq -r '.workspace.project_dir // .workspace.current_dir')
 model=$(echo "$input" | jq -r '.model.display_name')
 used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 
@@ -49,17 +51,14 @@ fi
 
 short_dir=$(basename "$cwd")
 
-# Calculate display width (visual width in terminal, handles wide characters)
-# ⏰ (alarm clock emoji) takes 2 columns, regular ASCII takes 1
+# Calculate terminal display width (handles wide chars/emoji via python3 unicodedata)
 calc_display_width() {
-  local str="$1"
-  local char_count=${#str}
-  # Check if string contains ⏰ (wide emoji, takes 2 terminal columns)
-  if echo "$str" | grep -q '⏰'; then
-    echo $((char_count + 1))
-  else
-    echo "$char_count"
-  fi
+  python3 -c "
+import unicodedata, sys
+s = sys.argv[1]
+w = sum(2 if unicodedata.east_asian_width(c) in ('W','F') else 1 for c in s)
+print(w)
+" "$1" 2>/dev/null || echo "${#1}"
 }
 
 # Format resolution display (e.g., "5h/10m" with /10m dimmed)
@@ -152,9 +151,11 @@ build_progress_bar() {
   echo -n "$bar"
 }
 
-# Colorize model name
+# Colorize model name (strips leading "Claude " prefix)
 colorize_model() {
   local name="$1"
+  # Strip "Claude " prefix
+  name=$(echo "$name" | sed 's/^Claude //')
   local color=""
   local keyword=""
   if echo "$name" | grep -qi "opus"; then
@@ -168,6 +169,33 @@ colorize_model() {
     echo "$name" | sed "s/$keyword/${color}${keyword}${rst}/"
   else
     echo "$name"
+  fi
+}
+
+# Colorize git branch: dim slash, color prefix by type
+colorize_branch() {
+  local branch="$1"
+  # Colors for branch prefixes
+  local c_feature=$(printf '\033[38;5;114m')   # green
+  local c_fix=$(printf '\033[38;5;203m')        # red
+  local c_release=$(printf '\033[38;5;221m')    # yellow
+  local c_refactor=$(printf '\033[38;5;110m')   # blue
+  local c_default=$(printf '\033[38;5;245m')    # gray
+
+  local prefix color suffix
+  if echo "$branch" | grep -q '/'; then
+    prefix="${branch%%/*}"
+    suffix="${branch#*/}"
+    case "$prefix" in
+      feature|feat)               color="$c_feature" ;;
+      fix|bugfix|hotfix)          color="$c_fix" ;;
+      release|chore|revert)       color="$c_release" ;;
+      refactor|docs|test|ci|wip|exp|experiment|dev|develop) color="$c_refactor" ;;
+      *)                          color="$c_default" ;;
+    esac
+    echo "${color}${prefix}${rst}${dim}/${rst}${suffix}"
+  else
+    echo "$branch"
   fi
 }
 
@@ -302,7 +330,7 @@ else
   fi
 fi
 
-# ===== BUILD LINE 1: 5h limit + model + context =====
+# ===== BUILD LINE 1: 5h limit + model + directory =====
 
 resolution_5h=$(format_resolution "5h" "10m")
 padding_5h="${very_dim}････${rst}"
@@ -328,7 +356,6 @@ if [ -n "$usage_json" ]; then
       esac
     done
 
-    # Pad to 8 characters (11 total - 3 spaces in line1 before emoji)
     five_display_width=$(calc_display_width "$five_remaining")
     five_padding=$((8 - five_display_width))
     five_time_fmt="${five_time_with_dim}$(printf "%${five_padding}s" "")"
@@ -345,35 +372,17 @@ fi
 model_colored=$(colorize_model "$model")
 model_with_dim=$(echo "$model_colored" | sed -E "s/([0-9]+\.[0-9]+)/${dim}\1${rst}/g")
 model_display=$(echo "$model_with_dim" | sed "s/ /${SEP}/g")
+# Visible terminal width of "🤖･model" (strip ANSI then measure)
+model_visible=$(echo "🤖･${model_display}" | sed $'s/\x1b\\[[0-9;]*m//g')
+model_visible_width=$(calc_display_width "$model_visible")
 
-# Context: build warning indicator (only if context data available)
-context_display=""
-if [ -n "$used_pct" ]; then
-  context_int=${used_pct%.*}
-  context_warning=""
-  if [ "$context_int" -ge 80 ] 2>/dev/null; then
-    ctx_color=$(printf '\033[38;5;167m')
-    context_warning="🛑"
-  elif [ "$context_int" -ge 60 ] 2>/dev/null; then
-    ctx_color=$(printf '\033[38;5;178m')
-    context_warning="⚠️"
-  else
-    ctx_color=""
-  fi
+# Directory: replace spaces with SEP
+dir_display=$(echo "$short_dir" | sed "s/ /${SEP}/g")
 
-  if [ -n "$context_warning" ]; then
-    context_display="   📚${SEP}${ctx_color}${used_pct}${dim}%${rst}${SEP}${context_warning}"
-  else
-    context_display="   📚${SEP}${ctx_color}${used_pct}${dim}%${rst}"
-  fi
-fi
-
-line1="${five_block}   🤖${SEP}${model_display}${context_display}"
-
-# ===== BUILD LINE 2: 7d limit + directory =====
+# ===== BUILD LINE 2: 7d limit + context + branch =====
 
 resolution_7d=$(format_resolution "7d" "6h")
-padding_7d=$(printf "${very_dim}%s${rst}" "･･･････")
+padding_7d=$(printf "${very_dim}%s${rst}" "･······")
 
 if [ -n "$usage_json" ]; then
   seven_day_pct=$(echo "$usage_json" | jq -r '.seven_day.utilization // empty')
@@ -396,7 +405,6 @@ if [ -n "$usage_json" ]; then
       esac
     done
 
-    # Pad to 8 characters (11 total - 3 spaces in line2 before emoji)
     seven_display_width=$(calc_display_width "$seven_remaining")
     seven_padding=$((8 - seven_display_width))
     seven_time_fmt="${seven_time_with_dim}$(printf "%${seven_padding}s" "")"
@@ -409,13 +417,45 @@ else
   seven_block=""
 fi
 
-# Directory: replace spaces with SEP
-dir_display=$(echo "$short_dir" | sed "s/ /${SEP}/g")
-dir_with_warning="📁${SEP}${dir_display}"
+# Context widget
+context_widget=""
+if [ -n "$used_pct" ]; then
+  context_int=${used_pct%.*}
+  if [ "$context_int" -ge 80 ] 2>/dev/null; then
+    ctx_color=$(printf '\033[38;5;167m')
+    ctx_suffix="${SEP}🛑"
+  elif [ "$context_int" -ge 60 ] 2>/dev/null; then
+    ctx_color=$(printf '\033[38;5;178m')
+    ctx_suffix="${SEP}⚠️"
+  else
+    ctx_color=""
+    ctx_suffix=""
+  fi
+  context_widget="📚${SEP}${ctx_color}${used_pct}${dim}%${rst}${ctx_suffix}"
+fi
+# Visible terminal width of "📚･ctx%" — build plain string for measurement
+if [ -n "$used_pct" ]; then
+  ctx_plain="📚･${used_pct}%"
+  if [ "$context_int" -ge 80 ] 2>/dev/null; then
+    ctx_plain="${ctx_plain}･🛑"
+  elif [ "$context_int" -ge 60 ] 2>/dev/null; then
+    ctx_plain="${ctx_plain}･⚠️"
+  fi
+  ctx_visible_width=$(calc_display_width "$ctx_plain")
+else
+  ctx_visible_width=0
+fi
 
-line2="${seven_block}   ${dir_with_warning}"
+# ===== COLUMN ALIGNMENT =====
+# Col 2 width = max(model_visible_width, ctx_visible_width, session_cost_visible_width)
+# We pad col 2 with spaces so col 3 starts at the same column in all lines.
+# session cost widget: "💵･$X.XX" → emoji(2)+sep(1)+dollar(1)+digits — computed below after extra block
+# For now use a minimum of model width; we'll finalize after building session cost.
 
-# ===== BUILD LINE 3: Extra usage + git branch =====
+# Col 2 separator between col1 and col2 is "   " (3 spaces)
+COL2_SEP="   "
+
+# ===== BUILD LINE 3: Extra usage + session cost =====
 
 resolution_1m=$(format_resolution "1M" "1d")
 
@@ -514,17 +554,74 @@ else
   extra_block="                                                    "
 fi
 
-# Git branch: replace spaces with SEP, colorize yellow if dirty, add ⚠️ emoji
+# Session cost widget: 💵･$X.XX  (from total_cost_usd in stdin JSON)
+session_cost_usd=$(echo "$input" | jq -r '.cost.session_cost_usd // empty')
+session_cost_widget=""
+session_cost_visible_width=0
+if [ -n "$session_cost_usd" ] && [ "$session_cost_usd" != "null" ]; then
+  # Convert JSON dot-decimal to locale decimal separator, then format with awk
+  dec_sep=$(printf "%.1f" 1 | tr -d '01')
+  cost_locale=$(echo "$session_cost_usd" | sed "s/\./${dec_sep}/")
+  cost_fmt=$(echo "$cost_locale" | awk '{printf "%.4f", $1}')
+  cost_int=$(echo "$cost_fmt" | sed 's/[.,].*//')
+  cost_frac=$(echo "$cost_fmt" | grep -o '[.,][0-9]*$')
+  session_cost_widget="💵${SEP}${dim}\$${rst}${cost_int}${dim}${cost_frac}${rst}"
+  session_cost_visible_width=$(calc_display_width "💵･\$${cost_int}${cost_frac}" 2>/dev/null || echo $(( 3 + 1 + ${#cost_int} + ${#cost_frac} )))
+fi
+
+# Git branch widget
+branch_widget=""
 if [ -n "$branch" ]; then
-  branch_display=$(echo "$branch" | sed "s/ /${SEP}/g")
+  branch_colored=$(colorize_branch "$branch")
+  branch_display=$(echo "$branch_colored" | sed "s/ /${SEP}/g")
   if [ -n "$dirty" ]; then
-    branch_with_warning="🌿${SEP}${yellow}${branch_display}${SEP}⚠️${rst}"
+    branch_widget="🌿${SEP}${branch_display}${SEP}⚠️"
   else
-    branch_with_warning="🌿${SEP}${branch_display}"
+    branch_widget="🌿${SEP}${branch_display}"
   fi
-  line3="${extra_block}   ${branch_with_warning}"
+fi
+
+# ===== COLUMN 2 ALIGNMENT =====
+# All widths are full terminal column widths of the col2 widget string
+col2_model_w=$model_visible_width
+col2_ctx_w=$ctx_visible_width
+col2_cost_w=$session_cost_visible_width
+
+# Find max width
+col2_max=$col2_model_w
+[ "$col2_ctx_w" -gt "$col2_max" ] && col2_max=$col2_ctx_w
+[ "$col2_cost_w" -gt "$col2_max" ] && col2_max=$col2_cost_w
+
+# Padding for each
+pad_to() {
+  local diff=$(( $2 - $1 ))
+  [ "$diff" -gt 0 ] && printf "%${diff}s" "" || true
+}
+
+model_pad=$(pad_to "$col2_model_w" "$col2_max")
+ctx_pad=$(pad_to "$col2_ctx_w" "$col2_max")
+cost_pad=$(pad_to "$col2_cost_w" "$col2_max")
+
+# ===== ASSEMBLE LINES =====
+
+# Line 1: bar + "   🤖･model<pad>   📁･dir"
+line1="${five_block}${COL2_SEP}🤖${SEP}${model_display}${model_pad}${COL2_SEP}📁${SEP}${dir_display}"
+
+# Line 2: bar + "   📚･ctx%<pad>   🌿･branch"
+if [ -n "$context_widget" ] && [ -n "$branch_widget" ]; then
+  line2="${seven_block}${COL2_SEP}${context_widget}${ctx_pad}${COL2_SEP}${branch_widget}"
+elif [ -n "$context_widget" ]; then
+  line2="${seven_block}${COL2_SEP}${context_widget}"
+elif [ -n "$branch_widget" ]; then
+  line2="${seven_block}${COL2_SEP}${branch_widget}"
 else
-  # Not in a git repository - no branch block
+  line2="${seven_block}"
+fi
+
+# Line 3: extra bar + "   💵･$X.XX"
+if [ -n "$session_cost_widget" ]; then
+  line3="${extra_block}${COL2_SEP}${session_cost_widget}"
+else
   line3="${extra_block}"
 fi
 
