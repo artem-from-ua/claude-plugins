@@ -74,7 +74,7 @@ Two-line Claude Code statusline: progress bars (line 1) + session info (line 2).
 
 **Key components:**
 - `scripts/statusline.sh` — main script, reads JSON from stdin (piped by Claude Code), outputs two ANSI-colored lines. Fetches Anthropic OAuth usage API (cached 60s in `/tmp/claude-statusline-usage-cache`), reads OAuth token from macOS Keychain or Linux credentials file
-- `scripts/setup-statusline.sh` — SessionStart hook, copies `statusline.sh` to `~/.claude/statusline.sh`
+- `scripts/setup-statusline.sh` — SessionStart hook, copies `statusline.sh` to `~/.claude/statusline.sh`. Logs all operations to `/tmp/claude-plugin-sync.log`
 - `commands/statusline-setup/` — user-invocable `/statusline-setup` command, configures `~/.claude/settings.json`
 - `docs/ACCEPTANCE_TESTS.md` — comprehensive test documentation (8 categories, 17+ tests)
 
@@ -335,6 +335,8 @@ fi
 Claude Code has a bug where the plugin cache is not invalidated on auto-update ([#14061](https://github.com/anthropics/claude-code/issues/14061), [#15621](https://github.com/anthropics/claude-code/issues/15621), [#15642](https://github.com/anthropics/claude-code/issues/15642)).
 
 **Solution:** The standalone `scripts/claude-marketplace-sync` script runs _before_ Claude Code starts, pulling marketplace repos and rsyncing into cache. Run `scripts/install-sync.sh` to install — it configures PATH and shell alias automatically. See README for details.
+
+**Debug logging:** Both `claude-marketplace-sync` and plugin SessionStart hooks log detailed operations to `/tmp/claude-plugin-sync.log`. Use this file to diagnose sync issues (stale `CLAUDE_PLUGIN_ROOT`, failed hook execution, rsync problems).
 
 ## Adding a New Plugin
 

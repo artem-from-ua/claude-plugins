@@ -93,6 +93,34 @@ test -x plugins/statusline/scripts/setup-statusline.sh && echo "✅ setup-status
 
 ---
 
+#### 1.3 Setup Script Logging
+
+**Objective:** Verify setup-statusline.sh writes diagnostic log
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+rm -f /tmp/claude-plugin-sync.log
+CLAUDE_PLUGIN_ROOT="$(pwd)/plugins/statusline" bash plugins/statusline/scripts/setup-statusline.sh > /dev/null 2>&1
+grep -c "\[setup-statusline\]" /tmp/claude-plugin-sync.log
+grep "CLAUDE_PLUGIN_ROOT=" /tmp/claude-plugin-sync.log
+grep "SOURCE=" /tmp/claude-plugin-sync.log
+```
+
+**Expected result:**
+- Log file created at `/tmp/claude-plugin-sync.log`
+- Contains `[setup-statusline]` entries with CLAUDE_PLUGIN_ROOT, SOURCE, TARGET paths
+- Records copy decision (missing/differs/identical)
+
+**Acceptance criteria:**
+- ✅ Log file created
+- ✅ CLAUDE_PLUGIN_ROOT value logged
+- ✅ SOURCE and TARGET paths logged
+- ✅ Copy decision logged
+
+---
+
 ### 2. Unit Tests
 
 #### 2.1 Progress Bar Block Count
@@ -980,6 +1008,14 @@ Exhaust 5h limit by using Claude extensively, then verify:
 - **Date commands**: macOS uses `-v` flags, Linux uses `-d` flag
 - **Keychain access**: OAuth token from Keychain only on macOS (Linux uses `~/.claude/.credentials.json`)
 - **Locale**: Decimal separator may be comma or dot depending on system locale
+
+### Debug Logging
+
+Both `claude-marketplace-sync` and `setup-statusline.sh` write detailed logs to `/tmp/claude-plugin-sync.log`. The log includes:
+- `[marketplace-sync]` — sync decisions, rsync operations, hook execution with exit codes
+- `[setup-statusline]` — `CLAUDE_PLUGIN_ROOT` value, source/target file states, diff output, copy results
+
+Use this log to diagnose issues where statusline doesn't update after a version bump.
 
 ---
 

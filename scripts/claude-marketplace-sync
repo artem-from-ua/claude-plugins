@@ -25,6 +25,12 @@ verbose=false
 force=false
 sync_all=false
 
+# --- File logging ---
+LOG_FILE="/tmp/claude-plugin-sync.log"
+_flog() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [marketplace-sync] $*" >> "$LOG_FILE"
+}
+
 usage() {
     cat <<'EOF'
 Usage: claude-marketplace-sync [OPTIONS]
@@ -73,11 +79,14 @@ if [ "$force" = false ] && [ -f "$FRESHNESS_FILE" ]; then
     age=$(( now - last_run ))
     if [ "$age" -lt "$FRESHNESS_WINDOW" ]; then
         log_always "⏭️  Skipping sync (last run ${age}s ago)"
+        _flog "Skipped: freshness window (age=${age}s < ${FRESHNESS_WINDOW}s)"
         exit 0
     fi
 fi
 
 log_always "🔄 Syncing Claude plugins..."
+_flog "=========================================="
+_flog "=== claude-marketplace-sync started (force=$force, sync_all=$sync_all) ==="
 
 # --- Check prerequisites ---
 if ! command -v jq &>/dev/null; then
@@ -174,6 +183,17 @@ for key in $plugin_keys; do
     old_version=$(jq -r --arg k "$key" '.plugins[$k][0].version // ""' "$INSTALLED_JSON" 2>/dev/null || echo "")
     old_sha=$(jq -r --arg k "$key" '.plugins[$k][0].gitCommitSha // ""' "$INSTALLED_JSON" 2>/dev/null || echo "")
 
+    _flog "--- Plugin: ${key} ---"
+    _flog "  source_dir=$source_dir"
+    _flog "  cache_dir=$cache_dir"
+    _flog "  old_version=$old_version, new_version=$new_version"
+    _flog "  old_sha=${old_sha:0:12}, current_sha=${current_sha:0:12}"
+    if [ -d "$cache_dir" ]; then
+        _flog "  cache_dir exists: $(ls -la "${cache_dir}/scripts/" 2>&1 | grep -E 'statusline|total' || echo 'n/a')"
+    else
+        _flog "  cache_dir does NOT exist"
+    fi
+
     # Determine if sync is needed before running rsync
     if [ -z "$old_version" ]; then
         needs_sync=true
@@ -194,8 +214,11 @@ for key in $plugin_keys; do
         needs_sync=false
     fi
 
+    _flog "  needs_sync=$needs_sync, reason=${sync_reason:-none}"
+
     if [ "$needs_sync" = false ]; then
         log "Skipping ${key} (up to date, SHA=${current_sha:0:7})"
+        _flog "  SKIPPED"
         continue
     fi
 
@@ -204,7 +227,9 @@ for key in $plugin_keys; do
     fi
 
     log "Syncing ${key} → ${cache_dir} (${sync_reason})"
+    _flog "  rsync: ${source_dir}/ → ${cache_dir}/"
     if rsync -a --delete "${source_dir}/" "${cache_dir}/" 2>/dev/null; then
+        _flog "  rsync OK. cache_dir after: $(ls -la "${cache_dir}/scripts/" 2>&1 | grep -E 'statusline|setup|total' || echo 'n/a')"
         if [ -z "$old_version" ]; then
             log_always "✅ Installed: ${key} version ${new_version}"
         elif [ "$old_version" != "$new_version" ]; then
@@ -223,6 +248,7 @@ for key in $plugin_keys; do
         log "  synced OK"
         synced_plugins="${synced_plugins} ${key}"
     else
+        _flog "  rsync FAILED"
         log_always "❌ Failed to sync ${key} → ${cache_dir}"
     fi
 done
@@ -263,13 +289,19 @@ for key in $plugin_keys; do
         # Expand ${CLAUDE_PLUGIN_ROOT} to actual cache directory
         expanded_command=$(echo "$hook_command" | sed "s|\${CLAUDE_PLUGIN_ROOT}|${cache_dir}|g")
         log "  Executing: $expanded_command"
-        if eval "$expanded_command" > /dev/null 2>&1; then
+        _flog "  Hook command (raw): $hook_command"
+        _flog "  Hook command (expanded): $expanded_command"
+        hook_output=$(eval "$expanded_command" 2>&1) && hook_rc=0 || hook_rc=$?
+        if [ "$hook_rc" -eq 0 ]; then
             log "  ✅ Hook executed successfully"
+            _flog "  Hook rc=0, output: $hook_output"
         else
             log "  ⚠️ Hook failed (non-critical)"
+            _flog "  Hook rc=$hook_rc, output: $hook_output"
         fi
     done <<< "$session_start_hooks"
 done
 
 touch "$FRESHNESS_FILE" 2>/dev/null || true
+_flog "=== claude-marketplace-sync finished ==="
 log "Done"
