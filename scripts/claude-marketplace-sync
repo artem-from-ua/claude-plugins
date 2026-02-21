@@ -129,6 +129,7 @@ for name in $marketplace_names; do
 done
 
 # --- Sync installed plugins into cache ---
+synced_plugins=""  # track which plugins were synced (for SessionStart hooks)
 plugin_keys=$(jq -r '.plugins | keys[]' "$INSTALLED_JSON")
 
 for key in $plugin_keys; do
@@ -220,30 +221,54 @@ for key in $plugin_keys; do
             && mv "${INSTALLED_JSON}.tmp" "$INSTALLED_JSON"
         fi
         log "  synced OK"
-
-        # Run SessionStart hooks after sync (to update installed files)
-        if true; then
-            hooks_json="${cache_dir}/hooks/hooks.json"
-            if [ -f "$hooks_json" ]; then
-                session_start_hooks=$(jq -r '.hooks.SessionStart[]?.hooks[]? | select(.type == "command") | .command' "$hooks_json" 2>/dev/null || true)
-                if [ -n "$session_start_hooks" ]; then
-                    log "Running SessionStart hooks for ${key}..."
-                    while IFS= read -r hook_command; do
-                        # Expand ${CLAUDE_PLUGIN_ROOT} to actual cache directory
-                        expanded_command=$(echo "$hook_command" | sed "s|\${CLAUDE_PLUGIN_ROOT}|${cache_dir}|g")
-                        log "  Executing: $expanded_command"
-                        if eval "$expanded_command" > /dev/null 2>&1; then
-                            log "  ✅ Hook executed successfully"
-                        else
-                            log "  ⚠️ Hook failed (non-critical)"
-                        fi
-                    done <<< "$session_start_hooks"
-                fi
-            fi
-        fi
+        synced_plugins="${synced_plugins} ${key}"
     else
         log_always "❌ Failed to sync ${key} → ${cache_dir}"
     fi
+done
+
+# --- Run SessionStart hooks for synced plugins ---
+# Runs after sync (not inside rsync block) so hooks execute even when rsync
+# succeeds but the previous hook run failed. With --force, runs for all plugins.
+for key in $plugin_keys; do
+    # Only run hooks for plugins that were synced, or all plugins with --force
+    if [ "$force" = false ] && [[ "$synced_plugins" != *" ${key}"* ]]; then
+        continue
+    fi
+
+    marketplace="${key##*@}"
+    plugin="${key%%@*}"
+
+    # Resolve cache directory from installed_plugins.json version
+    installed_version=$(jq -r --arg k "$key" '.plugins[$k][0].version // ""' "$INSTALLED_JSON" 2>/dev/null || echo "")
+    cache_base="${PLUGINS_DIR}/cache/${marketplace}/${plugin}"
+    cache_dir="${cache_base}/${installed_version}"
+    if [ -z "$installed_version" ] || [ ! -d "$cache_dir" ]; then
+        log "SessionStart: skipping ${key} (cache dir not found)"
+        continue
+    fi
+
+    hooks_json="${cache_dir}/hooks/hooks.json"
+    if [ ! -f "$hooks_json" ]; then
+        continue
+    fi
+
+    session_start_hooks=$(jq -r '.hooks.SessionStart[]?.hooks[]? | select(.type == "command") | .command' "$hooks_json" 2>/dev/null || true)
+    if [ -z "$session_start_hooks" ]; then
+        continue
+    fi
+
+    log "Running SessionStart hooks for ${key}..."
+    while IFS= read -r hook_command; do
+        # Expand ${CLAUDE_PLUGIN_ROOT} to actual cache directory
+        expanded_command=$(echo "$hook_command" | sed "s|\${CLAUDE_PLUGIN_ROOT}|${cache_dir}|g")
+        log "  Executing: $expanded_command"
+        if eval "$expanded_command" > /dev/null 2>&1; then
+            log "  ✅ Hook executed successfully"
+        else
+            log "  ⚠️ Hook failed (non-critical)"
+        fi
+    done <<< "$session_start_hooks"
 done
 
 touch "$FRESHNESS_FILE" 2>/dev/null || true
