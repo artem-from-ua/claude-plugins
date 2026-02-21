@@ -555,7 +555,7 @@ else
 fi
 
 # Session cost widget: 💵･$X.XX  (from total_cost_usd in stdin JSON)
-session_cost_usd=$(echo "$input" | jq -r '.cost.session_cost_usd // empty')
+session_cost_usd=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
 session_cost_widget=""
 session_cost_visible_width=0
 if [ -n "$session_cost_usd" ] && [ "$session_cost_usd" != "null" ]; then
