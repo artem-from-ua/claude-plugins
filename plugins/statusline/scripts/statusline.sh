@@ -101,28 +101,49 @@ build_progress_bar() {
   local t_blocks=$(( (t_pct * total + 50) / 100 ))
   local bar=""
   local block="■"
+  local block_ind="■̿"  # ■ + U+033F combining double overline = current-time indicator
+
+  # Determine position of current-time indicator:
+  # 1. green zone exists (t > u): last green = t_blocks-1
+  # 2. red zone exists (u > t):   first red  = t_blocks
+  # 3. only blue (u == t < total): first blue = u_blocks
+  # 4. only gray (u == t == total): last gray = total-1
+  local ind_pos
+  if [ "$t_blocks" -gt "$u_blocks" ]; then
+    ind_pos=$(( t_blocks - 1 ))
+  elif [ "$u_blocks" -gt "$t_blocks" ]; then
+    ind_pos=$t_blocks
+  elif [ "$u_blocks" -lt "$total" ]; then
+    ind_pos=$u_blocks
+  else
+    ind_pos=$(( total - 1 ))
+  fi
 
   if [ "$u_blocks" -le "$t_blocks" ]; then
     local i=0
     while [ "$i" -lt "$total" ]; do
+      local b="$block"
+      [ "$i" -eq "$ind_pos" ] && b="$block_ind"
       if [ "$i" -lt "$u_blocks" ]; then
-        bar="${bar}${dark_gray}${block}"
+        bar="${bar}${dark_gray}${b}"
       elif [ "$i" -lt "$t_blocks" ]; then
-        bar="${bar}${bright_green}${block}"
+        bar="${bar}${bright_green}${b}"
       else
-        bar="${bar}${dark_blue}${block}"
+        bar="${bar}${dark_blue}${b}"
       fi
       i=$(( i + 1 ))
     done
   else
     local i=0
     while [ "$i" -lt "$total" ]; do
+      local b="$block"
+      [ "$i" -eq "$ind_pos" ] && b="$block_ind"
       if [ "$i" -lt "$t_blocks" ]; then
-        bar="${bar}${dark_gray}${block}"
+        bar="${bar}${dark_gray}${b}"
       elif [ "$i" -lt "$u_blocks" ]; then
-        bar="${bar}${bright_red}${block}"
+        bar="${bar}${bright_red}${b}"
       else
-        bar="${bar}${dark_blue}${block}"
+        bar="${bar}${dark_blue}${b}"
       fi
       i=$(( i + 1 ))
     done
