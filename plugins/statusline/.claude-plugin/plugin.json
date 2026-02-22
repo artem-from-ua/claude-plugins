@@ -1,8 +1,12 @@
 {
   "name": "statusline",
-  "version": "1.2.3",
+  "version": "1.3.6",
   "description": "Three-line Claude Code statusline with enhanced resolution: 5h (30 blocks/10m), 7d (28 blocks/6h), extra usage (N blocks/1d). Features improved alignment, dimmed separators, and wide character support.",
-  "author": { "name": "Tribe Coding" },
+  "author": {
+    "name": "Tribe Coding"
+  },
   "license": "MIT",
-  "commands": ["./commands/"]
+  "commands": [
+    "./commands/"
+  ]
 }

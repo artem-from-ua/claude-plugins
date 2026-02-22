@@ -1,0 +1,5 @@
+{
+  "enabledPlugins": {
+    "git-branch-naming@tribe-coding": true
+  }
+}

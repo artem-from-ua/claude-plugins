@@ -25,6 +25,12 @@ verbose=false
 force=false
 sync_all=false
 
+# --- File logging ---
+LOG_FILE="/tmp/claude-plugin-sync.log"
+_flog() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [marketplace-sync] $*" >> "$LOG_FILE"
+}
+
 usage() {
     cat <<'EOF'
 Usage: claude-marketplace-sync [OPTIONS]
@@ -73,11 +79,14 @@ if [ "$force" = false ] && [ -f "$FRESHNESS_FILE" ]; then
     age=$(( now - last_run ))
     if [ "$age" -lt "$FRESHNESS_WINDOW" ]; then
         log_always "⏭️  Skipping sync (last run ${age}s ago)"
+        _flog "Skipped: freshness window (age=${age}s < ${FRESHNESS_WINDOW}s)"
         exit 0
     fi
 fi
 
 log_always "🔄 Syncing Claude plugins..."
+_flog "=========================================="
+_flog "=== claude-marketplace-sync started (force=$force, sync_all=$sync_all) ==="
 
 # --- Check prerequisites ---
 if ! command -v jq &>/dev/null; then
@@ -106,8 +115,6 @@ fi
 # --- Pull marketplaces ---
 marketplace_names=$(jq -r 'keys[]' "$MARKETPLACES_JSON")
 
-echo "claude-marketplace-sync: syncing marketplaces..." >&2
-
 for name in $marketplace_names; do
     auto_update=$(jq -r --arg n "$name" '.[$n].autoUpdate // false' "$MARKETPLACES_JSON")
     install_location=$(jq -r --arg n "$name" '.[$n].installLocation' "$MARKETPLACES_JSON")
@@ -131,6 +138,7 @@ for name in $marketplace_names; do
 done
 
 # --- Sync installed plugins into cache ---
+synced_plugins=""  # track which plugins were synced (for SessionStart hooks)
 plugin_keys=$(jq -r '.plugins | keys[]' "$INSTALLED_JSON")
 
 for key in $plugin_keys; do
@@ -168,56 +176,132 @@ for key in $plugin_keys; do
     cache_base="${PLUGINS_DIR}/cache/${marketplace}/${plugin}"
     cache_dir="${cache_base}/${new_version}"
 
-    # Get old version from existing cache (if any)
-    old_version=""
+    # Get current git SHA of the marketplace repo
+    current_sha=$(git -C "$marketplace_location" rev-parse HEAD 2>/dev/null || echo "")
+
+    # Get previously synced SHA and version from installed_plugins.json
+    old_version=$(jq -r --arg k "$key" '.plugins[$k][0].version // ""' "$INSTALLED_JSON" 2>/dev/null || echo "")
+    old_sha=$(jq -r --arg k "$key" '.plugins[$k][0].gitCommitSha // ""' "$INSTALLED_JSON" 2>/dev/null || echo "")
+
+    _flog "--- Plugin: ${key} ---"
+    _flog "  source_dir=$source_dir"
+    _flog "  cache_dir=$cache_dir"
+    _flog "  old_version=$old_version, new_version=$new_version"
+    _flog "  old_sha=${old_sha:0:12}, current_sha=${current_sha:0:12}"
     if [ -d "$cache_dir" ]; then
-        old_plugin_json="${cache_dir}/.claude-plugin/plugin.json"
-        if [ -f "$old_plugin_json" ]; then
-            old_version=$(jq -r '.version // ""' "$old_plugin_json" 2>/dev/null || echo "")
-        fi
+        _flog "  cache_dir exists: $(ls -la "${cache_dir}/scripts/" 2>&1 | grep -E 'statusline|total' || echo 'n/a')"
     else
-        # Directory doesn't exist yet, create it
+        _flog "  cache_dir does NOT exist"
+    fi
+
+    # Determine if sync is needed before running rsync
+    if [ -z "$old_version" ]; then
+        needs_sync=true
+        sync_reason="first install"
+    elif [ "$old_version" != "$new_version" ]; then
+        needs_sync=true
+        sync_reason="version changed: ${old_version} → ${new_version}"
+    elif [ -n "$current_sha" ] && [ "$old_sha" != "$current_sha" ]; then
+        needs_sync=true
+        sync_reason="new commits"
+    elif [ "$force" = true ]; then
+        needs_sync=true
+        sync_reason="--force"
+    elif [ ! -d "$cache_dir" ]; then
+        needs_sync=true
+        sync_reason="cache dir missing"
+    else
+        needs_sync=false
+    fi
+
+    _flog "  needs_sync=$needs_sync, reason=${sync_reason:-none}"
+
+    if [ "$needs_sync" = false ]; then
+        log "Skipping ${key} (up to date, SHA=${current_sha:0:7})"
+        _flog "  SKIPPED"
+        continue
+    fi
+
+    if [ ! -d "$cache_dir" ]; then
         mkdir -p "$cache_dir"
     fi
 
-    log "Syncing ${key} → ${cache_dir}"
+    log "Syncing ${key} → ${cache_dir} (${sync_reason})"
+    _flog "  rsync: ${source_dir}/ → ${cache_dir}/"
     if rsync -a --delete "${source_dir}/" "${cache_dir}/" 2>/dev/null; then
-        # Show update message only if version changed
-        if [ -n "$old_version" ] && [ "$old_version" != "$new_version" ]; then
-            log_always "✅ Updated: ${key} version ${new_version}"
-            version_changed=true
-        elif [ -z "$old_version" ]; then
+        _flog "  rsync OK. cache_dir after: $(ls -la "${cache_dir}/scripts/" 2>&1 | grep -E 'statusline|setup|total' || echo 'n/a')"
+        if [ -z "$old_version" ]; then
             log_always "✅ Installed: ${key} version ${new_version}"
-            version_changed=true
+        elif [ "$old_version" != "$new_version" ]; then
+            log_always "✅ Updated: ${key} version ${new_version}"
         else
-            version_changed=false
+            log_always "✅ Updated: ${key} version ${new_version} (${sync_reason})"
+        fi
+
+        # Update gitCommitSha in installed_plugins.json so next run can compare
+        if [ -n "$current_sha" ]; then
+            jq --arg k "$key" --arg sha "$current_sha" \
+               '.plugins[$k][0].gitCommitSha = $sha' \
+               "$INSTALLED_JSON" > "${INSTALLED_JSON}.tmp" \
+            && mv "${INSTALLED_JSON}.tmp" "$INSTALLED_JSON"
         fi
         log "  synced OK"
-
-        # Run SessionStart hooks if version changed (to update installed files)
-        if [ "$version_changed" = true ]; then
-            hooks_json="${cache_dir}/hooks/hooks.json"
-            if [ -f "$hooks_json" ]; then
-                session_start_hooks=$(jq -r '.hooks.SessionStart[]?.hooks[]? | select(.type == "command") | .command' "$hooks_json" 2>/dev/null || true)
-                if [ -n "$session_start_hooks" ]; then
-                    log "Running SessionStart hooks for ${key}..."
-                    while IFS= read -r hook_command; do
-                        # Expand ${CLAUDE_PLUGIN_ROOT} to actual cache directory
-                        expanded_command=$(echo "$hook_command" | sed "s|\${CLAUDE_PLUGIN_ROOT}|${cache_dir}|g")
-                        log "  Executing: $expanded_command"
-                        if eval "$expanded_command" > /dev/null 2>&1; then
-                            log "  ✅ Hook executed successfully"
-                        else
-                            log "  ⚠️ Hook failed (non-critical)"
-                        fi
-                    done <<< "$session_start_hooks"
-                fi
-            fi
-        fi
+        synced_plugins="${synced_plugins} ${key}"
     else
+        _flog "  rsync FAILED"
         log_always "❌ Failed to sync ${key} → ${cache_dir}"
     fi
 done
 
+# --- Run SessionStart hooks for synced plugins ---
+# Runs after sync (not inside rsync block) so hooks execute even when rsync
+# succeeds but the previous hook run failed. With --force, runs for all plugins.
+for key in $plugin_keys; do
+    # Only run hooks for plugins that were synced, or all plugins with --force
+    if [ "$force" = false ] && [[ "$synced_plugins" != *" ${key}"* ]]; then
+        continue
+    fi
+
+    marketplace="${key##*@}"
+    plugin="${key%%@*}"
+
+    # Resolve cache directory from installed_plugins.json version
+    installed_version=$(jq -r --arg k "$key" '.plugins[$k][0].version // ""' "$INSTALLED_JSON" 2>/dev/null || echo "")
+    cache_base="${PLUGINS_DIR}/cache/${marketplace}/${plugin}"
+    cache_dir="${cache_base}/${installed_version}"
+    if [ -z "$installed_version" ] || [ ! -d "$cache_dir" ]; then
+        log "SessionStart: skipping ${key} (cache dir not found)"
+        continue
+    fi
+
+    hooks_json="${cache_dir}/hooks/hooks.json"
+    if [ ! -f "$hooks_json" ]; then
+        continue
+    fi
+
+    session_start_hooks=$(jq -r '.hooks.SessionStart[]?.hooks[]? | select(.type == "command") | .command' "$hooks_json" 2>/dev/null || true)
+    if [ -z "$session_start_hooks" ]; then
+        continue
+    fi
+
+    log "Running SessionStart hooks for ${key}..."
+    while IFS= read -r hook_command; do
+        # Expand ${CLAUDE_PLUGIN_ROOT} to actual cache directory
+        expanded_command=$(echo "$hook_command" | sed "s|\${CLAUDE_PLUGIN_ROOT}|${cache_dir}|g")
+        log "  Executing: $expanded_command"
+        _flog "  Hook command (raw): $hook_command"
+        _flog "  Hook command (expanded): $expanded_command"
+        hook_output=$(eval "$expanded_command" 2>&1) && hook_rc=0 || hook_rc=$?
+        if [ "$hook_rc" -eq 0 ]; then
+            log "  ✅ Hook executed successfully"
+            _flog "  Hook rc=0, output: $hook_output"
+        else
+            log "  ⚠️ Hook failed (non-critical)"
+            _flog "  Hook rc=$hook_rc, output: $hook_output"
+        fi
+    done <<< "$session_start_hooks"
+done
+
 touch "$FRESHNESS_FILE" 2>/dev/null || true
+_flog "=== claude-marketplace-sync finished ==="
 log "Done"

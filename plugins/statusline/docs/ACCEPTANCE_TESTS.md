@@ -47,11 +47,10 @@ Acceptance tests are critical to ensure:
 
 **Steps:**
 ```bash
-cd plugins/statusline
-jq empty .claude-plugin/plugin.json && echo "✅ Valid JSON" || echo "❌ Invalid JSON"
-jq -r '.name' .claude-plugin/plugin.json
-jq -r '.version' .claude-plugin/plugin.json
-jq -r '.description' .claude-plugin/plugin.json
+jq empty plugins/statusline/.claude-plugin/plugin.json && echo "✅ Valid JSON" || echo "❌ Invalid JSON"
+jq -r '.name' plugins/statusline/.claude-plugin/plugin.json
+jq -r '.version' plugins/statusline/.claude-plugin/plugin.json
+jq -r '.description' plugins/statusline/.claude-plugin/plugin.json
 ```
 
 **Expected result:**
@@ -93,6 +92,34 @@ test -x plugins/statusline/scripts/setup-statusline.sh && echo "✅ setup-status
 
 ---
 
+#### 1.3 Setup Script Logging
+
+**Objective:** Verify setup-statusline.sh writes diagnostic log
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+rm -f /tmp/claude-plugin-sync.log
+CLAUDE_PLUGIN_ROOT="$(pwd)/plugins/statusline" bash plugins/statusline/scripts/setup-statusline.sh > /dev/null 2>&1
+grep -c "\[setup-statusline\]" /tmp/claude-plugin-sync.log
+grep "CLAUDE_PLUGIN_ROOT=" /tmp/claude-plugin-sync.log
+grep "SOURCE=" /tmp/claude-plugin-sync.log
+```
+
+**Expected result:**
+- Log file created at `/tmp/claude-plugin-sync.log`
+- Contains `[setup-statusline]` entries with CLAUDE_PLUGIN_ROOT, SOURCE, TARGET paths
+- Records copy decision (missing/differs/identical)
+
+**Acceptance criteria:**
+- ✅ Log file created
+- ✅ CLAUDE_PLUGIN_ROOT value logged
+- ✅ SOURCE and TARGET paths logged
+- ✅ Copy decision logged
+
+---
+
 ### 2. Unit Tests
 
 #### 2.1 Progress Bar Block Count
@@ -103,16 +130,14 @@ test -x plugins/statusline/scripts/setup-statusline.sh && echo "✅ setup-status
 
 **Steps:**
 ```bash
-cd plugins/statusline
-
 # Test 5h bar (20 blocks)
-test_output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
-  bash scripts/statusline.sh | head -1 | grep -o '■' | wc -l | tr -d ' ')
+test_output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1 | grep -o '■' | wc -l | tr -d ' ')
 echo "5h bar blocks: $test_output (expected: 20)"
 
 # Test 7d bar (21 blocks)
-test_output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
-  bash scripts/statusline.sh | head -1 | tail -c 50 | grep -o '■' | head -21 | wc -l | tr -d ' ')
+test_output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1 | tail -c 50 | grep -o '■' | head -21 | wc -l | tr -d ' ')
 echo "7d bar blocks: $test_output (expected: 21)"
 ```
 
@@ -136,8 +161,6 @@ echo "7d bar blocks: $test_output (expected: 21)"
 
 **Steps:**
 ```bash
-cd plugins/statusline
-
 # Calculate expected days in current month (UTC)
 if [ "$(uname)" = "Darwin" ]; then
   expected_days=$(date -u -v1d -v+1m -v-1d +%d 2>/dev/null)
@@ -147,8 +170,8 @@ fi
 echo "Expected days in month: $expected_days"
 
 # Count blocks in extra usage bar (after 💸)
-actual_blocks=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
-  bash scripts/statusline.sh | head -1 | grep -o '💸.*' | grep -o '■' | wc -l | tr -d ' ')
+actual_blocks=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1 | grep -o '💸.*' | grep -o '■' | wc -l | tr -d ' ')
 echo "Actual blocks in extra usage bar: $actual_blocks"
 
 if [ "$expected_days" = "$actual_blocks" ]; then
@@ -178,10 +201,8 @@ Actual blocks in extra usage bar: 28
 
 **Steps:**
 ```bash
-cd plugins/statusline
-
-line_count=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
-  bash scripts/statusline.sh | wc -l | tr -d ' ')
+line_count=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | wc -l | tr -d ' ')
 echo "Line count: $line_count (expected: 2)"
 
 test "$line_count" -eq 2 && echo "✅ Correct" || echo "❌ Incorrect"
@@ -210,23 +231,21 @@ Line count: 2 (expected: 2)
 
 **Steps:**
 ```bash
-cd plugins/statusline
-
 # Clear cache
 rm -f /tmp/claude-statusline-usage-cache-${UID}
 
 # First call (should fetch from API)
 echo "First call (fetching from API)..."
-time echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
-  bash scripts/statusline.sh > /dev/null
+time printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh > /dev/null
 
 # Check cache exists
 test -f /tmp/claude-statusline-usage-cache-${UID} && echo "✅ Cache file created"
 
 # Second call (should use cache)
 echo "Second call (using cache)..."
-time echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
-  bash scripts/statusline.sh > /dev/null
+time printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh > /dev/null
 
 echo "Second call should be faster (cached)"
 ```
@@ -256,8 +275,6 @@ Second call should be faster (cached)
 
 **Steps:**
 ```bash
-cd plugins/statusline
-
 # Create mock API responses with different utilization levels
 create_mock_cache() {
   local five_h=$1
@@ -275,7 +292,7 @@ EOF
 # Test case 1: 50% (no icons)
 echo "Test 1: 50% utilization (no warning icons)"
 create_mock_cache 50.0 50.0 50.0
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
 if echo "$output" | grep -q "⚠️\|❌"; then
   echo "❌ FAIL: Should not have warning icons"
 else
@@ -285,7 +302,7 @@ fi
 # Test case 2: 91% (⚠️ icons)
 echo "Test 2: 91% utilization (⚠️ warning icons)"
 create_mock_cache 91.0 91.0 91.0
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
 warning_count=$(echo "$output" | grep -o "⚠️" | wc -l | tr -d ' ')
 echo "Warning icons (⚠️) found: $warning_count (expected: 3)"
 test "$warning_count" -eq 3 && echo "✅ PASS" || echo "❌ FAIL"
@@ -293,7 +310,7 @@ test "$warning_count" -eq 3 && echo "✅ PASS" || echo "❌ FAIL"
 # Test case 3: 100% (❌ icons)
 echo "Test 3: 100% utilization (❌ exhausted icons)"
 create_mock_cache 100.0 100.0 100.0
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
 exhausted_count=$(echo "$output" | grep -o "❌" | wc -l | tr -d ' ')
 echo "Exhausted icons (❌) found: $exhausted_count (expected: 3)"
 test "$exhausted_count" -eq 3 && echo "✅ PASS" || echo "❌ FAIL"
@@ -327,14 +344,12 @@ Exhausted icons (❌) found: 3 (expected: 3)
 
 **Steps:**
 ```bash
-cd plugins/statusline
-
 # Test case 1: Limits not exhausted (⏸️ paused)
 echo "Test 1: Limits not exhausted (⏸️ paused)"
 cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
 {"five_hour":{"utilization":50.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1000.0,"utilization":50.0,"monthly_limit":5000}}
 EOF
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
 echo "$output" | grep -q "💸.*⏸️.*¤" && echo "✅ PASS: ⏸️ (paused)" || echo "❌ FAIL"
 
 # Test case 2: 5h exhausted, extra<100 (▶️ active)
@@ -342,7 +357,7 @@ echo "Test 2: 5h exhausted, extra<100 (▶️ active)"
 cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
 {"five_hour":{"utilization":100.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1000.0,"utilization":50.0,"monthly_limit":5000}}
 EOF
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
 echo "$output" | grep -q "💸.*▶️.*¤" && echo "✅ PASS: ▶️ (active)" || echo "❌ FAIL"
 
 # Test case 3: 7d exhausted, extra<100 (▶️ active)
@@ -350,7 +365,7 @@ echo "Test 3: 7d exhausted, extra<100 (▶️ active)"
 cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
 {"five_hour":{"utilization":50.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":100.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1000.0,"utilization":50.0,"monthly_limit":5000}}
 EOF
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
 echo "$output" | grep -q "💸.*▶️.*¤" && echo "✅ PASS: ▶️ (active)" || echo "❌ FAIL"
 
 # Test case 4: 5h exhausted, extra=100 (⏸️ paused)
@@ -358,7 +373,7 @@ echo "Test 4: 5h exhausted, extra=100 (⏸️ paused, extra exhausted)"
 cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
 {"five_hour":{"utilization":100.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":5000.0,"utilization":100.0,"monthly_limit":5000}}
 EOF
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
 echo "$output" | grep -q "💸.*⏸️.*¤" && echo "✅ PASS: ⏸️ (paused)" || echo "❌ FAIL"
 
 # Test case 5: 5h exhausted, extra=null (⏸️ paused, unlimited)
@@ -366,7 +381,7 @@ echo "Test 5: 5h exhausted, extra=null (⏸️ paused, unlimited)"
 cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
 {"five_hour":{"utilization":100.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1000.0,"utilization":null}}
 EOF
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
 echo "$output" | grep -q "💸.*⏸️.*¤" && echo "✅ PASS: ⏸️ (paused)" || echo "❌ FAIL"
 ```
 
@@ -401,8 +416,6 @@ Test 5: 5h exhausted, extra=null (⏸️ paused, unlimited)
 
 **Steps:**
 ```bash
-cd plugins/statusline
-
 # Test various credit amounts
 test_credits() {
   local credits=$1
@@ -412,7 +425,7 @@ test_credits() {
 {"five_hour":{"utilization":50.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":$credits,"utilization":null}}
 EOF
 
-  output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+  output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
 
   # Extract money spent (last field after 💸)
   actual=$(echo "$output" | grep -o '💸.*' | awk '{print $NF}')
@@ -470,14 +483,12 @@ if [ "$(uname)" != "Darwin" ]; then
   exit 0
 fi
 
-cd plugins/statusline
-
 # Test date commands (macOS-specific flags)
 date -u -v1d -v+1m -v-1d +%d > /dev/null 2>&1 && echo "✅ macOS date commands work"
 
 # Test full statusline
-echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
-  bash scripts/statusline.sh > /dev/null && echo "✅ Statusline executes without errors"
+printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh > /dev/null && echo "✅ Statusline executes without errors"
 ```
 
 **Expected result:**
@@ -505,14 +516,12 @@ if [ "$(uname)" = "Darwin" ]; then
   exit 0
 fi
 
-cd plugins/statusline
-
 # Test date commands (Linux-specific flags)
 date -u -d "2026-02-01 +1 month -1 day" +%d > /dev/null 2>&1 && echo "✅ Linux date commands work"
 
 # Test full statusline
-echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
-  bash scripts/statusline.sh > /dev/null && echo "✅ Statusline executes without errors"
+printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh > /dev/null && echo "✅ Statusline executes without errors"
 ```
 
 **Expected result:**
@@ -535,8 +544,6 @@ echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"cont
 
 **Steps:**
 ```bash
-cd plugins/statusline
-
 # Helper to create mock cache with specific reset time
 create_time_test() {
   local hours_left=$1
@@ -555,7 +562,7 @@ create_time_test() {
 {"five_hour":{"utilization":50.0,"resets_at":"$reset_iso"},"seven_day":{"utilization":50.0,"resets_at":"$reset_iso"},"extra_usage":{"is_enabled":false}}
 EOF
 
-  local output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+  local output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
 
   echo "Test: ${hours_left}h left"
   echo "Output: $output"
@@ -633,13 +640,11 @@ Output contains: 12h0m (no ~)
 
 **Steps:**
 ```bash
-cd plugins/statusline
-
 cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
 {"five_hour":{"utilization":50.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":false,"used_credits":1000.0,"utilization":null}}
 EOF
 
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
 
 if echo "$output" | grep -q "💸"; then
   echo "❌ FAIL: Extra usage block should not appear"
@@ -666,13 +671,11 @@ fi
 
 **Steps:**
 ```bash
-cd plugins/statusline
-
 cat > /tmp/claude-statusline-usage-cache-${UID} <<'EOF'
 {"five_hour":{"utilization":50.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":true,"used_credits":1251.0,"utilization":null,"monthly_limit":null}}
 EOF
 
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | head -1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
 
 echo "$output"
 
@@ -710,13 +713,11 @@ Icon count: 3
 
 **Steps:**
 ```bash
-cd plugins/statusline
-
 # Remove cache and token to simulate API failure
 rm -f /tmp/claude-statusline-usage-cache-${UID}
 unset CLAUDE_CODE_OAUTH_TOKEN
 
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh 2>&1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh 2>&1)
 
 echo "$output"
 
@@ -754,9 +755,8 @@ fi
 ```bash
 # Create temp git repo
 test_dir=$(mktemp -d)
-cd "$test_dir"
-git init -q
-git checkout -b test-branch 2>/dev/null
+git -C "$test_dir" init -q
+git -C "$test_dir" checkout -b test-branch 2>/dev/null
 
 # Run statusline
 output=$(echo "{\"workspace\":{\"current_dir\":\"$test_dir\"},\"model\":{\"display_name\":\"Test\"},\"context_window\":{\"used_percentage\":50}}" | \
@@ -771,7 +771,6 @@ else
 fi
 
 # Cleanup
-cd /
 rm -rf "$test_dir"
 ```
 
@@ -797,14 +796,13 @@ rm -rf "$test_dir"
 ```bash
 # Create temp git repo
 test_dir=$(mktemp -d)
-cd "$test_dir"
-git init -q
-git checkout -b main 2>/dev/null
+git -C "$test_dir" init -q
+git -C "$test_dir" checkout -b main 2>/dev/null
 
 # Add some content and commit
-echo "test" > file.txt
-git add file.txt
-git commit -m "Initial commit" -q
+printf '%s\n' "test" > "$test_dir/file.txt"
+git -C "$test_dir" add file.txt
+git -C "$test_dir" -c user.email=t@t.com -c user.name=T commit -m "Initial commit" -q
 
 # Run statusline (clean tree)
 output_clean=$(echo "{\"workspace\":{\"current_dir\":\"$test_dir\"},\"model\":{\"display_name\":\"Test\"},\"context_window\":{\"used_percentage\":50}}" | \
@@ -819,7 +817,7 @@ else
 fi
 
 # Make working tree dirty
-echo "modified" > file.txt
+printf '%s\n' "modified" > "$test_dir/file.txt"
 
 # Run statusline (dirty tree)
 output_dirty=$(echo "{\"workspace\":{\"current_dir\":\"$test_dir\"},\"model\":{\"display_name\":\"Test\"},\"context_window\":{\"used_percentage\":50}}" | \
@@ -834,7 +832,6 @@ else
 fi
 
 # Cleanup
-cd /
 rm -rf "$test_dir"
 ```
 
@@ -862,12 +859,10 @@ Dirty tree: 📁 tmp.XXXXXX   🌿 main ⚠️   🤖 Test   📚 50.0%
 
 **Steps:**
 ```bash
-cd plugins/statusline
-
 # Test case 1: <60% (no color, no warning)
 echo "Test 1: 50% context (no warning)"
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50.0}}' | \
-  bash scripts/statusline.sh | tail -1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50.0}}' | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | tail -1)
 if echo "$output" | grep "📚 50" | grep -qv "⚠️\|🛑"; then
   echo "✅ PASS: No warning"
 else
@@ -876,8 +871,8 @@ fi
 
 # Test case 2: ≥60% (yellow + ⚠️)
 echo "Test 2: 65% context (yellow ⚠️)"
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":65.0}}' | \
-  bash scripts/statusline.sh | tail -1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":65.0}}' | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | tail -1)
 if echo "$output" | grep -q "📚.*65.*⚠️"; then
   echo "✅ PASS: ⚠️ shown"
 else
@@ -886,8 +881,8 @@ fi
 
 # Test case 3: ≥80% (red + 🛑)
 echo "Test 3: 85% context (red 🛑)"
-output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":85.0}}' | \
-  bash scripts/statusline.sh | tail -1)
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":85.0}}' | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | tail -1)
 if echo "$output" | grep -q "📚.*85.*🛑"; then
   echo "✅ PASS: 🛑 shown"
 else
@@ -981,6 +976,14 @@ Exhaust 5h limit by using Claude extensively, then verify:
 - **Keychain access**: OAuth token from Keychain only on macOS (Linux uses `~/.claude/.credentials.json`)
 - **Locale**: Decimal separator may be comma or dot depending on system locale
 
+### Debug Logging
+
+Both `claude-marketplace-sync` and `setup-statusline.sh` write detailed logs to `/tmp/claude-plugin-sync.log`. The log includes:
+- `[marketplace-sync]` — sync decisions, rsync operations, hook execution with exit codes
+- `[setup-statusline]` — `CLAUDE_PLUGIN_ROOT` value, source/target file states, diff output, copy results
+
+Use this log to diagnose issues where statusline doesn't update after a version bump.
+
 ---
 
 ## Regression Testing Guide
@@ -996,10 +999,9 @@ Run full test suite:
 ### Quick Smoke Test
 
 ```bash
-cd plugins/statusline
-
 # Run basic tests
-bash docs/ACCEPTANCE_TESTS.md  # If converted to executable test script
+# If converted to executable test script:
+# bash plugins/statusline/docs/ACCEPTANCE_TESTS.md
 # OR manually run tests 2.1, 2.2, 2.3, 3.2, 3.3
 ```
 

@@ -74,9 +74,10 @@ Two-line Claude Code statusline: progress bars (line 1) + session info (line 2).
 
 **Key components:**
 - `scripts/statusline.sh` — main script, reads JSON from stdin (piped by Claude Code), outputs two ANSI-colored lines. Fetches Anthropic OAuth usage API (cached 60s in `/tmp/claude-statusline-usage-cache`), reads OAuth token from macOS Keychain or Linux credentials file
-- `scripts/setup-statusline.sh` — SessionStart hook, copies `statusline.sh` to `~/.claude/statusline.sh`
+- `scripts/setup-statusline.sh` — SessionStart hook, copies `statusline.sh` to `~/.claude/statusline.sh`. Logs all operations to `/tmp/claude-plugin-sync.log`
 - `commands/statusline-setup/` — user-invocable `/statusline-setup` command, configures `~/.claude/settings.json`
 - `docs/ACCEPTANCE_TESTS.md` — comprehensive test documentation (8 categories, 17+ tests)
+- `docs/STDIN_JSON.md` — reference for all JSON fields piped by Claude Code to `statusline.sh`
 
 ## Plugin Structure Convention
 
@@ -336,6 +337,8 @@ Claude Code has a bug where the plugin cache is not invalidated on auto-update (
 
 **Solution:** The standalone `scripts/claude-marketplace-sync` script runs _before_ Claude Code starts, pulling marketplace repos and rsyncing into cache. Run `scripts/install-sync.sh` to install — it configures PATH and shell alias automatically. See README for details.
 
+**Debug logging:** Both `claude-marketplace-sync` and plugin SessionStart hooks log detailed operations to `/tmp/claude-plugin-sync.log`. Use this file to diagnose sync issues (stale `CLAUDE_PLUGIN_ROOT`, failed hook execution, rsync problems).
+
 ## Adding a New Plugin
 
 1. Create `plugins/<name>/` with the structure above
@@ -572,7 +575,17 @@ For tests requiring manual execution (especially SessionStart hooks, fresh sessi
 
 **Steps:**
 ```bash
-[commands]
+# Use absolute paths — CWD is not guaranteed between Bash tool calls
+SCRIPT="/absolute/path/to/plugins/<name>/scripts/my-script.sh"
+
+# Use printf '%s' for JSON — echo interprets \n in zsh
+printf '%s' '{"tool_input":{"command":"git checkout -b feature/foo"}}' | bash "$SCRIPT"
+
+# Use git -C instead of cd
+git -C /tmp/test-repo init -q
+
+# Use env for environment variable injection
+env CLAUDE_PROJECT_DIR=/tmp/test-repo bash "$SCRIPT"
 ```
 
 **Expected result:**
@@ -603,7 +616,25 @@ For tests requiring manual execution (especially SessionStart hooks, fresh sessi
 - **Use tables**: For comparison data (scenarios, pass/fail, automation status)
 - **Reference real files**: Link to actual plugin files in examples
 
-### 8. Testing SessionStart Hooks and Proactive Behavior
+### 8. Shell Command Patterns for Bash Tool Compatibility
+
+Tests in `ACCEPTANCE_TESTS.md` are run by Claude Code's Bash tool (zsh on macOS). Follow these patterns to avoid common failures:
+
+| Problem | Wrong | Correct |
+|---------|-------|---------|
+| CWD not preserved between calls | `SCRIPT="plugins/foo/scripts/bar.sh"` | `SCRIPT="/absolute/path/to/bar.sh"` |
+| `echo` interprets `\n` in zsh | `echo '{"cmd":"git commit -m \"msg\""}'` | `printf '%s' '{"cmd":"git commit -m \"msg\""}'` |
+| `cd` state lost between Bash calls | `cd /tmp/repo && git status` | `git -C /tmp/repo status` |
+| Inline env var scoping | `CLAUDE_PROJECT_DIR=/tmp bash "$SCRIPT"` | `env CLAUDE_PROJECT_DIR=/tmp bash "$SCRIPT"` |
+
+**Rules:**
+- ALWAYS use absolute paths for scripts referenced in test steps
+- ALWAYS use `printf '%s'` (not `echo`) when passing JSON to hook scripts
+- ALWAYS use `git -C /path` instead of `cd /path && git`
+- ALWAYS use `env VAR=val cmd` for environment variable injection
+- NEVER rely on CWD being set correctly — each Bash tool call may start from project root
+
+### 9. Testing SessionStart Hooks and Proactive Behavior
 
 **Critical insight from [issue #28](https://github.com/Tribe-Coding/claude-plugins/issues/28):** SessionStart hooks that inject MANDATORY instructions work correctly, but testing them requires understanding environmental failure modes.
 
