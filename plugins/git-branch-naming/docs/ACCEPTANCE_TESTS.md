@@ -177,8 +177,9 @@ CLAUDE_PROJECT_DIR=/tmp/test-project \
 # Expected: JSON with permissionDecision: "deny"
 
 # Test: max length enforced (> 30 chars)
+# Note: branch name must actually exceed maxLength=30. "feat/this-is-a-really-too-long-name" = 35 chars
 CLAUDE_PROJECT_DIR=/tmp/test-project \
-  echo '{"tool_input":{"command":"git checkout -b feat/this-is-too-long-name"}}' | bash "$SCRIPT"
+  echo '{"tool_input":{"command":"git checkout -b feat/this-is-a-really-too-long-name"}}' | bash "$SCRIPT"
 # Expected: JSON with permissionDecision: "deny"
 ```
 
