@@ -1,0 +1,122 @@
+#!/bin/bash
+# Git pre-push hook: validate branch naming convention before push.
+# Installed by /git-branch-naming:setup or manually to .githooks/pre-push
+# Enable with: git config core.hooksPath .githooks
+#
+# Reads .claude/git-branch-naming.json for project-specific rules.
+# Exit 0 = allow push, Exit 1 = block push.
+
+set -euo pipefail
+
+# Find project root (directory containing .git)
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+CONFIG_FILE="$REPO_ROOT/.claude/git-branch-naming.json"
+
+# ─── Load config ─────────────────────────────────────────────────────────────
+
+PREFIXES="feature|bugfix|hotfix|release|docs|test|chore|refactor"
+TICKET_PATTERN=""
+MAX_LENGTH=60
+PROTECTED="main|master|develop"
+REQUIRE_KEBAB_CASE=true
+ENFORCEMENT_INVALID_NAME="ask"
+ENFORCEMENT_PROTECTED_BRANCH="ask"
+
+if [[ -f "$CONFIG_FILE" ]] && command -v jq >/dev/null 2>&1; then
+  _prefixes=$(jq -r '.prefixes // empty | join("|")' "$CONFIG_FILE" 2>/dev/null || true)
+  [[ -n "$_prefixes" ]] && PREFIXES="$_prefixes"
+
+  _ticket=$(jq -r '.ticketPattern // empty' "$CONFIG_FILE" 2>/dev/null || true)
+  [[ -n "$_ticket" ]] && TICKET_PATTERN="$_ticket"
+
+  _maxlen=$(jq -r '.maxLength // empty' "$CONFIG_FILE" 2>/dev/null || true)
+  [[ -n "$_maxlen" ]] && MAX_LENGTH="$_maxlen"
+
+  _protected=$(jq -r '.protectedBranches // empty | join("|")' "$CONFIG_FILE" 2>/dev/null || true)
+  [[ -n "$_protected" ]] && PROTECTED="$_protected"
+
+  _kebab=$(jq -r '.requireKebabCase // empty' "$CONFIG_FILE" 2>/dev/null || true)
+  [[ "$_kebab" == "false" ]] && REQUIRE_KEBAB_CASE=false
+
+  _e_name=$(jq -r '.enforcement.invalidName // empty' "$CONFIG_FILE" 2>/dev/null || true)
+  [[ -n "$_e_name" ]] && ENFORCEMENT_INVALID_NAME="$_e_name"
+
+  _e_prot=$(jq -r '.enforcement.protectedBranch // empty' "$CONFIG_FILE" 2>/dev/null || true)
+  [[ -n "$_e_prot" ]] && ENFORCEMENT_PROTECTED_BRANCH="$_e_prot"
+fi
+
+# ─── Get current branch ───────────────────────────────────────────────────────
+
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+
+if [[ -z "$CURRENT_BRANCH" ]] || [[ "$CURRENT_BRANCH" == "HEAD" ]]; then
+  exit 0
+fi
+
+ERRORS=()
+WARNINGS=()
+
+# ─── Check: protected branch ─────────────────────────────────────────────────
+
+if echo "$CURRENT_BRANCH" | grep -qE "^($PROTECTED)$"; then
+  MSG="Pushing directly to protected branch '$CURRENT_BRANCH'. Use a pull request instead."
+  if [[ "$ENFORCEMENT_PROTECTED_BRANCH" == "deny" ]]; then
+    ERRORS+=("$MSG")
+  else
+    WARNINGS+=("$MSG")
+  fi
+fi
+
+# ─── Check: branch name format ───────────────────────────────────────────────
+
+if ! echo "$CURRENT_BRANCH" | grep -qE "^($PROTECTED)$"; then
+  INVALID_REASON=""
+
+  if ! echo "$CURRENT_BRANCH" | grep -qE "^($PREFIXES)/"; then
+    INVALID_REASON="missing valid prefix. Valid prefixes: $(echo "$PREFIXES" | tr '|' ', ')"
+  else
+    DESC="${CURRENT_BRANCH#*/}"
+    if [[ -z "$DESC" ]]; then
+      INVALID_REASON="no description after prefix"
+    elif [[ "$REQUIRE_KEBAB_CASE" == "true" ]] && echo "$DESC" | grep -qE '[A-Z_]'; then
+      FIXED=$(echo "$DESC" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
+      INVALID_REASON="not kebab-case. Suggested: ${CURRENT_BRANCH%%/*}/$FIXED"
+    elif [[ ${#CURRENT_BRANCH} -gt $MAX_LENGTH ]]; then
+      INVALID_REASON="too long (${#CURRENT_BRANCH} > $MAX_LENGTH characters)"
+    elif [[ -n "$TICKET_PATTERN" ]] && ! echo "$DESC" | grep -qE "$TICKET_PATTERN"; then
+      INVALID_REASON="missing required ticket number (pattern: $TICKET_PATTERN)"
+    fi
+  fi
+
+  if [[ -n "$INVALID_REASON" ]]; then
+    MSG="Branch name '$CURRENT_BRANCH' is invalid: $INVALID_REASON"
+    if [[ "$ENFORCEMENT_INVALID_NAME" == "deny" ]]; then
+      ERRORS+=("$MSG")
+    else
+      WARNINGS+=("$MSG")
+    fi
+  fi
+fi
+
+# ─── Output results ───────────────────────────────────────────────────────────
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+for w in "${WARNINGS[@]:-}"; do
+  [[ -z "$w" ]] && continue
+  echo -e "${YELLOW}⚠ [git-branch-naming] WARNING: $w${NC}" >&2
+done
+
+for e in "${ERRORS[@]:-}"; do
+  [[ -z "$e" ]] && continue
+  echo -e "${RED}✗ [git-branch-naming] ERROR: $e${NC}" >&2
+done
+
+if [[ ${#ERRORS[@]} -gt 0 ]]; then
+  echo -e "${RED}Push blocked by git-branch-naming hook. Fix the issues above and retry.${NC}" >&2
+  exit 1
+fi
+
+exit 0

@@ -1,0 +1,13 @@
+{
+  "prefixes": ["feature", "bugfix", "hotfix", "release", "docs", "test", "chore", "refactor"],
+  "ticketPattern": "",
+  "maxLength": 60,
+  "protectedBranches": ["main", "master", "develop"],
+  "requireKebabCase": true,
+  "warnOnContentMismatch": true,
+  "enforcement": {
+    "invalidName": "ask",
+    "protectedBranch": "ask",
+    "contentMismatch": "ask"
+  }
+}
