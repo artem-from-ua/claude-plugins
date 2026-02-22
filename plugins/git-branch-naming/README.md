@@ -10,6 +10,88 @@ A Claude Code plugin that enforces git branch naming conventions. Validates bran
 - **Injects naming rules** into every Claude Code session (zero extra user prompts)
 - **Configurable per project** via `.claude/git-branch-naming.json` — committed to git and shared team-wide
 
+## Why This Plugin Exists
+
+Without this plugin, Claude happily runs whatever git command you ask — including problematic ones:
+
+```
+You: create a branch for the login feature
+Claude: git checkout -b LoginFeature   ✅ done
+```
+
+Three months later, your repo looks like this:
+
+```
+LoginFeature
+fix-bug
+update
+johns-branch
+temp2
+JIRA-456
+refactor-stuff-v2-FINAL
+```
+
+Nobody knows what's in these branches, `git branch -a` is unreadable, and automated tooling (release scripts, changelogs, CI rules) breaks because it can't parse branch names.
+
+This plugin catches the problem at the source — before the branch is created.
+
+## Usage Examples
+
+### Scenario 1: Claude creates a branch with a bad name
+
+```
+You: create a branch for the new payment feature
+
+Claude: ⚠️  Branch name 'payment-feature' is missing a valid prefix.
+
+Valid prefixes: feature, bugfix, hotfix, release, docs, test, chore, refactor
+
+Suggested fix: git branch -m 'payment-feature' 'feature/payment-feature'
+
+Branch name format: <prefix>/<kebab-case-description>
+
+Proceed anyway, or rename to 'feature/payment-feature'?
+```
+
+### Scenario 2: Ticket number required by team config
+
+```
+You: start working on PROJ-789, the cart checkout bug
+
+Claude: git checkout -b bugfix/PROJ-789-fix-cart-checkout   ✅
+```
+
+Without config, Claude might have created `bugfix/fix-cart-checkout` — valid format, but no ticket link. With `"ticketPattern": "[A-Z]+-\\d+"` in config, the ticket is enforced.
+
+### Scenario 3: Content mismatch before commit
+
+```
+You: git commit -m "docs: update API reference"
+
+Claude: ⚠️  Branch 'feature/add-payment' usually contains code changes, but 90%
+of staged files are documentation (9/10 files). Is this intentional?
+
+Staged files: README.md, docs/api.md, docs/auth.md, docs/errors.md ...
+
+Proceed with commit, or would you like to review the staged files?
+```
+
+Catches the common mistake of committing to the wrong branch.
+
+### Scenario 4: Direct push to main blocked
+
+```
+You: git push origin main
+
+Claude: ⚠️  You are about to push directly to protected branch 'main'.
+
+This is usually done via a pull request instead of a direct push. Are you sure?
+```
+
+### Scenario 5: Team-wide conventions via committed config
+
+Your team uses JIRA and wants strict enforcement. One dev runs `/git-branch-naming:setup`, commits `.claude/git-branch-naming.json`, and from that point every teammate's Claude Code session enforces the same rules — no onboarding docs required.
+
 ## Branch Name Format
 
 ```
@@ -186,16 +268,48 @@ templates/
 └── pre-push                  # Standalone git pre-push hook
 ```
 
-## Token Budget
+## Token Cost Analysis
 
-| Component | Tokens | When |
-|-----------|--------|------|
-| SessionStart rules | ~130 | Every session |
-| Skill description | ~60 | Every session (skill list) |
-| Command description | ~30 | Every session (command list) |
-| **Total per-session** | **~220** | Fixed |
-| Skill body (on-demand) | ~400 | When invoked |
-| PreToolUse scripts | 0 | External process |
+### Fixed cost per session (~220 tokens)
+
+Every Claude Code session pays this cost regardless of whether you use git at all:
+
+| Component | Tokens | Source |
+|-----------|--------|--------|
+| SessionStart rules (`inject-rules.sh`) | ~130 | Injected into system prompt |
+| Skill description (`branch-naming-guide`) | ~60 | Skill list loaded at startup |
+| Command description (`git-branch-naming-setup`) | ~30 | Command list loaded at startup |
+| **Total fixed** | **~220** | — |
+
+At Sonnet 4.6 pricing ($3.00 / 1M input tokens), 220 tokens cost **$0.00066 per session** — less than a tenth of a cent.
+
+### Variable cost (only when triggered)
+
+| Event | Tokens | Frequency |
+|-------|--------|-----------|
+| `branch-naming-guide` skill body | ~400 | When Claude consults naming guide |
+| `git-branch-naming-setup` command body | ~500 | When `/git-branch-naming:setup` is run |
+| Warning message in conversation | ~50–100 | When validation fires |
+
+### Zero-cost operations
+
+The PreToolUse hook (`validate-branch.sh`, `check-content-mismatch.sh`) runs as an **external process** — it never adds tokens to the context window. This means:
+- Every `git checkout`, `git commit`, `git push` validation costs **0 tokens**
+- Validation runs even on the largest codebase with no context overhead
+- Mismatch analysis (file classification, diff inspection) is entirely outside Claude
+
+### Comparison with naive approaches
+
+| Approach | Cost per session | Notes |
+|----------|-----------------|-------|
+| This plugin | ~220 tokens | Fixed; validation is external |
+| Inline rules in CLAUDE.md | ~220 tokens | Same, but no enforcement mechanism |
+| Asking Claude to validate each time | ~300–500 tokens | Per-validation cost, no automation |
+| No plugin (ad-hoc reminders) | 0 tokens | But conventions drift and Claude forgets |
+
+### Design principle
+
+The plugin is designed so that **enforcement has zero context cost**. All three validation scripts (`validate-branch.sh`, `check-content-mismatch.sh`, `inject-rules.sh`) run outside the LLM — they read stdin JSON and write `permissionDecision` JSON without consuming any context window tokens. The ~220 token fixed cost covers only the rules Claude needs to *understand* conventions, not to *enforce* them.
 
 ## Testing
 
