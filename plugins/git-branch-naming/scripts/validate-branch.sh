@@ -258,24 +258,32 @@ if echo "$CMD" | grep -qE '^git\s+switch\s+(-c|--create)\s+'; then
   handle_branch_creation "$BRANCH"
 fi
 
-# git commit — check staged content vs branch type
+# git commit — check protected branch + staged content vs branch type
 if echo "$CMD" | grep -qE '^git\s+commit(\s|$)'; then
+  # Get current branch
+  CURRENT_BRANCH=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+
+  # Skip detached HEAD
+  if [[ -z "$CURRENT_BRANCH" ]] || [[ "$CURRENT_BRANCH" == "HEAD" ]]; then
+    exit 0
+  fi
+
+  # Warn on direct commit to protected branch
+  if echo "$CURRENT_BRANCH" | grep -qE "^($PROTECTED)$"; then
+    permission_response "$ENFORCEMENT_PROTECTED_BRANCH" \
+      "You are about to commit directly to protected branch '$CURRENT_BRANCH'.
+
+This bypasses code review. Use a feature branch and open a pull request instead:
+  git checkout -b feature/my-change
+  git commit ...
+  git push && gh pr create"
+  fi
+
+  # Content mismatch check (only for non-protected branches)
   if [[ "$WARN_ON_CONTENT_MISMATCH" != "true" ]]; then
     exit 0
   fi
 
-  # Get current branch
-  CURRENT_BRANCH=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
-
-  # Skip detached HEAD or protected branches
-  if [[ -z "$CURRENT_BRANCH" ]] || [[ "$CURRENT_BRANCH" == "HEAD" ]]; then
-    exit 0
-  fi
-  if echo "$CURRENT_BRANCH" | grep -qE "^($PROTECTED)$"; then
-    exit 0
-  fi
-
-  # Delegate content mismatch check
   MISMATCH_RESULT=$("$PLUGIN_ROOT/scripts/check-content-mismatch.sh" --staged "$CURRENT_BRANCH" "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || true)
   if [[ -n "$MISMATCH_RESULT" ]]; then
     permission_response "$ENFORCEMENT_CONTENT_MISMATCH" "$MISMATCH_RESULT"
