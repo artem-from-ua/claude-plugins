@@ -231,11 +231,11 @@ for key in $plugin_keys; do
     if rsync -a --delete "${source_dir}/" "${cache_dir}/" 2>/dev/null; then
         _flog "  rsync OK. cache_dir after: $(ls -la "${cache_dir}/scripts/" 2>&1 | grep -E 'statusline|setup|total' || echo 'n/a')"
         if [ -z "$old_version" ]; then
-            log_always "ok Installed: ${key} version ${new_version}"
+            log_always "OK Installed: ${key} version ${new_version}"
         elif [ "$old_version" != "$new_version" ]; then
-            log_always "ok Updated: ${key} version ${new_version}"
+            log_always "OK Updated: ${key} version ${new_version}"
         else
-            log_always "ok Updated: ${key} version ${new_version} (${sync_reason})"
+            log_always "OK Updated: ${key} version ${new_version} (${sync_reason})"
         fi
 
         # Update gitCommitSha in installed_plugins.json so next run can compare
@@ -293,7 +293,7 @@ for key in $plugin_keys; do
         _flog "  Hook command (expanded): $expanded_command"
         hook_output=$(eval "$expanded_command" 2>&1) && hook_rc=0 || hook_rc=$?
         if [ "$hook_rc" -eq 0 ]; then
-            log "  ok Hook executed successfully"
+            log "  OK Hook executed successfully"
             _flog "  Hook rc=0, output: $hook_output"
         else
             log "  WARN Hook failed (non-critical)"
