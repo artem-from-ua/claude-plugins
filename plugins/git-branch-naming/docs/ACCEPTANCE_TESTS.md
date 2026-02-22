@@ -66,32 +66,33 @@ head -10 plugins/git-branch-naming/commands/git-branch-naming-setup/SKILL.md
 
 **Steps:**
 ```bash
-SCRIPT="plugins/git-branch-naming/scripts/validate-branch.sh"
+# Use absolute path — CWD is not guaranteed between Bash tool calls
+SCRIPT="/path/to/plugins/git-branch-naming/scripts/validate-branch.sh"
 
 # Test: valid branch name → passthrough (exit 0, no output)
-echo '{"tool_input":{"command":"git checkout -b feature/user-auth"}}' | bash "$SCRIPT"
+printf '%s' '{"tool_input":{"command":"git checkout -b feature/user-auth"}}' | bash "$SCRIPT"
 echo "Exit: $?"  # Expected: 0
 
 # Test: missing prefix → ask/deny output
-echo '{"tool_input":{"command":"git checkout -b my-feature"}}' | bash "$SCRIPT"
+printf '%s' '{"tool_input":{"command":"git checkout -b my-feature"}}' | bash "$SCRIPT"
 echo "Exit: $?"  # Expected: 0 (default is ask), output JSON
 
 # Test: uppercase → invalid
-echo '{"tool_input":{"command":"git branch MyFeature/UserAuth"}}' | bash "$SCRIPT"
+printf '%s' '{"tool_input":{"command":"git branch MyFeature/UserAuth"}}' | bash "$SCRIPT"
 
 # Test: underscore → invalid
-echo '{"tool_input":{"command":"git switch -c feature/user_auth"}}' | bash "$SCRIPT"
+printf '%s' '{"tool_input":{"command":"git switch -c feature/user_auth"}}' | bash "$SCRIPT"
 
 # Test: valid switch -c
-echo '{"tool_input":{"command":"git switch -c bugfix/fix-null-pointer"}}' | bash "$SCRIPT"
+printf '%s' '{"tool_input":{"command":"git switch -c bugfix/fix-null-pointer"}}' | bash "$SCRIPT"
 echo "Exit: $?"  # Expected: 0 (passthrough)
 
 # Test: non-git command → passthrough
-echo '{"tool_input":{"command":"npm install"}}' | bash "$SCRIPT"
+printf '%s' '{"tool_input":{"command":"npm install"}}' | bash "$SCRIPT"
 echo "Exit: $?"  # Expected: 0
 
 # Test: git status → passthrough
-echo '{"tool_input":{"command":"git status"}}' | bash "$SCRIPT"
+printf '%s' '{"tool_input":{"command":"git status"}}' | bash "$SCRIPT"
 echo "Exit: $?"  # Expected: 0
 ```
 
@@ -186,22 +187,22 @@ EOF
 
 **Tests:**
 ```bash
-SCRIPT="plugins/git-branch-naming/scripts/validate-branch.sh"
+SCRIPT="/path/to/plugins/git-branch-naming/scripts/validate-branch.sh"
 
 # Test: custom prefix allowed
-CLAUDE_PROJECT_DIR=/tmp/test-project \
-  echo '{"tool_input":{"command":"git checkout -b feat/new-thing"}}' | bash "$SCRIPT"
+printf '%s' '{"tool_input":{"command":"git checkout -b feat/new-thing"}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-project bash "$SCRIPT"
 echo "Exit: $?"  # Expected: 0 (passthrough)
 
 # Test: default prefix denied (not in custom list)
-CLAUDE_PROJECT_DIR=/tmp/test-project \
-  echo '{"tool_input":{"command":"git checkout -b feature/new-thing"}}' | bash "$SCRIPT"
+printf '%s' '{"tool_input":{"command":"git checkout -b feature/new-thing"}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-project bash "$SCRIPT"
 # Expected: JSON with permissionDecision: "deny"
 
 # Test: max length enforced (> 30 chars)
 # Note: branch name must actually exceed maxLength=30. "feat/this-is-a-really-too-long-name" = 35 chars
-CLAUDE_PROJECT_DIR=/tmp/test-project \
-  echo '{"tool_input":{"command":"git checkout -b feat/this-is-a-really-too-long-name"}}' | bash "$SCRIPT"
+printf '%s' '{"tool_input":{"command":"git checkout -b feat/this-is-a-really-too-long-name"}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-project bash "$SCRIPT"
 # Expected: JSON with permissionDecision: "deny"
 ```
 
@@ -221,29 +222,30 @@ CLAUDE_PROJECT_DIR=/tmp/test-project \
 
 **Setup:**
 ```bash
-# Create test repo with docs/ branch
-mkdir -p /tmp/test-mismatch-repo
-cd /tmp/test-mismatch-repo && git init -q
-git config user.email "test@test.com" && git config user.name "Test"
-echo "Initial" > README.md && git add . && git commit -q -m "init"
-git checkout -q -b docs/update-readme
+# Use git -C instead of cd — CWD does not persist between Bash tool calls
+SCRIPT="/path/to/plugins/git-branch-naming/scripts/check-content-mismatch.sh"
+
+rm -rf /tmp/test-mismatch-repo
+mkdir /tmp/test-mismatch-repo
+git -C /tmp/test-mismatch-repo init -q
+git -C /tmp/test-mismatch-repo -c user.email=t@t.com -c user.name=T commit -q --allow-empty -m "init"
+git -C /tmp/test-mismatch-repo checkout -q -b docs/update-readme
 # Stage code files on docs branch
-echo "console.log('test')" > app.js
-echo "def foo(): pass" > main.py
-git add app.js main.py
+printf '%s\n' "console.log('test')" > /tmp/test-mismatch-repo/app.js
+printf '%s\n' "def foo(): pass" > /tmp/test-mismatch-repo/main.py
+git -C /tmp/test-mismatch-repo add app.js main.py
 ```
 
 **Tests:**
 ```bash
-SCRIPT="plugins/git-branch-naming/scripts/check-content-mismatch.sh"
-
 # Test: docs branch with 100% code files → mismatch
 bash "$SCRIPT" --staged "docs/update-readme" "/tmp/test-mismatch-repo"
 # Expected: non-empty warning message
 
 # Test: feature branch with code files → no mismatch
-cd /tmp/test-mismatch-repo && git checkout -q -b feature/add-login
-echo "auth.ts content" > auth.ts && git add auth.ts
+git -C /tmp/test-mismatch-repo checkout -q -b feature/add-login
+printf '%s\n' "auth.ts content" > /tmp/test-mismatch-repo/auth.ts
+git -C /tmp/test-mismatch-repo add auth.ts
 bash "$SCRIPT" --staged "feature/add-login" "/tmp/test-mismatch-repo"
 # Expected: empty output (no mismatch)
 
@@ -252,9 +254,13 @@ bash "$SCRIPT" --staged "release/1.0.0" "/tmp/test-mismatch-repo"
 # Expected: empty output (release skipped)
 
 # Test: too few files → skip
-cd /tmp/test-mismatch-repo && git checkout -q -b docs/tiny
-echo "a.ts content" > a.ts && git add a.ts
-bash "$SCRIPT" --staged "docs/tiny" "/tmp/test-mismatch-repo"
+rm -rf /tmp/test-mismatch-tiny && mkdir /tmp/test-mismatch-tiny
+git -C /tmp/test-mismatch-tiny init -q
+git -C /tmp/test-mismatch-tiny -c user.email=t@t.com -c user.name=T commit -q --allow-empty -m "init"
+git -C /tmp/test-mismatch-tiny checkout -q -b docs/tiny
+printf '%s\n' "a.ts content" > /tmp/test-mismatch-tiny/a.ts
+git -C /tmp/test-mismatch-tiny add a.ts
+bash "$SCRIPT" --staged "docs/tiny" "/tmp/test-mismatch-tiny"
 # Expected: empty output (only 1 file, skip check)
 ```
 

@@ -575,7 +575,17 @@ For tests requiring manual execution (especially SessionStart hooks, fresh sessi
 
 **Steps:**
 ```bash
-[commands]
+# Use absolute paths — CWD is not guaranteed between Bash tool calls
+SCRIPT="/absolute/path/to/plugins/<name>/scripts/my-script.sh"
+
+# Use printf '%s' for JSON — echo interprets \n in zsh
+printf '%s' '{"tool_input":{"command":"git checkout -b feature/foo"}}' | bash "$SCRIPT"
+
+# Use git -C instead of cd
+git -C /tmp/test-repo init -q
+
+# Use env for environment variable injection
+env CLAUDE_PROJECT_DIR=/tmp/test-repo bash "$SCRIPT"
 ```
 
 **Expected result:**
@@ -606,7 +616,25 @@ For tests requiring manual execution (especially SessionStart hooks, fresh sessi
 - **Use tables**: For comparison data (scenarios, pass/fail, automation status)
 - **Reference real files**: Link to actual plugin files in examples
 
-### 8. Testing SessionStart Hooks and Proactive Behavior
+### 8. Shell Command Patterns for Bash Tool Compatibility
+
+Tests in `ACCEPTANCE_TESTS.md` are run by Claude Code's Bash tool (zsh on macOS). Follow these patterns to avoid common failures:
+
+| Problem | Wrong | Correct |
+|---------|-------|---------|
+| CWD not preserved between calls | `SCRIPT="plugins/foo/scripts/bar.sh"` | `SCRIPT="/absolute/path/to/bar.sh"` |
+| `echo` interprets `\n` in zsh | `echo '{"cmd":"git commit -m \"msg\""}'` | `printf '%s' '{"cmd":"git commit -m \"msg\""}'` |
+| `cd` state lost between Bash calls | `cd /tmp/repo && git status` | `git -C /tmp/repo status` |
+| Inline env var scoping | `CLAUDE_PROJECT_DIR=/tmp bash "$SCRIPT"` | `env CLAUDE_PROJECT_DIR=/tmp bash "$SCRIPT"` |
+
+**Rules:**
+- ALWAYS use absolute paths for scripts referenced in test steps
+- ALWAYS use `printf '%s'` (not `echo`) when passing JSON to hook scripts
+- ALWAYS use `git -C /path` instead of `cd /path && git`
+- ALWAYS use `env VAR=val cmd` for environment variable injection
+- NEVER rely on CWD being set correctly — each Bash tool call may start from project root
+
+### 9. Testing SessionStart Hooks and Proactive Behavior
 
 **Critical insight from [issue #28](https://github.com/Tribe-Coding/claude-plugins/issues/28):** SessionStart hooks that inject MANDATORY instructions work correctly, but testing them requires understanding environmental failure modes.
 
