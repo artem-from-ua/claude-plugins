@@ -3,7 +3,7 @@
 # Reads JSON from stdin (piped by Claude Code)
 #
 # Layout:
-#   5h 12% ~2h14m   7d 45% ~3d5h   extra $4.79   Sonnet 4.5   context 52%   my-project/   main
+#   5h 12% ~2h14m   7d 45% ~3d5h   extra $4.79   $0.42   Sonnet 4.5   context 52%   my-project/   main
 #
 # Brightness-coded values: dim at low usage, brighter as they climb,
 # yellow >90%, red at 100%. Text indicators: !! warning, XX exhausted.
@@ -218,7 +218,7 @@ if [ -n "$usage_json" ]; then
     [ "$five_int" -ge 100 ] 2>/dev/null && c5_suffix=" ${bright_red}XX${rst}"
     [ "$five_int" -gt 90 ] 2>/dev/null && [ "$five_int" -lt 100 ] 2>/dev/null && c5_suffix=" ${yellow}!!${rst}"
     c5_time=""
-    if [ -n "$five_remaining" ] && [ "$five_int" -lt 100 ] 2>/dev/null; then
+    if [ -n "$five_remaining" ]; then
       c5_time=" ${five_time_with_dim}"
     fi
     compact_5h="${dim}5h${rst} ${c5_pct}${c5_time}${c5_suffix}"
@@ -242,7 +242,7 @@ if [ -n "$usage_json" ]; then
     [ "$seven_int" -ge 100 ] 2>/dev/null && c7_suffix=" ${bright_red}XX${rst}"
     [ "$seven_int" -gt 90 ] 2>/dev/null && [ "$seven_int" -lt 100 ] 2>/dev/null && c7_suffix=" ${yellow}!!${rst}"
     c7_time=""
-    if [ -n "$seven_remaining" ] && [ "$seven_int" -lt 100 ] 2>/dev/null; then
+    if [ -n "$seven_remaining" ]; then
       c7_time=" ${seven_time_with_dim}"
     fi
     compact_7d="${dim}7d${rst} ${c7_pct}${c7_time}${c7_suffix}"
@@ -278,6 +278,18 @@ if [ -n "$usage_json" ]; then
   fi
 fi
 
+# Session cost segment: "$0.42"
+compact_cost=""
+session_cost_usd=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
+if [ -n "$session_cost_usd" ] && [ "$session_cost_usd" != "null" ]; then
+  dec_sep=$(printf "%.1f" 1 | tr -d '01')
+  cost_locale=$(echo "$session_cost_usd" | sed "s/\./${dec_sep}/")
+  cost_fmt=$(echo "$cost_locale" | awk '{printf "%.2f", $1}')
+  cost_int=$(echo "$cost_fmt" | sed 's/[.,].*//')
+  cost_frac=$(echo "$cost_fmt" | grep -o '[.,][0-9]*$')
+  compact_cost="${dim}${DOLLAR}${rst}${cost_int}${dim}${cost_frac}${rst}"
+fi
+
 # Model segment: strip "Claude " prefix for compactness
 compact_model_name=$(echo "$model" | sed 's/^Claude //')
 compact_model_colored=$(colorize_model "$compact_model_name")
@@ -307,7 +319,7 @@ fi
 
 # Assemble single line with 3-space gaps
 compact_line=""
-for seg in "$compact_5h" "$compact_7d" "$compact_mo" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch"; do
+for seg in "$compact_5h" "$compact_7d" "$compact_mo" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch"; do
   if [ -n "$seg" ]; then
     if [ -n "$compact_line" ]; then
       compact_line="${compact_line}   ${seg}"

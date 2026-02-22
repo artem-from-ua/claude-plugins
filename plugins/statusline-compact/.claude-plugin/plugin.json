@@ -1,6 +1,6 @@
 {
   "name": "statusline-compact",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Compact single-line Claude Code statusline with brightness-coded API usage values. Shows 5h/7d rate limits, extra usage, context window, git branch, and model - all on one line.",
   "author": { "name": "Tribe Coding" },
   "license": "MIT",
