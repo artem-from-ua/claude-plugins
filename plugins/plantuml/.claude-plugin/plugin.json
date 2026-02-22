@@ -1,9 +1,15 @@
 {
   "name": "plantuml",
-  "version": "1.5.9",
+  "version": "1.5.10",
   "description": "PlantUML diagram automation: auto-sync, validation, diagram type guide",
-  "author": { "name": "Tribe Coding" },
+  "author": {
+    "name": "Tribe Coding"
+  },
   "license": "MIT",
-  "commands": ["./commands/"],
-  "skills": ["./skills/"]
+  "commands": [
+    "./commands/"
+  ],
+  "skills": [
+    "./skills/"
+  ]
 }

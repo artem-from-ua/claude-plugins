@@ -278,7 +278,7 @@ A -> B: Test
 EOF
 
 # Simulate PostToolUse hook call
-echo '{"tool_input":{"file_path":"hook-test.md"}}' | bash "${CLAUDE_PLUGIN_ROOT}/scripts/sync-plantuml.sh"
+printf '%s' '{"tool_input":{"file_path":"hook-test.md"}}' | bash "${CLAUDE_PLUGIN_ROOT}/scripts/sync-plantuml.sh"
 
 # Verify URL was added
 cat hook-test.md
@@ -293,7 +293,7 @@ cat hook-test.md
 
 **Steps:**
 ```bash
-echo '{"tool_input":{"file_path":"test.txt"}}' | bash "${CLAUDE_PLUGIN_ROOT}/scripts/sync-plantuml.sh"
+printf '%s' '{"tool_input":{"file_path":"test.txt"}}' | bash "${CLAUDE_PLUGIN_ROOT}/scripts/sync-plantuml.sh"
 echo "Exit code: $?"
 ```
 
@@ -338,19 +338,19 @@ bash scripts/inject-base-rules.sh
 
 **Steps:**
 ```bash
-mkdir test-repo && cd test-repo
-git init
-git config user.email "test@test.com"
-git config user.name "Test"
+rm -rf /tmp/plantuml-test-repo && mkdir /tmp/plantuml-test-repo
+git -C /tmp/plantuml-test-repo init -q
+git -C /tmp/plantuml-test-repo -c user.email=test@test.com -c user.name=Test commit -q --allow-empty -m "init"
+
 
 CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
-CLAUDE_PROJECT_DIR="." \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-repo" \
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
 
 # Check results
-test -f .githooks/pre-commit && echo "✓ Hook file created"
-test -x .githooks/pre-commit && echo "✓ Hook is executable"
-test "$(git config core.hooksPath)" = ".githooks" && echo "✓ Git config set"
+test -f /tmp/plantuml-test-repo/.githooks/pre-commit && echo "✓ Hook file created"
+test -x /tmp/plantuml-test-repo/.githooks/pre-commit && echo "✓ Hook is executable"
+test "$(git -C /tmp/plantuml-test-repo config core.hooksPath)" = ".githooks" && echo "✓ Git config set"
 ```
 
 **Expected result:**
@@ -364,7 +364,7 @@ test "$(git config core.hooksPath)" = ".githooks" && echo "✓ Git config set"
 ```bash
 # Run setup-project.sh again in the same repo
 CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
-CLAUDE_PROJECT_DIR="." \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-repo" \
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
 
 echo "Exit code: $?"
@@ -379,13 +379,13 @@ echo "Exit code: $?"
 
 **Steps:**
 ```bash
-mkdir non-git-dir && cd non-git-dir
+rm -rf /tmp/plantuml-non-git && mkdir /tmp/plantuml-non-git
 CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
-CLAUDE_PROJECT_DIR="." \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-non-git" \
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
 
 echo "Exit code: $?"
-test -d .githooks && echo "ERROR: Hook installed in non-git dir" || echo "✓ Correctly skipped"
+test -d /tmp/plantuml-non-git/.githooks && echo "ERROR: Hook installed in non-git dir" || echo "✓ Correctly skipped"
 ```
 
 **Expected result:**
@@ -401,7 +401,7 @@ test -d .githooks && echo "ERROR: Hook installed in non-git dir" || echo "✓ Co
 **Test setup:**
 ```bash
 # Use repo from test 4.2 with pre-commit hook installed
-cd test-repo
+# Working in /tmp/plantuml-test-repo (created in test 4.1)
 ```
 
 **Test case 1:** Valid diagram allows commit
@@ -479,8 +479,8 @@ echo "Exit code: $?"
 **Test setup:**
 ```bash
 # Create project with multiple markdown files
-mkdir validation-test && cd validation-test
-git init
+rm -rf /tmp/plantuml-validation-test && mkdir /tmp/plantuml-validation-test
+git -C /tmp/plantuml-validation-test init -q
 ```
 
 **Steps:**
@@ -735,8 +735,7 @@ description: >
 Open a new terminal and navigate to any git repository (or create a test one):
 ```bash
 mkdir /tmp/plantuml-sessionstart-test
-cd /tmp/plantuml-sessionstart-test
-git init
+git -C /tmp/plantuml-sessionstart-test init -q
 ```
 
 Start Claude Code:
@@ -923,8 +922,8 @@ Proactive usage:
 
 **Test setup:**
 ```bash
-mkdir proactivity-test && cd proactivity-test
-cat > docs/api-design.md << 'EOF'
+rm -rf /tmp/plantuml-proactivity-test && mkdir /tmp/plantuml-proactivity-test
+mkdir -p /tmp/plantuml-proactivity-test/docs && cat > /tmp/plantuml-proactivity-test/docs/api-design.md << 'EOF'
 # API Design
 
 (empty file, to be populated)
@@ -1375,17 +1374,17 @@ Second attempt succeeded after Claude fixed escaping:
 **Steps:**
 ```bash
 # 1. Setup new project
-mkdir e2e-test && cd e2e-test
-git init
-git config user.email "e2e@test.com"
-git config user.name "E2E Test"
+rm -rf /tmp/plantuml-e2e-test && mkdir /tmp/plantuml-e2e-test
+git -C /tmp/plantuml-e2e-test init -q
+git -C /tmp/plantuml-e2e-test -c user.email=e2e@test.com -c "user.name=E2E Test" commit -q --allow-empty -m "init"
+
 
 # 2. SessionStart: setup-project
 CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
-CLAUDE_PROJECT_DIR="." \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-e2e-test" \
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
 
-test -f .githooks/pre-commit && echo "✓ Step 1: Pre-commit hook installed"
+test -f /tmp/plantuml-e2e-test/.githooks/pre-commit && echo "✓ Step 1: Pre-commit hook installed"
 
 # 3. SessionStart: inject-base-rules (verify output)
 bash /path/to/scripts/inject-base-rules.sh | head -n 3
@@ -1410,7 +1409,7 @@ End of file.
 EOF
 
 # 5. Simulate PostToolUse hook (in real usage, this happens automatically)
-echo '{"tool_input":{"file_path":"README.md"}}' | \
+printf '%s' '{"tool_input":{"file_path":"README.md"}}' | \
 CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/sync-plantuml.sh"
 
@@ -1717,8 +1716,7 @@ rm /etc/passwd
 **Step 1: Start fresh session**
 ```bash
 mkdir /tmp/path-resolution-test
-cd /tmp/path-resolution-test
-git init
+git -C /tmp/path-resolution-test init -q
 claude
 ```
 
