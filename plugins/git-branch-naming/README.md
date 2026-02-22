@@ -349,3 +349,12 @@ See [`docs/ACCEPTANCE_TESTS.md`](docs/ACCEPTANCE_TESTS.md) for comprehensive tes
 - **bash** 3.2+ (macOS compatible)
 - **git** (any modern version)
 - **jq** (for config loading — scripts fall back to defaults if jq is unavailable)
+
+## References
+
+Standards and best practices this plugin is based on:
+
+- [A successful Git branching model](https://nvie.com/posts/a-successful-git-branching-model/) — Vincent Driessen's original 2010 Gitflow article that established `feature/`, `bugfix/`, `hotfix/`, `release/` as the canonical branch prefixes
+- [Gitflow Workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) — Atlassian's documentation on Gitflow, widely used as a team reference for branch naming strategy
+- [Conventional Branch](https://conventional-branch.github.io/) — a lightweight specification for standardized branch naming, analogous to Conventional Commits but at the branch level
+- [Best practices for naming Git branches](https://graphite.com/guides/git-branch-naming-conventions) — practical guide covering kebab-case, prefix semantics, and team workflow integration
