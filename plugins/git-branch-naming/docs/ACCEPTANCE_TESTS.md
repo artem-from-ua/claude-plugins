@@ -105,33 +105,55 @@ echo "Exit: $?"  # Expected: 0
 
 ## 3. Unit Tests — validate-branch.sh (Commit & Push)
 
-**Objective:** Verify commit and push interception.
+**Objective:** Verify commit and push interception, including direct commits to protected branches.
 
 **Automation:** ✅ (requires a git repo for full test)
 
 **Steps:**
 ```bash
-SCRIPT="plugins/git-branch-naming/scripts/validate-branch.sh"
+SCRIPT="/path/to/plugins/git-branch-naming/scripts/validate-branch.sh"
 
-# Test: git commit (no git repo — should gracefully skip content check)
-echo '{"tool_input":{"command":"git commit -m \"feat: add login\""}}' | bash "$SCRIPT"
+# Setup: repo on main
+rm -rf /tmp/test-commit-protect
+mkdir /tmp/test-commit-protect
+git -C /tmp/test-commit-protect init -q
+git -C /tmp/test-commit-protect -c user.email=t@t.com -c user.name=T commit -q --allow-empty -m "init"
+
+# Test: git commit on main → protected branch warning
+printf '%s' '{"tool_input":{"command":"git commit -m \"feat: add login\""}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-commit-protect bash "$SCRIPT"
+# Expected: JSON with permissionDecision: "ask", mentions "protected branch 'main'"
+
+# Test: git commit on master → protected branch warning
+rm -rf /tmp/test-commit-master
+mkdir /tmp/test-commit-master
+git -C /tmp/test-commit-master init -q -b master
+git -C /tmp/test-commit-master -c user.email=t@t.com -c user.name=T commit -q --allow-empty -m "init"
+printf '%s' '{"tool_input":{"command":"git commit -m \"fix: something\""}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-commit-master bash "$SCRIPT"
+# Expected: JSON with permissionDecision: "ask", mentions "protected branch 'master'"
+
+# Test: git commit on feature branch → passthrough (no output)
+git -C /tmp/test-commit-protect checkout -q -b feature/my-thing
+printf '%s' '{"tool_input":{"command":"git commit -m \"feat: add login\""}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-commit-protect bash "$SCRIPT"
+echo "Exit: $?"  # Expected: 0, empty output
+
+# Test: git push (no git repo — graceful exit)
+printf '%s' '{"tool_input":{"command":"git push"}}' | bash "$SCRIPT"
 echo "Exit: $?"  # Expected: 0
 
-# Test: git push (no git repo — should gracefully exit)
-echo '{"tool_input":{"command":"git push"}}' | bash "$SCRIPT"
-echo "Exit: $?"  # Expected: 0
-
-# Test: git push origin main (protected branch warning)
-# (requires being on main branch in a git repo)
-CLAUDE_PROJECT_DIR=/tmp/test-repo bash -c '
-  mkdir -p /tmp/test-repo && cd /tmp/test-repo && git init -q && git checkout -q -b main 2>/dev/null || true
-  echo "{\"tool_input\":{\"command\":\"git push origin main\"}}" | bash "$SCRIPT"
-'
+# Test: git push origin main → protected branch warning
+printf '%s' '{"tool_input":{"command":"git push origin main"}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-commit-protect bash "$SCRIPT"
+# Expected: JSON with permissionDecision: "ask"
 ```
 
 **Acceptance criteria:**
-- ✅ `git commit` passes through when no git repo (graceful degradation)
-- ✅ `git push` to protected branch produces `permissionDecision: "ask"` response
+- ✅ `git commit` on `main` → `permissionDecision: "ask"` with PR workflow suggestion
+- ✅ `git commit` on `master` → same warning
+- ✅ `git commit` on feature branch → silent passthrough (exit 0, no output)
+- ✅ `git push` to protected branch → `permissionDecision: "ask"` response
 - ✅ Scripts don't crash with missing git repo
 
 ---
@@ -307,25 +329,30 @@ echo "Exit: $?"  # Expected: 1 (deny = block)
    Ask: "What are the rules for git branch naming in this session?"
    Expected: Claude mentions prefixes, kebab-case, and `.claude/git-branch-naming.json`
 
-3. Test proactive enforcement:
+3. Test proactive enforcement — invalid branch name:
    Ask: "Create a git branch called `my-new-feature`"
    Expected: Claude warns about missing prefix, suggests `feature/my-new-feature`
 
-4. Test valid name passes:
+4. Test proactive enforcement — direct commit to main:
+   Ask: "Commit these changes directly to main"
+   Expected: Claude refuses, explains protected branch rule, suggests creating a feature branch
+
+5. Test valid name passes:
    Ask: "Create a git branch called `feature/add-user-login`"
    Expected: Claude runs `git checkout -b feature/add-user-login` without warning
 
-5. Verify hook output token count:
+6. Verify hook output token count:
    ```bash
    bash plugins/git-branch-naming/scripts/inject-rules.sh | wc -w
    ```
-   Expected: < 200 words (~130 tokens)
+   Expected: < 200 words (~147 tokens)
 
 **Acceptance criteria:**
 - ✅ Hook exits 0
 - ✅ Output is < 200 words
 - ✅ Output contains valid prefixes list
-- ✅ Claude enforces conventions proactively
+- ✅ Output contains rule about NOT committing directly to main/master
+- ✅ Claude enforces commit conventions proactively (not just branch creation)
 
 **Known failure modes:**
 
@@ -436,9 +463,18 @@ echo "=== Token Budget ==="
 plugins/git-branch-naming/scripts/inject-rules.sh | wc -w
 
 # 3. validate-branch.sh tests
+SCRIPT="/path/to/plugins/git-branch-naming/scripts/validate-branch.sh"
 echo "=== validate-branch.sh ==="
-echo '{"tool_input":{"command":"git checkout -b feature/valid"}}' | bash plugins/git-branch-naming/scripts/validate-branch.sh; echo "valid name: $?"
-echo '{"tool_input":{"command":"git checkout -b bad-name"}}' | bash plugins/git-branch-naming/scripts/validate-branch.sh | jq -r '.hookSpecificOutput.permissionDecision'
+printf '%s' '{"tool_input":{"command":"git checkout -b feature/valid"}}' | bash "$SCRIPT"; echo "valid name: $?"
+printf '%s' '{"tool_input":{"command":"git checkout -b bad-name"}}' | bash "$SCRIPT" | python3 -c "import sys,json; print(json.load(sys.stdin)['hookSpecificOutput']['permissionDecision'])"
+
+# Setup repo for commit-on-protected test
+rm -rf /tmp/test-protected && mkdir /tmp/test-protected
+git -C /tmp/test-protected init -q
+git -C /tmp/test-protected -c user.email=t@t.com -c user.name=T commit -q --allow-empty -m "init"
+echo "=== commit on main → ask ==="
+printf '%s' '{"tool_input":{"command":"git commit -m \"test\""}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-protected bash "$SCRIPT" | python3 -c "import sys,json; print(json.load(sys.stdin)['hookSpecificOutput']['permissionDecision'])"
 ```
 
 ### CI integration
