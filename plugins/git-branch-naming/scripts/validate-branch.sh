@@ -133,6 +133,20 @@ validate_name() {
       echo "INVALID_CHARS:$prefix_part/$fixed_desc"
       return
     fi
+    # Check consecutive hyphens (e.g. feature/new--login)
+    if [[ "$desc_part" == *"--"* ]]; then
+      local fixed_desc
+      fixed_desc=$(echo "$desc_part" | sed 's/-\{2,\}/-/g')
+      echo "INVALID_CONSECUTIVE_HYPHENS:$prefix_part/$fixed_desc"
+      return
+    fi
+    # Check leading or trailing hyphen in description (e.g. feature/-login or feature/login-)
+    if [[ "$desc_part" == -* ]] || [[ "$desc_part" == *- ]]; then
+      local fixed_desc
+      fixed_desc=$(echo "$desc_part" | sed 's/^-*//' | sed 's/-*$//')
+      echo "INVALID_LEADING_TRAILING_HYPHEN:$prefix_part/$fixed_desc"
+      return
+    fi
   fi
 
   # Check max length
@@ -190,6 +204,16 @@ Suggested fix: git branch -m '$branch_name' '$suggestion'"
       ;;
     INVALID_CHARS)
       reason="Branch name '$branch_name' contains invalid characters. Only lowercase letters, digits, hyphens, and dots are allowed in the description part.
+
+Suggested fix: git branch -m '$branch_name' '$suggestion'"
+      ;;
+    INVALID_CONSECUTIVE_HYPHENS)
+      reason="Branch name '$branch_name' contains consecutive hyphens (--), which are not allowed.
+
+Suggested fix: git branch -m '$branch_name' '$suggestion'"
+      ;;
+    INVALID_LEADING_TRAILING_HYPHEN)
+      reason="Branch name '$branch_name' has a leading or trailing hyphen in the description, which is not allowed.
 
 Suggested fix: git branch -m '$branch_name' '$suggestion'"
       ;;
