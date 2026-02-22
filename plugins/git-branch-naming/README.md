@@ -53,7 +53,31 @@ Branch name format: <prefix>/<kebab-case-description>
 Proceed anyway, or rename to 'feature/payment-feature'?
 ```
 
-### Scenario 2: Ticket number required by team config
+### Scenario 2: Claude derives the branch name from task context
+
+The plugin teaches Claude *how* naming works, so it picks the right prefix based on what you're actually doing — not just what you literally say:
+
+```
+You: we need to fix the null pointer crash in the cart service, it's urgent
+
+Claude: git checkout -b hotfix/fix-null-pointer-cart-service   ✅
+```
+
+```
+You: I want to reorganize the auth module, no behavior changes
+
+Claude: git checkout -b refactor/reorganize-auth-module   ✅
+```
+
+```
+You: add unit tests for the payment processor
+
+Claude: git checkout -b test/add-payment-processor-unit-tests   ✅
+```
+
+Without this plugin, Claude would likely create `fix-crash`, `refactor` or `new-branch` — whatever felt natural in the moment.
+
+### Scenario 3: Ticket number required by team config
 
 ```
 You: start working on PROJ-789, the cart checkout bug
@@ -61,9 +85,9 @@ You: start working on PROJ-789, the cart checkout bug
 Claude: git checkout -b bugfix/PROJ-789-fix-cart-checkout   ✅
 ```
 
-Without config, Claude might have created `bugfix/fix-cart-checkout` — valid format, but no ticket link. With `"ticketPattern": "[A-Z]+-\\d+"` in config, the ticket is enforced.
+Without the plugin, Claude might have created `bugfix/fix-cart-checkout` — valid format, but no ticket link. With `"ticketPattern": "[A-Z]+-\\d+"` in config, the ticket is enforced automatically whenever Claude sees a ticket number in context.
 
-### Scenario 3: Content mismatch before commit
+### Scenario 4: Content mismatch before commit
 
 ```
 You: git commit -m "docs: update API reference"
@@ -78,7 +102,7 @@ Proceed with commit, or would you like to review the staged files?
 
 Catches the common mistake of committing to the wrong branch.
 
-### Scenario 4: Direct push to main blocked
+### Scenario 5: Direct push to main blocked
 
 ```
 You: git push origin main
@@ -88,7 +112,7 @@ Claude: ⚠️  You are about to push directly to protected branch 'main'.
 This is usually done via a pull request instead of a direct push. Are you sure?
 ```
 
-### Scenario 5: Team-wide conventions via committed config
+### Scenario 6: Team-wide conventions via committed config
 
 Your team uses JIRA and wants strict enforcement. One dev runs `/git-branch-naming:setup`, commits `.claude/git-branch-naming.json`, and from that point every teammate's Claude Code session enforces the same rules — no onboarding docs required.
 
