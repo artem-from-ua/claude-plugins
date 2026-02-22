@@ -17,6 +17,11 @@
       "name": "statusline-compact",
       "source": "./plugins/statusline-compact",
       "description": "Compact single-line Claude Code statusline with brightness-coded API usage"
+    },
+    {
+      "name": "git-branch-naming",
+      "source": "./plugins/git-branch-naming",
+      "description": "Git branch naming convention enforcement: validates names, warns on content mismatch"
     }
   ]
 }
