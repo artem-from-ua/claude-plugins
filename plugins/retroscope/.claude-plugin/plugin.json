@@ -8,5 +8,8 @@
   "license": "MIT",
   "commands": [
     "./commands/"
+  ],
+  "skills": [
+    "./commands/"
   ]
 }
