@@ -17,6 +17,7 @@ Every PlantUML diagram MUST have two parts, in this order:
 Example:
 \`\`\`plantuml
 @startuml
+title Greeting Sequence
 Alice -> Bob: Hello
 @enduml
 \`\`\`
@@ -38,6 +39,7 @@ Proactive usage:
 - **ALWAYS invoke the \`plantuml-diagram-guide\` skill BEFORE creating any PlantUML diagram** to choose the correct diagram type. This is MANDATORY — do not skip this step even if you think you know which type to use.
 
 Rules:
+- Every PlantUML diagram MUST include a \`title\` directive after the opening tag (@startuml, @startjson, etc.). The title should be a short, descriptive name of the diagram.
 - Always keep both parts in sync. When you modify PlantUML source, the PostToolUse hook auto-updates the image URL.
 - Use SVG format (\`/svg/\` path) unless PNG is specifically requested.
 - The alt text in the image link should be a short description of the diagram.
