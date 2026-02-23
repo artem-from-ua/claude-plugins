@@ -343,6 +343,51 @@ Run `/retro today` again immediately after 5.2.
 - ✅ Shows cached report without regenerating
 - ✅ Message indicates cached result (or simply displays quickly without running extraction)
 
+#### 5.4 Force Regenerate (`--force` flag)
+
+Run `/retro today --force` immediately after 5.3 (when cache is still fresh).
+
+**Expected result:**
+- ✅ Claude skips cache check entirely (does NOT display cached report)
+- ✅ Runs full extraction and regeneration pipeline
+- ✅ New report written to summary.md and git-committed
+- ✅ Works with all modes: `/retro today --force`, `/retro yesterday --force`, `/retro session --force`
+
+#### 5.5 Report Template Sections
+
+After generating a report (5.2 or 5.4), inspect `summary.md`:
+
+```bash
+STORAGE_DIR="/tmp/retroscope-test"
+PROJECT="claude-plugins"
+DATE=$(date +%Y/%m/%d)
+grep "^##" "$STORAGE_DIR/reports/$PROJECT/daily/$DATE/summary.md"
+```
+
+**Expected result:**
+- ✅ Contains `## 📊 Overview`
+- ✅ Contains `## 🎯 Performance Assessment`
+- ✅ Contains `## 📝 Tasks & Outcomes`
+- ✅ Contains `## 📄 Documentation Changes`
+- ✅ Contains `## 💬 Communication Insights`
+- ✅ Contains `## 📈 Productivity Metrics`
+- ✅ Contains `## 🔮 Next Steps`
+- ✅ Does NOT contain `## 🔗 References` (removed in v0.1.3)
+
+#### 5.6 Dual Cost Display
+
+Inspect the Productivity Metrics section of a generated report:
+
+```bash
+grep -A3 "Productivity Metrics" "$STORAGE_DIR/reports/$PROJECT/daily/$DATE/summary.md"
+```
+
+**Expected result:**
+- ✅ Contains `Estimated cost:` line
+- ✅ Shows actual cost with `(with cache discounts)` label
+- ✅ Shows naive cost with `(without cache discounts` or `as shown in Claude Code UI)` label
+- ✅ Naive cost ≥ actual cost
+
 ---
 
 ### 6. Storage and Git Commit
@@ -367,7 +412,8 @@ git -C "$STORAGE_DIR" log --oneline -3
 **Expected result:**
 - ✅ `summary.md` exists at expected path
 - ✅ Git log shows commit like `retro(claude-plugins): 2026-02-23 daily summary`
-- ✅ File contains all template sections (Overview, Tasks, References, etc.)
+- ✅ File contains all template sections (Overview, Tasks & Outcomes, Documentation Changes, Communication Insights, Productivity Metrics, Next Steps)
+- ✅ No `## 🔗 References` section (removed in v0.1.3 — references are now inline in Links column)
 
 ---
 

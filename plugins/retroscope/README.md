@@ -39,12 +39,14 @@ Highly productive session focused on new plugin development...
 ## 📝 Tasks & Outcomes
 | Status | Task | Links |
 |--------|------|-------|
-| ✅ Done | Implement find-sessions.py | PR #70 |
+| ✅ Done | Implement find-sessions.py | 📌 PR #70 |
 | 🚧 In progress | ACCEPTANCE_TESTS.md | — |
 | ❓ Open | Weekly rollup design | — |
 
-## 🔗 References
-...
+## 📄 Documentation Changes
+| Change | File(s) |
+|--------|---------|
+| Added acceptance tests | `docs/ACCEPTANCE_TESTS.md` |
 
 ## 💬 Communication Insights
 ...
