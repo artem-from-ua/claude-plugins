@@ -130,6 +130,11 @@ plugins/<name>/
 └── templates/                # Project templates (pre-commit, CI)
 ```
 
+> **Note:** `plugin.json` **must** include both `"commands"` and `"skills"` fields for Claude Code to expose SKILL.md files to the skill system. If your plugin only has `commands/`, point both fields at the same directory:
+> ```json
+> { "commands": ["./commands/"], "skills": ["./commands/"] }
+> ```
+
 ## Requirements
 
 ### plantuml

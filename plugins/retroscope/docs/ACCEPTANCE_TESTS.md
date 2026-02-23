@@ -33,8 +33,9 @@ Critical components to test:
 | Test | Status | Notes |
 |------|--------|-------|
 | 1.1 plugin.json valid | ✅ Pass | |
-| 1.2 hooks.json valid | ✅ Pass | |
-| 1.3 SKILL.md frontmatter | ✅ Pass | Both commands |
+| 1.2 plugin.json has skills field | ✅ Pass | Required for skill discovery |
+| 1.3 hooks.json valid | ✅ Pass | |
+| 1.4 SKILL.md frontmatter | ✅ Pass | Both commands |
 | 2.1 list mode — today | ✅ Pass | Found 3 sessions |
 | 2.2 list mode — yesterday | ✅ Pass | 0 sessions (no sessions yesterday) |
 | 2.3 stats mode | ✅ Pass | JSON output correct |
@@ -59,13 +60,23 @@ PLUGIN="/Users/artem/devel/claude-plugins/plugins/retroscope"
 # 1.1 plugin.json is valid JSON
 python3 -c "import json; json.load(open('$PLUGIN/.claude-plugin/plugin.json'))" && echo "plugin.json: OK"
 
-# 1.2 hooks.json is valid JSON
+# 1.2 plugin.json has required 'skills' field (CRITICAL for skill discovery)
+python3 -c "
+import json, sys
+with open('$PLUGIN/.claude-plugin/plugin.json') as f:
+    p = json.load(f)
+assert 'skills' in p, 'MISSING skills field — commands will not be discoverable!'
+assert isinstance(p['skills'], list) and len(p['skills']) > 0, 'skills field must be non-empty list'
+print('plugin.json skills field: OK')
+"
+
+# 1.3 hooks.json is valid JSON
 python3 -c "import json; json.load(open('$PLUGIN/hooks/hooks.json'))" && echo "hooks.json: OK"
 
-# 1.3 templates/retroscope.json is valid JSON
+# 1.4 templates/retroscope.json is valid JSON
 python3 -c "import json; json.load(open('$PLUGIN/templates/retroscope.json'))" && echo "template: OK"
 
-# 1.4 SKILL.md files have YAML frontmatter
+# 1.5 SKILL.md files have YAML frontmatter
 python3 -c "
 import re, sys
 for path in [
@@ -81,14 +92,17 @@ for path in [
         sys.exit(1)
 "
 
-# 1.5 Scripts are executable
+# 1.6 Scripts are executable
 ls -la "$PLUGIN/scripts/"
 ```
 
 **Expected result:**
 - ✅ All JSON files parse without error
+- ✅ `plugin.json` contains non-empty `"skills"` field (required for skill discovery)
 - ✅ Both SKILL.md files start with `---` YAML frontmatter
 - ✅ `inject-rules.sh`, `session-end.sh`, `find-sessions.py` are executable (`-rwxr-xr-x`)
+
+> **Note:** The `"skills"` field in `plugin.json` is required by Claude Code to register SKILL.md files in the skill system. Without it, `/retro` and `/retroscope:setup` won't be discoverable even if the SKILL.md files exist in the cache. This was discovered during testing (see `docs/INITIAL_PLAN.md`).
 
 ---
 
