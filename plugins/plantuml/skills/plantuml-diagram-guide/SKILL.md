@@ -12,6 +12,8 @@ description: >
 
 Use this guide to choose the right PlantUML diagram type for documentation. When creating or updating `.md` files, proactively suggest and use the appropriate diagram type.
 
+**IMPORTANT:** Every diagram MUST include a `title` directive immediately after the opening tag. This makes diagrams self-documenting. Example: `title User Authentication Flow`
+
 ## Behavioral Diagrams (how things work)
 
 | Type | When to use | When to suggest | Syntax |
