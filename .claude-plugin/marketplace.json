@@ -22,6 +22,11 @@
       "name": "git-branch-naming",
       "source": "./plugins/git-branch-naming",
       "description": "Git branch naming convention enforcement: validates names, warns on content mismatch"
+    },
+    {
+      "name": "retroscope",
+      "source": "./plugins/retroscope",
+      "description": "Retrospective session reports: summarize tasks, decisions, and open questions from Claude Code sessions"
     }
   ]
 }

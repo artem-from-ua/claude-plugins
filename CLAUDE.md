@@ -93,6 +93,26 @@ plugins/<name>/
     └── ACCEPTANCE_TESTS.md       # comprehensive test documentation (REQUIRED)
 ```
 
+**IMPORTANT: `plugin.json` MUST include both `"commands"` and `"skills"` fields** for Claude Code to expose SKILL.md files to the skill system. Without the `"skills"` field, commands are not discoverable via `/skill-name` even if their SKILL.md files exist.
+
+If your plugin only has `commands/` (no separate `skills/` directory), point both fields at the same path:
+
+```json
+{
+  "commands": ["./commands/"],
+  "skills": ["./commands/"]
+}
+```
+
+If your plugin has both directories:
+
+```json
+{
+  "commands": ["./commands/"],
+  "skills": ["./skills/"]
+}
+```
+
 ## Skills Standard
 
 All SKILL.md files must follow the [agentskills.io specification](https://agentskills.io/specification):
