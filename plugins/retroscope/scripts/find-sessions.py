@@ -11,7 +11,10 @@ Modes:
 import argparse
 import json
 import os
+import re
 import sys
+import time
+import urllib.request
 from datetime import datetime, date, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -298,8 +301,162 @@ def extract_assistant_text(content) -> tuple[str, list]:
 
 
 # ---------------------------------------------------------------------------
-# Stats mode
+# Stats mode — pricing
 # ---------------------------------------------------------------------------
+
+_PRICING_URL = "https://platform.claude.com/docs/en/docs/about-claude/pricing"
+_PRICING_CACHE_FILE = f"/tmp/claude-model-pricing-{os.getuid()}.json"
+_PRICING_CACHE_TTL = 86400  # 24 hours
+
+# Fallback pricing per 1M tokens: {key: {"input", "output", "cache_write", "cache_read"}}
+# Used only when both fetch and cache fail.
+# Source: https://platform.claude.com/docs/en/docs/about-claude/pricing (Feb 2026)
+FALLBACK_PRICING = {
+    "opus-4.6":   {"input": 5.0,  "output": 25.0, "cache_write": 6.25,  "cache_read": 0.50},
+    "opus-4.5":   {"input": 5.0,  "output": 25.0, "cache_write": 6.25,  "cache_read": 0.50},
+    "sonnet-4.6": {"input": 3.0,  "output": 15.0, "cache_write": 3.75,  "cache_read": 0.30},
+    "sonnet-4.5": {"input": 3.0,  "output": 15.0, "cache_write": 3.75,  "cache_read": 0.30},
+    "haiku-4.5":  {"input": 1.0,  "output": 5.0,  "cache_write": 1.25,  "cache_read": 0.10},
+    # Claude 3.x legacy
+    "opus-3":     {"input": 15.0, "output": 75.0, "cache_write": 18.75, "cache_read": 1.50},
+    "sonnet-3":   {"input": 3.0,  "output": 15.0, "cache_write": 3.75,  "cache_read": 0.30},
+    "haiku-3":    {"input": 0.25, "output": 1.25,  "cache_write": 0.30,  "cache_read": 0.03},
+}
+
+
+def fetch_pricing() -> dict | None:
+    """Fetch pricing from platform.claude.com pricing page (SSR HTML).
+
+    Parses the HTML table with columns:
+      Model | Base Input | 5m Cache Writes | 1h Cache Writes | Cache Hits | Output
+    Returns dict like FALLBACK_PRICING, or None on failure.
+    """
+    try:
+        req = urllib.request.Request(
+            _PRICING_URL,
+            headers={"User-Agent": "retroscope-find-sessions/1.0"},
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            html = resp.read().decode("utf-8", errors="replace")
+    except Exception:
+        return None
+
+    row_re = re.compile(r"<tr[^>]*>(.*?)</tr>", re.DOTALL)
+    td_re = re.compile(r"<td[^>]*>(.*?)</td>", re.DOTALL)
+    tag_re = re.compile(r"<[^>]+>")
+    price_re = re.compile(r"\$([0-9.]+)\s*/\s*MTok")
+
+    pricing = {}
+    for row_match in row_re.finditer(html):
+        row_html = row_match.group(1)
+        cells = td_re.findall(row_html)
+        if len(cells) < 6:
+            continue
+
+        cells_text = [tag_re.sub("", c).strip() for c in cells]
+        model_cell = cells_text[0]
+        if not model_cell.startswith("Claude "):
+            continue
+
+        prices = []
+        for cell in cells_text[1:6]:
+            m = price_re.search(cell)
+            prices.append(float(m.group(1)) if m else None)
+
+        if len(prices) < 5 or None in prices:
+            continue
+
+        # "Claude Opus 4.6" -> "opus-4.6"; "Claude Opus 4" -> "opus-4"
+        name_match = re.match(r"Claude\s+(\w+)\s+([\d.]+)", model_cell)
+        if not name_match:
+            continue
+        key = f"{name_match.group(1).lower()}-{name_match.group(2)}"
+
+        # Columns: Base Input | 5m Cache Writes | 1h Cache Writes | Cache Hits | Output
+        pricing[key] = {
+            "input": prices[0],
+            "cache_write": prices[1],
+            "cache_read": prices[3],
+            "output": prices[4],
+        }
+
+    return pricing if pricing else None
+
+
+def load_pricing() -> tuple[dict, str]:
+    """Load pricing: try cache → fetch from web → fall back to hardcoded.
+
+    Returns (pricing_dict, source) where source is "cached", "fetched", or "static".
+    """
+    # 1. Check cache file (valid for 24h)
+    try:
+        if os.path.exists(_PRICING_CACHE_FILE):
+            mtime = os.stat(_PRICING_CACHE_FILE).st_mtime
+            if time.time() - mtime < _PRICING_CACHE_TTL:
+                with open(_PRICING_CACHE_FILE) as f:
+                    cached = json.load(f)
+                if isinstance(cached.get("models"), dict) and cached["models"]:
+                    return cached["models"], "cached"
+    except Exception:
+        pass
+
+    # 2. Fetch fresh pricing from Anthropic docs
+    fetched = fetch_pricing()
+    if fetched:
+        try:
+            with open(_PRICING_CACHE_FILE, "w") as f:
+                json.dump({
+                    "fetched_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "models": fetched,
+                }, f)
+        except Exception:
+            pass  # cache write failure is non-fatal
+        return fetched, "fetched"
+
+    # 3. Hardcoded fallback
+    return FALLBACK_PRICING, "static"
+
+
+def match_model_to_pricing(model_id: str, pricing: dict) -> tuple[dict | None, str]:
+    """Match a full model ID to the best pricing entry.
+
+    model_id examples: "claude-sonnet-4-6-20250514", "claude-opus-4-6"
+    pricing keys: "sonnet-4.6", "opus-4.6", "haiku-4.5", etc.
+
+    Returns (pricing_entry, matched_key) or (None, "") if no match.
+    """
+    model_lower = model_id.lower()
+
+    # Extract family and version from model ID
+    # Patterns: claude-{family}-{major}-{minor}[-date] or claude-{family}-{major}
+    family_match = re.search(r"claude-(opus|sonnet|haiku)-(\d+)-?(\d+)?", model_lower)
+    if family_match:
+        family = family_match.group(1)
+        major = family_match.group(2)
+        minor = family_match.group(3)
+        if minor:
+            # Try exact version match first
+            key = f"{family}-{major}.{minor}"
+            if key in pricing:
+                return pricing[key], key
+        # Try major-only match (e.g. "sonnet-4" matches "sonnet-4.6")
+        prefix = f"{family}-{major}."
+        candidates = [k for k in pricing if k.startswith(prefix)]
+        if candidates:
+            # Pick highest version
+            best = sorted(candidates, key=lambda k: float(k.split("-")[1]))[-1]
+            return pricing[best], best
+
+    # Fallback: family keyword match
+    for family in ("opus", "sonnet", "haiku"):
+        if family in model_lower:
+            candidates = [k for k in pricing if k.startswith(family + "-")]
+            if candidates:
+                best = sorted(candidates, key=lambda k: float(k.split("-")[1]))[-1]
+                return pricing[best], best
+
+    return None, ""
+
 
 def get_stats(jsonl_file: str):
     """
@@ -411,6 +568,60 @@ def get_stats(jsonl_file: str):
     if first_ts and last_ts:
         duration = (last_ts - first_ts).total_seconds() / 60
         stats["time_range"]["duration_minutes"] = round(duration, 1)
+
+    # Estimate cost using dynamic pricing (fetched or cached), fallback to hardcoded
+    pricing_dict, pricing_source = load_pricing()
+
+    # Per-message per-model cost: re-read file for accurate weighted calculation
+    actual_cost = 0.0
+    naive_cost = 0.0  # Claude Code style: all input tokens at full input rate
+    cost_model_used = ""
+    try:
+        with open(jsonl_file, errors="ignore") as f2:
+            for line2 in f2:
+                line2 = line2.strip()
+                if not line2:
+                    continue
+                try:
+                    obj2 = json.loads(line2)
+                except json.JSONDecodeError:
+                    continue
+                msg2 = obj2.get("message", {})
+                model2 = msg2.get("model", "")
+                usage2 = msg2.get("usage", {})
+                if not model2 or not usage2:
+                    continue
+
+                entry, key = match_model_to_pricing(model2, pricing_dict)
+                if entry is None:
+                    continue
+                if not cost_model_used:
+                    cost_model_used = key
+
+                inp = usage2.get("input_tokens", 0)
+                out = usage2.get("output_tokens", 0)
+                cw = usage2.get("cache_creation_input_tokens", 0)
+                cr = usage2.get("cache_read_input_tokens", 0)
+
+                # Actual cost: each token type at its real rate
+                actual_cost += (
+                    inp * entry["input"]       / 1_000_000
+                    + out * entry["output"]    / 1_000_000
+                    + cw * entry["cache_write"] / 1_000_000
+                    + cr * entry["cache_read"]  / 1_000_000
+                )
+                # Naive cost: all input tokens at full input rate (no cache discount)
+                naive_cost += (
+                    (inp + cw + cr) * entry["input"] / 1_000_000
+                    + out * entry["output"]           / 1_000_000
+                )
+    except OSError:
+        pass
+
+    stats["estimated_cost_usd"] = round(actual_cost, 4)
+    stats["naive_cost_usd"] = round(naive_cost, 4)
+    stats["pricing_model"] = cost_model_used or "unknown"
+    stats["pricing_source"] = pricing_source
 
     print(json.dumps(stats, indent=2))
 

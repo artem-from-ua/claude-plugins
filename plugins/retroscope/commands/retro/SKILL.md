@@ -21,23 +21,23 @@ Generate a retrospective summary of Claude Code session(s).
 
 ## Step 1: Determine Mode
 
+**You MUST ask the user which mode they want. Do NOT skip this step or assume a default.**
+
 If the user provided a mode argument (e.g., `/retro session`, `/retro today`), use it.
-Otherwise ask:
+Otherwise use AskUserQuestion with options: `session`, `today`, `yesterday`.
 
-```
-Use AskUserQuestion with options: session, today, yesterday
-```
-
-## Step 2: Load Config (today/yesterday only)
+## Step 2: Load Config
 
 Look for config in this order:
 1. `{CLAUDE_PROJECT_DIR}/.claude/retroscope.json` (project-level)
 2. `~/.claude/retroscope.json` (user-level)
 
-If no config found → tell the user to run `/retroscope:setup` first and stop.
+**If no config found:**
+- For `today` or `yesterday` mode → tell the user to run `/retroscope:setup` first and **stop**.
+- For `session` mode → show a note: "💡 Tip: Run `/retroscope:setup` to configure storage, language, and other options." Then continue with defaults (`sessionSource: logs`).
 
 Config fields used:
-- `storageDir` — where to save reports (REQUIRED)
+- `storageDir` — where to save reports (REQUIRED for today/yesterday)
 - `language` — report language (default: English)
 - `model` — report generation model: `haiku`, `sonnet`, or `inherit` (default: `haiku`)
 - `extractMode` — pre-filter sessions to text-only (default: `true`)
@@ -57,8 +57,6 @@ Read `sessionSource` from config (default: `logs`).
 |-------|----------|
 | `logs` (default) | Read JSONL session file — complete and reliable even if context was compressed or cleared |
 | `context` | Use current conversation context — faster, no file I/O, but may miss earlier turns if context was compressed (`/compact`) or cleared (`/clear`) |
-
-**If no config found:** use `logs` as default (do not require config for `session` mode — only `storageDir` needs setup for today/yesterday).
 
 ### 3b. Source: `logs`
 

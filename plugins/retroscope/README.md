@@ -48,7 +48,8 @@ Highly productive session focused on new plugin development...
 ...
 
 ## 📈 Productivity Metrics
-- Token usage: 1.2M input / 45K output (est. cost: $0.04)
+- Token usage: 1.2M input / 45K output
+- Estimated cost: $4.84 actual / $32.36 naive (6.7x cache savings)
 - Tool breakdown: Read: 42, Bash: 18, Edit: 15, Write: 7
 
 ## 🔮 Next Steps
@@ -91,7 +92,7 @@ Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude/retros
 
 1. **Session discovery** — `find-sessions.py` locates JSONL session files in `~/.claude/projects/` for the target date
 2. **Content extraction** — Filters user prompts and assistant responses (skips tool inputs/outputs when extract mode is on)
-3. **Statistics** — Aggregates token usage, tool calls, duration across sessions
+3. **Statistics** — Aggregates token usage, tool calls, duration across sessions; calculates two cost estimates: *actual* (with cache discounts) and *naive* (all tokens at full input rate, as reported by Claude Code). Pricing fetched from Anthropic docs, cached 24h, with hardcoded fallback
 4. **Report generation** — Claude generates the report using the template, optionally using a haiku subagent for cost efficiency
 5. **Storage** — Saves to the configured storage repo and creates a git commit
 6. **Caching** — If a report already exists and is newer than all session files, displays cached version instantly
@@ -111,7 +112,7 @@ Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude/retros
 - `/retro last-week` — Mon–Sun of previous week
 - Streak tracking — consecutive productive days, activity heatmap
 - CLAUDE.md audit — suggest rules based on repeated session patterns
-- Cost tracking — estimated $ per session/day/week
+- Cost tracking per day/week rollup (per-session cost already tracked in v0.1.1)
 - Focus score — on-task vs tangential exchange ratio
 - Git stats integration — lines changed, commits per session
 - Export formats — JSON, CSV for external dashboards
