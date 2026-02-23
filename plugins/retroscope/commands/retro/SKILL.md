@@ -70,7 +70,11 @@ Read `sessionSource` from config (default: `logs`).
 
 Find the JSONL file for the current session:
 
-1. Get current session ID — read `$CLAUDE_SESSION_ID` env var, or fall back to extracting it from `~/.claude/projects/` by finding the most recently modified JSONL file under the encoded current project path.
+1. Get current session ID — read `$CLAUDE_SESSION_ID` env var, or fall back to finding the most recently modified JSONL file under the encoded current project path:
+   ```bash
+   ls -t ~/.claude/projects/<encoded-project-dir>/*.jsonl | head -1
+   ```
+   **Never use the Read tool on `.jsonl` files — they can exceed 256 KB. Always use Bash commands.**
 
 2. Resolve script path — `SCRIPT_DIR` = `${SKILL_DIR}/../../scripts` (i.e., `scripts/` at the plugin root).
 
@@ -161,7 +165,16 @@ Concatenate all extracted text (with session separators).
 
 **If `extractMode: false`:**
 
-Read raw JSONL files directly (filter to `type: user` and `type: assistant` messages only).
+Parse JSONL files via Bash — **never use the Read tool on `.jsonl` files** (they can exceed 256 KB / 25K tokens):
+```bash
+PYTHONPATH="" python3 -c "
+import json, sys
+for line in open(sys.argv[1]):
+    obj = json.loads(line)
+    if obj.get('type') in ('user', 'assistant'):
+        print(json.dumps(obj))
+" "{session_file}"
+```
 
 **If combined content exceeds ~100K tokens:**
 - Warn user about large session size
