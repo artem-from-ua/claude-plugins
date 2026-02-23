@@ -19,22 +19,26 @@ Generate a retrospective summary of Claude Code session(s).
 | `today` | Aggregate all today's sessions | Saved to storage repo + git commit |
 | `yesterday` | Aggregate all yesterday's sessions | Saved to storage repo + git commit |
 
-## Step 1: Determine Mode
+## Step 1: Load Config
+
+Look for config in this order:
+1. `{CLAUDE_PROJECT_DIR}/.claude/retroscope.json` (project-level)
+2. `~/.claude/retroscope.json` (user-level)
+
+**If no config found:** ask the user whether to run setup now using AskUserQuestion:
+- Option A: "Yes, run setup now" → invoke `/retroscope:setup` skill and **stop**.
+- Option B: "No, continue without config" → continue with defaults (`sessionSource: logs`, display-only, no storage).
+
+## Step 2: Determine Mode
 
 **You MUST ask the user which mode they want. Do NOT skip this step or assume a default.**
 
 If the user provided a mode argument (e.g., `/retro session`, `/retro today`), use it.
 Otherwise use AskUserQuestion with options: `session`, `today`, `yesterday`.
 
-## Step 2: Load Config
-
-Look for config in this order:
-1. `{CLAUDE_PROJECT_DIR}/.claude/retroscope.json` (project-level)
-2. `~/.claude/retroscope.json` (user-level)
-
-**If no config found:**
-- For `today` or `yesterday` mode → tell the user to run `/retroscope:setup` first and **stop**.
-- For `session` mode → show a note: "💡 Tip: Run `/retroscope:setup` to configure storage, language, and other options." Then continue with defaults (`sessionSource: logs`).
+**If no config was found** (user chose to continue without config):
+- Only `session` mode is available (no storage configured for today/yesterday).
+- Skip the mode question and use `session` mode directly, showing a note: "💡 Tip: Run `/retroscope:setup` to enable daily reports (today/yesterday)."
 
 Config fields used:
 - `storageDir` — where to save reports (REQUIRED for today/yesterday)

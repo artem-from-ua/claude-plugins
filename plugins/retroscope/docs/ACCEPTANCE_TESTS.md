@@ -288,28 +288,36 @@ print('Template config: all fields valid')
 
 **Automation:** 🟡 (requires configured storage dir)
 
-#### 5.1 No Config → Different behavior by mode
+#### 5.1 No Config → Setup Prompt First
 
-**For `today`/`yesterday` mode without retroscope config:**
+When retroscope config is absent, `/retro` must ask about setup **before** offering a mode choice.
+
+**Steps:**
+1. Ensure no config exists:
+   ```bash
+   ls ~/.claude/retroscope.json 2>/dev/null && echo "exists" || echo "not found"
+   ls .claude/retroscope.json 2>/dev/null && echo "exists" || echo "not found"
+   ```
+2. Run any `/retro` command (with or without mode argument):
+   ```
+   /retro
+   ```
+
+**Expected result:**
+- ✅ Claude detects missing config **before** asking which mode to use
+- ✅ AskUserQuestion dialog appears with two options:
+  - "Yes, run setup now" → invokes `/retroscope:setup` and stops
+  - "No, continue without config" → proceeds in `session` mode only (no mode selection dialog shown)
+- ✅ If user picks "No, continue without config" → session report shown with tip: "💡 Tip: Run `/retroscope:setup` to enable daily reports (today/yesterday)."
+- ✅ Does NOT show mode selection dialog when no config found
+- ✅ Does NOT crash or generate empty report
+
+**Negative test — explicit mode with no config:**
 ```
 /retro today
 ```
-
-**Expected result:**
-- ✅ Claude detects missing config
-- ✅ Tells user to run `/retroscope:setup` first and **stops** (does not proceed)
-- ✅ Does NOT crash or generate empty report
-
-**For `session` mode without retroscope config:**
-```
-/retro session
-```
-
-**Expected result:**
-- ✅ Claude detects missing config
-- ✅ Shows tip: "💡 Tip: Run `/retroscope:setup` to configure storage, language, and other options."
-- ✅ **Continues** with default `sessionSource: logs` (does not stop)
-- ✅ Generates session report and displays it in terminal
+- ✅ Still shows setup prompt first (config check precedes mode resolution)
+- ✅ If user picks "No, continue without config" → Claude explains that today/yesterday mode requires storage config and shows session report instead
 
 #### 5.2 Today Report (with config)
 

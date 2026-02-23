@@ -14,9 +14,11 @@ Reports include: task outcomes, decisions made, open questions, GitHub/PR refere
 
 1. Install the plugin (via claude-marketplace-sync or manually)
 2. Start a Claude Code session
-3. Run `/retroscope:setup` — interactive wizard configures storage and options
+3. Run `/retro` — if no config is found, it will offer to run setup automatically
 4. Work normally in Claude Code
 5. Run `/retro today` at end of day
+
+> **Tip:** You can also run `/retroscope:setup` directly at any time to configure or update settings.
 
 ## Report Format
 
@@ -129,7 +131,7 @@ Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude/retros
 - Encoded path: `/Users/artem/devel/foo` → `-Users-artem-devel-foo`
 
 **Storage dir not initialized:**
-- Run `/retroscope:setup` to create and configure the storage repo
+- Run `/retro` and choose "Yes, run setup now" when prompted, or run `/retroscope:setup` directly
 
 **Report quality is poor:**
 - Switch from `haiku` to `sonnet` model in config
