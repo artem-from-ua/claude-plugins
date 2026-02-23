@@ -26,23 +26,27 @@ Use this template when generating retrospective reports. Fill in all sections ba
 
 | Status | Task | Links |
 |--------|------|-------|
-| ✅ Done | {completed task} | {PR #N, issue #N, or —} |
-| 🚧 In progress | {ongoing work} | {branch feature/foo} |
-| ❓ Open | {unresolved question} | {issue #N or —} |
-| 🔬 Research | {topic investigated} | {session {uuid-short}} |
-| ✔️ Decision | {what was decided} | {discussion #N or —} |
+| ✅ Done | {completed task} | 📌 PR #N · 🔀 `branch` |
+| 🚧 In progress | {ongoing work} | 🔀 `feature/foo` |
+| ❓ Open | {unresolved question} | 🐛 Issue #N |
+| 🔬 Research | {topic investigated} | 💬 `uuid-short` |
+| ✔️ Decision | {what was decided} | 📋 `plan-file.md` |
 | ❌ Abandoned | {abandoned task and reason} | — |
 | 💡 Idea | {idea for future} | — |
-| ⚠️ Blocked | {what is blocked and why} | {issue #N} |
+| ⚠️ Blocked | {what is blocked and why} | 🐛 Issue #N |
 
 _(Include only rows that apply. Remove unused status rows.)_
 
-## 🔗 References
+**Link icons:** 📌 PR · 🔀 Branch · 💬 Session · 📋 Plan · 🐛 Issue/Discussion
+Use `·` (middle dot) to separate multiple links in one cell.
 
-- **PRs:** {PR URLs from conversation, or "none"}
-- **Issues/Discussions:** {GitHub/JIRA references, or "none"}
-- **Branches:** {git branches touched}
-- **Sessions:** {session UUIDs with slugs, e.g. "03e14812 (wild-dancing-wigderson)"}
+## 📄 Documentation Changes
+
+| Change | File(s) |
+|--------|---------|
+| {short description of substantial change} | `{file path}` |
+
+_(Include only significant documentation changes: new docs, structural updates, important clarifications. Skip trivial edits like typo fixes.)_
 
 ## 💬 Communication Insights
 
@@ -54,7 +58,8 @@ _(Include only rows that apply. Remove unused status rows.)_
 
 ## 📈 Productivity Metrics
 
-- **Token usage:** {input / output / cache totals} (est. cost: ${estimated_cost})
+- **Estimated cost:** ${estimated_cost_usd} (with cache discounts) / ${naive_cost_usd} (without cache discounts, as shown in Claude Code UI)
+- **Token usage:** {input / output / cache totals}
 - **Tool breakdown:** {top tools — e.g. "Read: 42, Bash: 18, Edit: 15, Write: 7"}
 - **Session pacing:** {average time between exchanges or notable patterns}
 
