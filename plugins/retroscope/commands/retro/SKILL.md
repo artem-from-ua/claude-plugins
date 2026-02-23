@@ -19,6 +19,8 @@ Generate a retrospective summary of Claude Code session(s).
 | `today` | Aggregate all today's sessions | Saved to storage repo + git commit |
 | `yesterday` | Aggregate all yesterday's sessions | Saved to storage repo + git commit |
 
+Add `--force` to any mode to regenerate even if a cached report exists (e.g., `/retro today --force`).
+
 ## Step 1: Load Config
 
 Look for config in this order:
@@ -35,6 +37,8 @@ Look for config in this order:
 
 If the user provided a mode argument (e.g., `/retro session`, `/retro today`), use it.
 Otherwise use AskUserQuestion with options: `session`, `today`, `yesterday`.
+
+Parse the user's argument for both mode and flags. If `--force` is present, set `force = true` and strip it from the mode argument before further processing.
 
 **If no config was found** (user chose to continue without config):
 - Only `session` mode is available (no storage configured for today/yesterday).
@@ -122,7 +126,9 @@ Determine report output path:
 
 Where `{project_name}` = basename of `CLAUDE_PROJECT_DIR`.
 
-If the file exists:
+If `force` is set: skip cache check entirely, always regenerate.
+
+Otherwise, if the file exists:
 - Get modification time of summary.md
 - Get modification times of all session files
 - If summary.md is newer than ALL session files → display cached report and stop
@@ -135,6 +141,8 @@ python3 {SCRIPT_DIR}/find-sessions.py --stats "{session_file}"
 ```
 
 Collect: token totals, tool counts, duration, branches, models.
+
+From each stats JSON, collect both `estimated_cost_usd` (actual cost with cache discounts) and `naive_cost_usd` (all input tokens at full rate, matches Claude Code UI display). Show both in the Productivity Metrics section.
 
 Aggregate across all sessions for the Overview and Productivity Metrics sections.
 
