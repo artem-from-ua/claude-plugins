@@ -41,24 +41,59 @@ Config fields used:
 - `language` — report language (default: English)
 - `model` — report generation model: `haiku`, `sonnet`, or `inherit` (default: `haiku`)
 - `extractMode` — pre-filter sessions to text-only (default: `true`)
+- `sessionSource` — data source for `/retro session`: `logs` (default) or `context`
 - `autoPush` — git push after commit (default: `false`)
 - `timezone` — timezone for date calculations (default: system)
 
 ## Step 3: Session Mode
 
-**ONLY for `session` mode:**
+**ONLY for `session` mode.**
 
-The full conversation is already in context. Generate the report directly:
+### 3a. Determine session data source
+
+Read `sessionSource` from config (default: `logs`).
+
+| Value | Behavior |
+|-------|----------|
+| `logs` (default) | Read JSONL session file — complete and reliable even if context was compressed or cleared |
+| `context` | Use current conversation context — faster, no file I/O, but may miss earlier turns if context was compressed (`/compact`) or cleared (`/clear`) |
+
+**If no config found:** use `logs` as default (do not require config for `session` mode — only `storageDir` needs setup for today/yesterday).
+
+### 3b. Source: `logs`
+
+Find the JSONL file for the current session:
+
+1. Get current session ID — read `$CLAUDE_SESSION_ID` env var, or fall back to extracting it from `~/.claude/projects/` by finding the most recently modified JSONL file under the encoded current project path.
+
+2. Run stats first:
+   ```bash
+   python3 {SCRIPT_DIR}/find-sessions.py --stats "{session_file}"
+   ```
+
+3. Extract conversation text:
+   ```bash
+   python3 {SCRIPT_DIR}/find-sessions.py --extract "{session_file}"
+   ```
+   (No `--date` filter — include all messages regardless of when session started.)
+
+4. Read `${SKILL_DIR}/references/report-template.md`
+
+5. Generate the report from the extracted text. Use `inherit` model (generate directly, no subagent — session reports don't benefit from a haiku subagent since Claude already has context).
+
+6. Display in terminal. **Do NOT save to disk** — session reports are display-only.
+
+### 3c. Source: `context`
+
+> ⚠️ **Note:** Context may be incomplete if the conversation was compacted or cleared. Use `logs` for reliable coverage of the full session.
 
 1. Read `${SKILL_DIR}/references/report-template.md`
-2. Fill in the template from conversation context:
-   - Review the full conversation history
+2. Fill in the template from the current conversation history in context:
+   - Review all visible conversation turns
    - Project = current working directory name
    - Date = today's date
    - Session count = 1 (current session)
-   - All other fields from conversation content
-3. Display the report in the terminal
-4. **Do NOT save to disk** — session reports are display-only
+3. Display in terminal. **Do NOT save to disk.**
 
 Stop here for `session` mode.
 

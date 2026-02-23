@@ -69,6 +69,16 @@ Options:
 - On (default) — Pre-filter sessions to user prompts + assistant responses only. Reduces tokens by ~80–90%. Good for task tracking, decisions, and status overviews.
 - Off — Send complete session data including tool inputs/outputs, file contents, error messages. ~5–10x more tokens. Better for detailed debugging insights and nuanced communication analysis.
 
+**Question 5b — /retro session data source:**
+
+This setting controls how `/retro session` reads data about the current session.
+
+Claude Code automatically compresses long conversations (`/compact`) and users may run `/clear` to reset context. When this happens, earlier turns are no longer visible in memory — so a report based on "what Claude can see right now" will be incomplete.
+
+Options:
+- **Session logs** (default, recommended) — Always reads the full JSONL session file from `~/.claude/projects/`. Complete and reliable regardless of context compression or `/clear`. Slightly slower due to file I/O.
+- **Current context** — Uses whatever Claude can see in the active conversation. Faster and simpler, but will produce incomplete reports if context was compressed or cleared earlier in the session.
+
 **Question 6 — Suggest /retro on exit?**
 
 Options:
@@ -95,6 +105,7 @@ Write global defaults (storageDir, language, timezone):
   "timezone": "{detected_timezone}",
   "model": "{haiku|sonnet|inherit}",
   "extractMode": {true|false},
+  "sessionSource": "{logs|context}",
   "suggestRetroOnExit": {true|false},
   "autoPush": {false|true}
 }
@@ -141,11 +152,12 @@ git -C "{storageDir}" commit -m "chore: initialize retroscope storage"
 ```
 ✅ Retroscope configured successfully!
 
-Storage:  {storageDir}
-Remote:   {remoteUrl or "none (local only)"}
-Language: {language}
-Model:    {model}
-Extract:  {on/off}
+Storage:        {storageDir}
+Remote:         {remoteUrl or "none (local only)"}
+Language:       {language}
+Model:          {model}
+Extract mode:   {on/off}
+Session source: {logs/context}
 
 Next steps:
 1. Run /retro session — summarize current session (display only)
@@ -166,5 +178,6 @@ Tip: Reports are saved to:
 | `timezone` | string | system TZ | IANA timezone name (e.g. "Europe/Kyiv") |
 | `model` | string | `"haiku"` | Report model: `haiku`, `sonnet`, or `inherit` |
 | `extractMode` | boolean | `true` | Pre-filter sessions to text-only content |
+| `sessionSource` | string | `"logs"` | `/retro session` data source: `logs` (full JSONL, reliable) or `context` (current conversation, fast but may be incomplete) |
 | `suggestRetroOnExit` | boolean | `true` | Show /retro reminder in SessionEnd hook |
 | `autoPush` | boolean | `false` | Git push after each report commit |

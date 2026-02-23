@@ -83,6 +83,7 @@ Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude/retros
 | `timezone` | system | IANA timezone name |
 | `model` | `"haiku"` | Report model: `haiku`, `sonnet`, or `inherit` |
 | `extractMode` | `true` | Pre-filter to text-only (reduces tokens 80–90%) |
+| `sessionSource` | `"logs"` | `/retro session` data source: `logs` (full JSONL file, reliable even after `/compact` or `/clear`) or `context` (current conversation memory, faster but may miss earlier turns) |
 | `suggestRetroOnExit` | `true` | Show `/retro` reminder on session exit |
 | `autoPush` | `false` | Auto-push after each report commit |
 
