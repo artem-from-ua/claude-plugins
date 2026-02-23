@@ -117,7 +117,7 @@ ls -la "$PLUGIN/scripts/"
 ```bash
 SCRIPT="/Users/artem/devel/claude-plugins/plugins/retroscope/scripts/find-sessions.py"
 
-python3 "$SCRIPT" today --project-dir /Users/artem/devel/claude-plugins 2>&1
+PYTHONPATH="" python3 "$SCRIPT" today --project-dir /Users/artem/devel/claude-plugins 2>&1
 ```
 
 **Expected result:**
@@ -129,7 +129,7 @@ python3 "$SCRIPT" today --project-dir /Users/artem/devel/claude-plugins 2>&1
 #### 2.2 List Mode — Yesterday
 
 ```bash
-python3 "$SCRIPT" yesterday --project-dir /Users/artem/devel/claude-plugins 2>&1
+PYTHONPATH="" python3 "$SCRIPT" yesterday --project-dir /Users/artem/devel/claude-plugins 2>&1
 ```
 
 **Expected result:**
@@ -139,7 +139,7 @@ python3 "$SCRIPT" yesterday --project-dir /Users/artem/devel/claude-plugins 2>&1
 #### 2.3 List Mode — Date Range
 
 ```bash
-python3 "$SCRIPT" "2026-02-01:2026-02-23" --project-dir /Users/artem/devel/claude-plugins 2>&1
+PYTHONPATH="" python3 "$SCRIPT" "2026-02-01:2026-02-23" --project-dir /Users/artem/devel/claude-plugins 2>&1
 ```
 
 **Expected result:**
@@ -149,7 +149,7 @@ python3 "$SCRIPT" "2026-02-01:2026-02-23" --project-dir /Users/artem/devel/claud
 #### 2.4 List Mode — Unknown Project
 
 ```bash
-python3 "$SCRIPT" today --project-dir /tmp/nonexistent-project-xyz 2>&1
+PYTHONPATH="" python3 "$SCRIPT" today --project-dir /tmp/nonexistent-project-xyz 2>&1
 ```
 
 **Expected result:**
@@ -160,7 +160,7 @@ python3 "$SCRIPT" today --project-dir /tmp/nonexistent-project-xyz 2>&1
 
 ```bash
 RECENT=$(ls -t ~/.claude/projects/-Users-artem-devel-claude-plugins/*.jsonl 2>/dev/null | head -1)
-python3 "$SCRIPT" --stats "$RECENT" 2>&1
+PYTHONPATH="" python3 "$SCRIPT" --stats "$RECENT" 2>&1
 ```
 
 **Expected result:**
@@ -174,7 +174,7 @@ python3 "$SCRIPT" --stats "$RECENT" 2>&1
 Verify JSON structure:
 ```bash
 RECENT=$(ls -t ~/.claude/projects/-Users-artem-devel-claude-plugins/*.jsonl 2>/dev/null | head -1)
-python3 "$SCRIPT" --stats "$RECENT" | python3 -c "
+PYTHONPATH="" python3 "$SCRIPT" --stats "$RECENT" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
 assert data['session_id'], 'session_id missing'
@@ -202,7 +202,7 @@ print(f'Stats validation: OK (actual: \${actual:.4f}, naive: \${naive:.4f}, rati
 
 ```bash
 RECENT=$(ls -t ~/.claude/projects/-Users-artem-devel-claude-plugins/*.jsonl 2>/dev/null | head -1)
-python3 "$SCRIPT" --extract "$RECENT" --date 2026-02-23 2>&1 | head -20
+PYTHONPATH="" python3 "$SCRIPT" --extract "$RECENT" --date 2026-02-23 2>&1 | head -20
 ```
 
 **Expected result:**
@@ -216,7 +216,7 @@ python3 "$SCRIPT" --extract "$RECENT" --date 2026-02-23 2>&1 | head -20
 ```bash
 RECENT=$(ls -t ~/.claude/projects/-Users-artem-devel-claude-plugins/*.jsonl 2>/dev/null | head -1)
 # Test with wrong date (should produce no output)
-python3 "$SCRIPT" --extract "$RECENT" --date 2020-01-01 2>&1
+PYTHONPATH="" python3 "$SCRIPT" --extract "$RECENT" --date 2020-01-01 2>&1
 ```
 
 **Expected result:**
@@ -570,10 +570,10 @@ python3 -c "import json; json.load(open('$PLUGIN/hooks/hooks.json'))" || exit 1
 python3 -c "import json; json.load(open('$PLUGIN/templates/retroscope.json'))" || exit 1
 
 # Script syntax check
-python3 -m py_compile "$SCRIPT" && echo "find-sessions.py syntax: OK"
+PYTHONPATH="" python3 -m py_compile "$SCRIPT" && echo "find-sessions.py syntax: OK"
 
 # Help text (no session data needed)
-python3 "$SCRIPT" --help >/dev/null && echo "find-sessions.py --help: OK"
+PYTHONPATH="" python3 "$SCRIPT" --help >/dev/null && echo "find-sessions.py --help: OK"
 ```
 
 ### Expected Success Rate

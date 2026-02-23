@@ -74,12 +74,12 @@ Find the JSONL file for the current session:
 
 2. Run stats first:
    ```bash
-   python3 {SCRIPT_DIR}/find-sessions.py --stats "{session_file}"
+   PYTHONPATH="" python3 {SCRIPT_DIR}/find-sessions.py --stats "{session_file}"
    ```
 
 3. Extract conversation text:
    ```bash
-   python3 {SCRIPT_DIR}/find-sessions.py --extract "{session_file}"
+   PYTHONPATH="" python3 {SCRIPT_DIR}/find-sessions.py --extract "{session_file}"
    ```
    (No `--date` filter — include all messages regardless of when session started.)
 
@@ -108,7 +108,7 @@ Stop here for `session` mode.
 Run `find-sessions.py` to locate matching session files:
 
 ```bash
-python3 {SCRIPT_DIR}/find-sessions.py {today|yesterday} \
+PYTHONPATH="" python3 {SCRIPT_DIR}/find-sessions.py {today|yesterday} \
   --project-dir "{CLAUDE_PROJECT_DIR}" \
   --tz "{config.timezone}"
 ```
@@ -137,7 +137,7 @@ Otherwise, if the file exists:
 
 For each session file, run:
 ```bash
-python3 {SCRIPT_DIR}/find-sessions.py --stats "{session_file}"
+PYTHONPATH="" python3 {SCRIPT_DIR}/find-sessions.py --stats "{session_file}"
 ```
 
 Collect: token totals, tool counts, duration, branches, models.
@@ -152,7 +152,7 @@ Aggregate across all sessions for the Overview and Productivity Metrics sections
 
 For each session file, run:
 ```bash
-python3 {SCRIPT_DIR}/find-sessions.py --extract "{session_file}" --date "{YYYY-MM-DD}"
+PYTHONPATH="" python3 {SCRIPT_DIR}/find-sessions.py --extract "{session_file}" --date "{YYYY-MM-DD}"
 ```
 
 Concatenate all extracted text (with session separators).
@@ -169,8 +169,9 @@ Read raw JSONL files directly (filter to `type: user` and `type: assistant` mess
 
 1. Read `${SKILL_DIR}/references/report-template.md`
 2. Generate report content based on the template and extracted session data
-3. **If config `model` is `haiku` or `sonnet`**: use the Task tool with `subagent_type: haiku` or `subagent_type: sonnet` to generate the report body. Pass the extracted session text and template as context.
-4. **If config `model` is `inherit`**: generate directly (current session model)
+3. **If config `model` is `haiku`**: use the Task tool with `subagent_type: general-purpose` and `model: haiku` to generate the report body. Pass the extracted session text and template as context.
+4. **If config `model` is `sonnet`**: use the Task tool with `subagent_type: general-purpose` and `model: sonnet` to generate the report body. Pass the extracted session text and template as context.
+5. **If config `model` is `inherit`**: generate directly (current session model)
 
 ## Step 9: Save Report
 
