@@ -199,6 +199,7 @@ for line in open(sys.argv[1]):
    ```
    {storageDir}/reports/{project_name}/daily/{YYYY}/{MM}/{DD}/summary.md
    ```
+   **If the file already exists: Read it first, then use Edit to replace the content.** The Write tool blocks overwriting an unread file. Never skip the Read step when the file may exist from a previous run.
 
 3. Git commit in storage repo:
    ```bash
