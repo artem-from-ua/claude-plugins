@@ -72,22 +72,24 @@ Find the JSONL file for the current session:
 
 1. Get current session ID — read `$CLAUDE_SESSION_ID` env var, or fall back to extracting it from `~/.claude/projects/` by finding the most recently modified JSONL file under the encoded current project path.
 
-2. Run stats first:
+2. Resolve script path — `SCRIPT_DIR` = `${SKILL_DIR}/../../scripts` (i.e., `scripts/` at the plugin root).
+
+3. Run stats first:
    ```bash
    PYTHONPATH="" python3 {SCRIPT_DIR}/find-sessions.py --stats "{session_file}"
    ```
 
-3. Extract conversation text:
+4. Extract conversation text:
    ```bash
    PYTHONPATH="" python3 {SCRIPT_DIR}/find-sessions.py --extract "{session_file}"
    ```
    (No `--date` filter — include all messages regardless of when session started.)
 
-4. Read `${SKILL_DIR}/references/report-template.md`
+5. Read `${SKILL_DIR}/references/report-template.md`
 
-5. Generate the report from the extracted text. Use `inherit` model (generate directly, no subagent — session reports don't benefit from a haiku subagent since Claude already has context).
+6. Generate the report from the extracted text. Use `inherit` model (generate directly, no subagent — session reports don't benefit from a haiku subagent since Claude already has context).
 
-6. Display in terminal. **Do NOT save to disk** — session reports are display-only.
+7. Display in terminal. **Do NOT save to disk** — session reports are display-only.
 
 ### 3c. Source: `context`
 
