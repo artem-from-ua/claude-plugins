@@ -29,16 +29,24 @@ Bob -[#70AD47]-> Alice: Hi there!
 
 Proactive usage:
 - When creating or updating \`.md\` documentation files, proactively add PlantUML diagrams to illustrate architecture, sequences, state machines, data flow, and component relationships.
-- When explaining architecture or flows in the terminal, use PlantUML's ASCII text renderer:
+- When explaining architecture or flows in the terminal, determine diagram type first, then use one of two rendering paths:
+
+  **ASCII-friendly types** (sequence, activity, state, class, component, object, usecase):
   1. Create the PlantUML source code
-  2. Encode it: \`echo "\$source" | python3 ${PLUGIN_ROOT}/scripts/plantuml-encode.py\`
+  2. Encode it: \`encoded=\$(echo "\$source" | python3 ${PLUGIN_ROOT}/scripts/plantuml-encode.py --encode-only)\`
   3. Fetch ASCII output via WebFetch from: \`https://www.plantuml.com/plantuml/txt/<encoded>\`
   4. Display the rendered ASCII diagram
-  5. If WebFetch fails: retry once with simpler diagram
-  6. If both attempts fail: inform user PlantUML API unavailable, then generate ASCII diagram yourself using box-drawing characters (as fallback only)
-  Do NOT paste raw PlantUML source. Do NOT manually draw ASCII if PlantUML API is available.
-  If rendering fails (exit code 1): retry once with simpler diagram. If both attempts fail: inform user PlantUML API unavailable, then generate ASCII diagram yourself using box-drawing characters (as fallback only).
-  Do NOT paste raw PlantUML source. Do NOT manually draw ASCII if PlantUML API is available.
+  5. After the ASCII diagram, show a clickable SVG link: \`[View SVG diagram](https://www.plantuml.com/plantuml/svg/<encoded>)\`
+  6. If WebFetch fails: retry once with simpler diagram
+  7. If both attempts fail: inform user PlantUML API unavailable, then generate ASCII diagram yourself using box-drawing characters (as fallback only)
+
+  **Link-only types** (timing, gantt, mindmap, WBS, wireframe, network, JSON, YAML, ER, deployment):
+  1. Create the PlantUML source code
+  2. Show source in a fenced \`plantuml\` code block
+  3. Encode it: \`encoded=\$(echo "\$source" | python3 ${PLUGIN_ROOT}/scripts/plantuml-encode.py --encode-only)\`
+  4. Show a clickable SVG link: \`[View SVG diagram](https://www.plantuml.com/plantuml/svg/<encoded>)\`
+
+  Do NOT paste raw PlantUML source without a code block. Do NOT manually draw ASCII if PlantUML API is available.
 - **ALWAYS invoke the \`plantuml-diagram-guide\` skill BEFORE creating any PlantUML diagram** to choose the correct diagram type. This is MANDATORY — do not skip this step even if you think you know which type to use.
 
 Rules:
