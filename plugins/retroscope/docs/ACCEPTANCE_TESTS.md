@@ -38,7 +38,7 @@ Critical components to test:
 | 1.4 SKILL.md frontmatter | ✅ Pass | Both commands |
 | 2.1 list mode — today | ✅ Pass | Found 3 sessions |
 | 2.2 list mode — yesterday | ✅ Pass | 0 sessions (no sessions yesterday) |
-| 2.3 stats mode | ✅ Pass | JSON output correct |
+| 2.3 stats mode | ✅ Pass | JSON output correct, includes estimated_cost_usd, pricing_model, pricing_source |
 | 2.4 extract mode | ✅ Pass | User/assistant text extracted |
 | 7.1 session-end.sh | ✅ Pass | Output shown when suggestRetroOnExit=true |
 | 7.2 session-end.sh silent | ✅ Pass | No output when suggestRetroOnExit=false |
@@ -166,6 +166,7 @@ python3 "$SCRIPT" --stats "$RECENT" 2>&1
 **Expected result:**
 - ✅ Valid JSON on stdout
 - ✅ Contains: `session_id`, `slug`, `branches`, `models`, `time_range`, `message_counts`, `token_usage`, `tool_counts`
+- ✅ Contains: `estimated_cost_usd` (float, ≥0), `naive_cost_usd` (float, ≥ estimated_cost_usd), `pricing_model` (string like `sonnet-4.6`), `pricing_source` (string: `fetched`, `cached`, or `static`)
 - ✅ `message_counts.user > 0` and `message_counts.assistant > 0`
 - ✅ `time_range.start` and `time_range.end` are valid ISO timestamps
 - ✅ `token_usage.output_tokens > 0`
@@ -181,7 +182,19 @@ assert data['time_range']['start'], 'time_range.start missing'
 assert data['message_counts']['user'] > 0, 'no user messages'
 assert data['message_counts']['assistant'] > 0, 'no assistant messages'
 assert data['token_usage']['output_tokens'] > 0, 'no output tokens'
-print('Stats validation: OK')
+assert 'estimated_cost_usd' in data, 'estimated_cost_usd missing'
+assert isinstance(data['estimated_cost_usd'], (int, float)), 'estimated_cost_usd must be numeric'
+assert data['estimated_cost_usd'] >= 0, 'cost must be non-negative'
+assert 'naive_cost_usd' in data, 'naive_cost_usd missing'
+assert isinstance(data['naive_cost_usd'], (int, float)), 'naive_cost_usd must be numeric'
+assert data['naive_cost_usd'] >= data['estimated_cost_usd'], 'naive_cost must be >= estimated_cost'
+assert 'pricing_model' in data, 'pricing_model missing'
+assert isinstance(data['pricing_model'], str), 'pricing_model must be a string'
+assert data.get('pricing_source') in ('fetched', 'cached', 'static'), f'unexpected pricing_source: {data.get(\"pricing_source\")}'
+actual = data['estimated_cost_usd']
+naive = data['naive_cost_usd']
+ratio = naive / actual if actual > 0 else 0
+print(f'Stats validation: OK (actual: \${actual:.4f}, naive: \${naive:.4f}, ratio: {ratio:.1f}x, model: {data[\"pricing_model\"]} [{data[\"pricing_source\"]}])')
 "
 ```
 
@@ -275,17 +288,28 @@ print('Template config: all fields valid')
 
 **Automation:** 🟡 (requires configured storage dir)
 
-#### 5.1 No Config → Setup Prompt
+#### 5.1 No Config → Different behavior by mode
 
-In a session without retroscope config:
+**For `today`/`yesterday` mode without retroscope config:**
 ```
 /retro today
 ```
 
 **Expected result:**
 - ✅ Claude detects missing config
-- ✅ Suggests running `/retroscope:setup`
+- ✅ Tells user to run `/retroscope:setup` first and **stops** (does not proceed)
 - ✅ Does NOT crash or generate empty report
+
+**For `session` mode without retroscope config:**
+```
+/retro session
+```
+
+**Expected result:**
+- ✅ Claude detects missing config
+- ✅ Shows tip: "💡 Tip: Run `/retroscope:setup` to configure storage, language, and other options."
+- ✅ **Continues** with default `sessionSource: logs` (does not stop)
+- ✅ Generates session report and displays it in terminal
 
 #### 5.2 Today Report (with config)
 
