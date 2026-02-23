@@ -1,0 +1,10 @@
+{
+  "storageDir": "",
+  "remoteUrl": "",
+  "language": "en",
+  "timezone": "",
+  "model": "haiku",
+  "extractMode": true,
+  "suggestRetroOnExit": true,
+  "autoPush": false
+}
