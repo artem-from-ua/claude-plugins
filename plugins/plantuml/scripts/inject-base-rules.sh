@@ -18,7 +18,10 @@ Example:
 \`\`\`plantuml
 @startuml
 title Greeting Sequence
-Alice -> Bob: Hello
+skinparam participantBackgroundColor #E8F4FD
+skinparam participantBorderColor #7FB3D8
+Alice -[#5B9BD5]> Bob: Hello
+Bob -[#70AD47]-> Alice: Hi there!
 @enduml
 \`\`\`
 
@@ -40,6 +43,7 @@ Proactive usage:
 
 Rules:
 - Every PlantUML diagram MUST include a \`title\` directive after the opening tag (@startuml, @startjson, etc.). The title should be a short, descriptive name of the diagram.
+- When appropriate, use color coding in diagrams (skinparam, colored arrows, group backgrounds) with a muted pastel palette on white background (default). Do NOT change backgroundColor unless the user requests it. Add a \`legend\` block when colors encode specific meaning (e.g., blue = external service, red = error path). Does NOT apply to JSON, YAML, or Wireframe (Salt) diagrams.
 - Always keep both parts in sync. When you modify PlantUML source, the PostToolUse hook auto-updates the image URL.
 - Use SVG format (\`/svg/\` path) unless PNG is specifically requested.
 - The alt text in the image link should be a short description of the diagram.
