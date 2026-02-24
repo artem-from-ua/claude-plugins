@@ -1,0 +1,9 @@
+{
+  "name": "playbook",
+  "version": "0.1.0",
+  "description": "Curated presets of coding guidelines injected into sessions on demand",
+  "author": { "name": "Tribe Coding" },
+  "license": "MIT",
+  "commands": ["./commands/"],
+  "skills": ["./skills/"]
+}
