@@ -1,0 +1,24 @@
+{
+  "versionFiles": [
+    {
+      "path": "package.json",
+      "field": "version",
+      "format": "json"
+    }
+  ],
+  "triggerStrategy": "auto",
+  "baseBranch": "main",
+  "enforcement": {
+    "missingBump": "ask"
+  },
+  "commitFormat": "chore: bump version to {version}",
+  "excludePatterns": [
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    ".gitignore",
+    ".claude/**",
+    "docs/**",
+    "*.md"
+  ]
+}

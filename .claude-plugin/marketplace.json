@@ -32,6 +32,11 @@
       "name": "playbook",
       "source": "./plugins/playbook",
       "description": "Curated presets of coding guidelines injected into sessions on demand"
+    },
+    {
+      "name": "semver",
+      "source": "./plugins/semver",
+      "description": "Semantic versioning enforcement: validates version bumps before commit/push/PR, supports multiple version files"
     }
   ]
 }
