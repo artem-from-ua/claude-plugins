@@ -2,14 +2,14 @@
 name: git-branch-naming-setup
 description: >
   Interactive setup wizard for git branch naming conventions.
-  Creates or updates .claude/git-branch-naming.json with project-specific rules.
+  Creates or updates .claude-plugin/git-branch-naming.json with project-specific rules.
   Run this command to configure prefixes, ticket patterns, enforcement levels, and protected branches.
   Keywords: setup branch naming, configure conventions, branch config, git naming setup.
 ---
 
 # Git Branch Naming Setup
 
-Interactive wizard to create or update `.claude/git-branch-naming.json` for your project.
+Interactive wizard to create or update `.claude-plugin/git-branch-naming.json` for your project.
 
 ## What this command does
 
@@ -22,7 +22,7 @@ Interactive wizard to create or update `.claude/git-branch-naming.json` for your
 
 ### Step 1: Check existing config
 
-Read `.claude/git-branch-naming.json` if it exists (show current values as defaults).
+Read `.claude-plugin/git-branch-naming.json` if it exists (show current values as defaults).
 Otherwise use defaults from `${SKILL_DIR}/../../templates/git-branch-naming.json`.
 
 ### Step 2: Ask configuration questions
@@ -63,7 +63,7 @@ Use `AskUserQuestion` to collect:
 
 ### Step 3: Write config file
 
-Create `.claude/` directory if needed, then write `.claude/git-branch-naming.json`:
+Create `.claude-plugin/` directory if needed, then write `.claude-plugin/git-branch-naming.json`:
 
 ```json
 {
@@ -92,10 +92,10 @@ git config core.hooksPath .githooks
 ### Step 5: Show next steps to user
 
 ```
-✅ Configuration saved to .claude/git-branch-naming.json
+✅ Configuration saved to .claude-plugin/git-branch-naming.json
 
 Next steps:
-1. Commit this file: git add .claude/git-branch-naming.json && git commit -m "chore: add branch naming config"
+1. Commit this file: git add .claude-plugin/git-branch-naming.json && git commit -m "chore: add branch naming config"
 2. Add plugin to .claude/settings.json: { "enabledPlugins": { "git-branch-naming@tribe-coding": true } }
 3. Push to share conventions with your team
 

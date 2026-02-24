@@ -10,7 +10,15 @@ set -euo pipefail
 
 # Find project root (directory containing .git)
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-CONFIG_FILE="$REPO_ROOT/.claude/git-branch-naming.json"
+_new="$REPO_ROOT/.claude-plugin/git-branch-naming.json"
+_old="$REPO_ROOT/.claude/git-branch-naming.json"
+if [[ -f "$_new" ]]; then
+  CONFIG_FILE="$_new"
+elif [[ -f "$_old" ]]; then
+  CONFIG_FILE="$_old"
+else
+  CONFIG_FILE="$_new"
+fi
 
 # ─── Load config ─────────────────────────────────────────────────────────────
 
