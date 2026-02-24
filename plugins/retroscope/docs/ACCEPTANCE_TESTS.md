@@ -296,7 +296,7 @@ When retroscope config is absent, `/retro` must ask about setup **before** offer
 1. Ensure no config exists:
    ```bash
    ls ~/.claude/retroscope.json 2>/dev/null && echo "exists" || echo "not found"
-   ls .claude/retroscope.json 2>/dev/null && echo "exists" || echo "not found"
+   ls .claude-plugin/retroscope.json 2>/dev/null && echo "exists" || echo "not found"
    ```
 2. Run any `/retro` command (with or without mode argument):
    ```
@@ -428,10 +428,10 @@ git -C "$STORAGE_DIR" log --oneline -3
 ```bash
 SCRIPT="/Users/artem/devel/claude-plugins/plugins/retroscope/scripts/session-end.sh"
 
-# Create temp config with suggestRetroOnExit=true
+# Create temp config with suggestRetroOnExit=true (new path .claude-plugin/)
 TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/.claude"
-printf '%s' '{"suggestRetroOnExit": true}' > "$TMPDIR/.claude/retroscope.json"
+mkdir -p "$TMPDIR/.claude-plugin"
+printf '%s' '{"suggestRetroOnExit": true}' > "$TMPDIR/.claude-plugin/retroscope.json"
 
 env CLAUDE_PROJECT_DIR="$TMPDIR" bash "$SCRIPT"
 rm -rf "$TMPDIR"
@@ -446,8 +446,8 @@ rm -rf "$TMPDIR"
 SCRIPT="/Users/artem/devel/claude-plugins/plugins/retroscope/scripts/session-end.sh"
 
 TMPDIR=$(mktemp -d)
-mkdir -p "$TMPDIR/.claude"
-printf '%s' '{"suggestRetroOnExit": false}' > "$TMPDIR/.claude/retroscope.json"
+mkdir -p "$TMPDIR/.claude-plugin"
+printf '%s' '{"suggestRetroOnExit": false}' > "$TMPDIR/.claude-plugin/retroscope.json"
 
 OUTPUT=$(env CLAUDE_PROJECT_DIR="$TMPDIR" bash "$SCRIPT")
 if [ -z "$(echo "$OUTPUT" | tr -d '[:space:]')" ]; then
@@ -488,7 +488,7 @@ env CLAUDE_PROJECT_DIR="/tmp/nonexistent-project-xyz-retroscope" bash "$SCRIPT"
 **Step 2:** Ensure no existing retroscope config:
 ```bash
 ls ~/.claude/retroscope.json 2>/dev/null && echo "exists" || echo "not found"
-ls .claude/retroscope.json 2>/dev/null && echo "exists" || echo "not found"
+ls .claude-plugin/retroscope.json 2>/dev/null && echo "exists" || echo "not found"
 ```
 
 **Step 3:** Run setup wizard:
@@ -508,7 +508,7 @@ ls .claude/retroscope.json 2>/dev/null && echo "exists" || echo "not found"
 **Step 5:** Verify config files created:
 ```bash
 cat ~/.claude/retroscope.json
-cat .claude/retroscope.json
+cat .claude-plugin/retroscope.json
 ```
 
 **Step 6:** Verify storage repo initialized:

@@ -78,7 +78,7 @@ Reports are saved as git-tracked markdown files:
 
 ## Configuration
 
-Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude/retroscope.json` (project-level overrides).
+Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude-plugin/retroscope.json` (project-level overrides).
 
 | Field | Default | Description |
 |-------|---------|-------------|

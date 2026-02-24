@@ -5,12 +5,15 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 # Find config — project-level takes precedence
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
-PROJECT_CONFIG="${PROJECT_DIR}/.claude/retroscope.json"
+_new="${PROJECT_DIR}/.claude-plugin/retroscope.json"
+_old="${PROJECT_DIR}/.claude/retroscope.json"
 USER_CONFIG="${HOME}/.claude/retroscope.json"
 
 CONFIG=""
-if [ -f "$PROJECT_CONFIG" ]; then
-  CONFIG="$PROJECT_CONFIG"
+if [ -f "$_new" ]; then
+  CONFIG="$_new"
+elif [ -f "$_old" ]; then
+  CONFIG="$_old"
 elif [ -f "$USER_CONFIG" ]; then
   CONFIG="$USER_CONFIG"
 fi
