@@ -137,6 +137,12 @@ If your plugin has both directories:
 }
 ```
 
+**WARNING: Duplicate skills in `/context`** — Claude Code does NOT deduplicate SKILL.md files between `commands/` and `skills/` directories. If the same `name:` frontmatter appears in both, it will show twice in `/context`. Rules:
+
+- **Auto-invocable skills** (e.g., `plantuml-diagram-guide`): place SKILL.md in `skills/` only. The `commands/` directory should have a **different** skill (e.g., `plantuml-validate`), or no SKILL.md at all.
+- **Command-only plugins** (no auto-invocable skills, only user-invoked commands like `/retro`): use `"skills": []` in plugin.json. Commands work fine without the skills field — they are loaded from `commands/` when invoked.
+- **Never** have the same `name:` in both `commands/foo/SKILL.md` and `skills/foo/SKILL.md`.
+
 ## Skills Standard
 
 All SKILL.md files must follow the [agentskills.io specification](https://agentskills.io/specification):
