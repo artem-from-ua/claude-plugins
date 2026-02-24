@@ -95,10 +95,27 @@ plugins/<name>/
 ├── scripts/                      # shell/python scripts called by hooks
 ├── commands/<cmd>/SKILL.md       # user-invocable slash commands
 ├── skills/<skill>/SKILL.md       # on-demand context-efficient skills
-├── templates/                    # project templates (pre-commit, CI)
+├── templates/                    # project templates (pre-commit, CI, default config)
 └── docs/
     └── ACCEPTANCE_TESTS.md       # comprehensive test documentation (REQUIRED)
 ```
+
+## Plugin Config Convention
+
+Plugins that need project-level configuration store config files in `.claude-plugin/`:
+
+| Scope | Path | Committed? | Example |
+|-------|------|-----------|---------|
+| **Project** (shared with team) | `{project}/.claude-plugin/<name>.json` | ✅ Yes | `.claude-plugin/playbook.json` |
+| **Global** (personal) | `~/.claude/<name>.json` | ❌ No | `~/.claude/playbook.json` |
+
+**Resolution order:** Project config takes priority over global. If both exist, project wins.
+
+**Backwards compatibility:** Scripts also check `{project}/.claude/<name>.json` as fallback for configs created before this convention.
+
+**Setup wizards** (`/playbook-setup`, `/semver-setup`, `/git-branch-naming-setup`, `/retroscope-setup`) write to `.claude-plugin/<name>.json` by default.
+
+---
 
 **IMPORTANT: `plugin.json` MUST include both `"commands"` and `"skills"` fields** for Claude Code to expose SKILL.md files to the skill system. Without the `"skills"` field, commands are not discoverable via `/skill-name` even if their SKILL.md files exist.
 
@@ -374,6 +391,10 @@ Claude Code has a bug where the plugin cache is not invalidated on auto-update (
 4. In hooks.json, use `${CLAUDE_PLUGIN_ROOT}` for script paths (see Hook Scripts Convention)
 5. Register in `.claude-plugin/marketplace.json`
 6. **Create acceptance test documentation** in `plugins/<name>/docs/ACCEPTANCE_TESTS.md`
+7. **If plugin needs project-level config:**
+   - Store default config template in `templates/<name>.json`
+   - Setup wizard writes to `{project}/.claude-plugin/<name>.json`
+   - Scripts read from `.claude-plugin/<name>.json` first, fall back to `.claude/<name>.json`
 
 ## Version Bump Requirements
 

@@ -68,9 +68,9 @@ done
 SCRIPT="/Users/artem/devel/claude-plugins/plugins/playbook/scripts/inject-rules.sh"
 PLUGIN="/Users/artem/devel/claude-plugins/plugins/playbook"
 
-# Test 2.1: Project config with both presets
-mkdir -p /tmp/playbook-test-2/.claude
-printf '{"presets":["documentation-principles","github-workflow"]}' > /tmp/playbook-test-2/.claude/playbook.json
+# Test 2.1: Project config with both presets (new path .claude-plugin/)
+mkdir -p /tmp/playbook-test-2/.claude-plugin
+printf '{"presets":["documentation-principles","github-workflow"]}' > /tmp/playbook-test-2/.claude-plugin/playbook.json
 output=$(env CLAUDE_PROJECT_DIR=/tmp/playbook-test-2 CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT")
 echo "$output" | grep -q "MANDATORY" && echo "✅ 2.1: RULES extracted" || echo "❌ 2.1: RULES not found"
 echo "$output" | grep -q "Documentation" && echo "✅ 2.1: doc preset" || echo "❌ 2.1: doc preset missing"
@@ -81,13 +81,27 @@ output=$(env HOME=/tmp/nonexistent CLAUDE_PROJECT_DIR=/tmp/nonexistent CLAUDE_PL
 [[ -z "$output" ]] && echo "✅ 2.2: Silent exit" || echo "❌ 2.2: Unexpected output: $output"
 
 # Test 2.3: Nonexistent preset name (graceful skip)
-mkdir -p /tmp/playbook-test-3/.claude
-printf '{"presets":["nonexistent-preset"]}' > /tmp/playbook-test-3/.claude/playbook.json
+mkdir -p /tmp/playbook-test-3/.claude-plugin
+printf '{"presets":["nonexistent-preset"]}' > /tmp/playbook-test-3/.claude-plugin/playbook.json
 output=$(env CLAUDE_PROJECT_DIR=/tmp/playbook-test-3 HOME=/tmp/nonexistent CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT")
 [[ -z "$output" ]] && echo "✅ 2.3: Nonexistent preset skipped silently" || echo "❌ 2.3: Unexpected output"
 
+# Test 2.4: Backwards compatibility — old path .claude/ still works
+mkdir -p /tmp/playbook-test-4/.claude
+printf '{"presets":["documentation-principles"]}' > /tmp/playbook-test-4/.claude/playbook.json
+output=$(env CLAUDE_PROJECT_DIR=/tmp/playbook-test-4 CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT")
+echo "$output" | grep -q "MANDATORY" && echo "✅ 2.4: Old path fallback works" || echo "❌ 2.4: Old path fallback broken"
+
+# Test 2.5: New path takes priority over old path
+mkdir -p /tmp/playbook-test-5/.claude-plugin /tmp/playbook-test-5/.claude
+printf '{"presets":["documentation-principles"]}' > /tmp/playbook-test-5/.claude-plugin/playbook.json
+printf '{"presets":["github-workflow"]}' > /tmp/playbook-test-5/.claude/playbook.json
+output=$(env CLAUDE_PROJECT_DIR=/tmp/playbook-test-5 CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT")
+echo "$output" | grep -q "Documentation" && echo "✅ 2.5: New path wins" || echo "❌ 2.5: New path not prioritized"
+echo "$output" | grep -q "GitHub Workflow" && echo "❌ 2.5: Old path should not win" || echo "✅ 2.5: Old path correctly ignored"
+
 # Cleanup
-rm -rf /tmp/playbook-test-2 /tmp/playbook-test-3
+rm -rf /tmp/playbook-test-2 /tmp/playbook-test-3 /tmp/playbook-test-4 /tmp/playbook-test-5
 ```
 
 **Expected result:**
@@ -120,14 +134,14 @@ echo "$output" | grep -q "Documentation" && echo "✅ 3.1: Global doc preset" ||
 echo "$output" | grep -q "GitHub Workflow" && echo "✅ 3.1: Global github preset" || echo "❌ 3.1"
 
 # Test 3.2: Project excludes one global preset
-mkdir -p /tmp/playbook-proj-test/.claude
-printf '{"presets":[],"exclude":["documentation-principles"]}' > /tmp/playbook-proj-test/.claude/playbook.json
+mkdir -p /tmp/playbook-proj-test/.claude-plugin
+printf '{"presets":[],"exclude":["documentation-principles"]}' > /tmp/playbook-proj-test/.claude-plugin/playbook.json
 output=$(env HOME="$FAKE_HOME" CLAUDE_PROJECT_DIR=/tmp/playbook-proj-test CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT")
 echo "$output" | grep -q "Documentation" && echo "❌ 3.2: Doc should be excluded" || echo "✅ 3.2: Doc excluded"
 echo "$output" | grep -q "GitHub Workflow" && echo "✅ 3.2: Github kept" || echo "❌ 3.2: Github missing"
 
 # Test 3.3: Deduplication (same preset in both configs)
-printf '{"presets":["documentation-principles"]}' > /tmp/playbook-proj-test/.claude/playbook.json
+printf '{"presets":["documentation-principles"]}' > /tmp/playbook-proj-test/.claude-plugin/playbook.json
 output=$(env HOME="$FAKE_HOME" CLAUDE_PROJECT_DIR=/tmp/playbook-proj-test CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT")
 count=$(echo "$output" | grep -c "Documentation — Base Rules")
 [[ "$count" -eq 1 ]] && echo "✅ 3.3: No duplication" || echo "❌ 3.3: Duplicated ($count times)"
