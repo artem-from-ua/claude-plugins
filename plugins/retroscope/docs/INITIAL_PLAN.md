@@ -73,7 +73,7 @@ Extract mode pre-processes JSONL via Python script, outputting only user text + 
 ### SessionEnd Hook
 
 `SessionEnd` hook fires with query `prompt_input_exit` when user types `exit`. The hook script:
-1. Reads project config `.claude/retroscope.json`
+1. Reads project config `.claude-plugin/retroscope.json`
 2. If `suggestRetroOnExit: true` → outputs suggestion message
 3. Output is shown to user before session closes
 
@@ -141,7 +141,7 @@ Pattern: follows `plugins/plantuml/scripts/inject-base-rules.sh` (PLUGIN_ROOT re
 ### 4. `plugins/retroscope/scripts/session-end.sh`
 
 SessionEnd hook:
-1. Read `.claude/retroscope.json` from `$CLAUDE_PROJECT_DIR`
+1. Read `.claude-plugin/retroscope.json` (or `.claude/retroscope.json` fallback) from `$CLAUDE_PROJECT_DIR`
 2. If `suggestRetroOnExit` is true → output suggestion text
 3. Silent if option is off or config doesn't exist
 
@@ -185,7 +185,7 @@ Main command (~100 lines, hybrid skill with references).
 3. Display in console only, do NOT save
 
 **Mode: `today` / `yesterday`**
-1. Read config: `.claude/retroscope.json` → fallback `~/.claude/retroscope.json`
+1. Read config: `.claude-plugin/retroscope.json` → fallback `.claude/retroscope.json` → fallback `~/.claude/retroscope.json`
 2. If no config → suggest `/retroscope:setup`
 3. Run `find-sessions.py <today|yesterday>` → session file paths
 4. Check cached report `{storageDir}/reports/{project}/daily/{YYYY}/{MM}/{DD}/summary.md`:

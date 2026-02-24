@@ -2,7 +2,7 @@
 name: retroscope-setup
 description: >
   Interactive setup wizard for retroscope retrospective reports.
-  Creates or updates ~/.claude/retroscope.json and .claude/retroscope.json.
+  Creates or updates ~/.claude/retroscope.json and .claude-plugin/retroscope.json.
   Run this command to configure storage directory, language, model, and options.
   Keywords: retroscope setup, configure retro, retroscope config, setup retrospective.
 ---
@@ -23,7 +23,7 @@ Interactive wizard to configure the retroscope plugin for your environment and p
 
 Read existing configs (show current values as defaults):
 - `~/.claude/retroscope.json` — user-level (global defaults)
-- `.claude/retroscope.json` — project-level (overrides)
+- `.claude-plugin/retroscope.json` — project-level (overrides)
 
 ## Step 2: Ask Configuration Questions
 
@@ -118,9 +118,9 @@ python3 -c "import datetime; print(datetime.datetime.now().astimezone().tzname()
 readlink /etc/localtime | sed 's|.*/zoneinfo/||'
 ```
 
-### Project-level config: `.claude/retroscope.json`
+### Project-level config: `.claude-plugin/retroscope.json`
 
-Create `.claude/` if needed, write project-level overrides. By default, identical to user-level config (user can manually edit to override per project later).
+Create `.claude-plugin/` if needed, write project-level overrides. By default, identical to user-level config (user can manually edit to override per project later).
 
 ## Step 4: Initialize Storage Repository
 

@@ -24,8 +24,9 @@ Add `--force` to any mode to regenerate even if a cached report exists (e.g., `/
 ## Step 1: Load Config
 
 Look for config in this order:
-1. `{CLAUDE_PROJECT_DIR}/.claude/retroscope.json` (project-level)
-2. `~/.claude/retroscope.json` (user-level)
+1. `{CLAUDE_PROJECT_DIR}/.claude-plugin/retroscope.json` (project-level, preferred)
+2. `{CLAUDE_PROJECT_DIR}/.claude/retroscope.json` (project-level, legacy fallback)
+3. `~/.claude/retroscope.json` (user-level)
 
 **If no config found:** ask the user whether to run setup now using AskUserQuestion:
 - Option A: "Yes, run setup now" → invoke `/retroscope:setup` skill and **stop**.
