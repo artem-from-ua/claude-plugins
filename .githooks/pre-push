@@ -86,7 +86,7 @@ if ! echo "$CURRENT_BRANCH" | grep -qE "^($PROTECTED)$"; then
     DESC="${CURRENT_BRANCH#*/}"
     if [[ -z "$DESC" ]]; then
       INVALID_REASON="no description after prefix"
-    elif [[ "$REQUIRE_KEBAB_CASE" == "true" ]] && echo "$DESC" | grep -qE '[A-Z_]'; then
+    elif [[ "$REQUIRE_KEBAB_CASE" == "true" ]] && echo "$DESC" | grep -qE '[A-Z]'; then
       FIXED=$(echo "$DESC" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
       INVALID_REASON="not kebab-case. Suggested: ${CURRENT_BRANCH%%/*}/$FIXED"
     else
