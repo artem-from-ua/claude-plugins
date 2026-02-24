@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## PR Merge
+
+`allow_auto_merge` is **disabled** in this repo — `gh pr merge --auto` will fail. Always use:
+```bash
+gh pr merge <N> --squash
+```
+
 ## ⚠️ CRITICAL: Version Bump Requirement
 
 **MANDATORY: Claude Code MUST automatically bump version when plugin files change**

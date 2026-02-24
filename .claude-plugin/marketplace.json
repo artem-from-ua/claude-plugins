@@ -27,6 +27,11 @@
       "name": "retroscope",
       "source": "./plugins/retroscope",
       "description": "Retrospective session reports: summarize tasks, decisions, and open questions from Claude Code sessions"
+    },
+    {
+      "name": "playbook",
+      "source": "./plugins/playbook",
+      "description": "Curated presets of coding guidelines injected into sessions on demand"
     }
   ]
 }
