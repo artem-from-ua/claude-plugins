@@ -8,7 +8,7 @@ A Claude Code plugin that enforces git branch naming conventions. Validates bran
 - **Warns on content mismatch** before `git commit` (staged files) and `git push` (full branch diff)
 - **Protects main branches** from direct pushes
 - **Injects naming rules** into every Claude Code session (zero extra user prompts)
-- **Configurable per project** via `.claude/git-branch-naming.json` — committed to git and shared team-wide
+- **Configurable per project** via `.claude-plugin/git-branch-naming.json` — committed to git and shared team-wide
 
 ## Why This Plugin Exists
 
@@ -114,7 +114,7 @@ This is usually done via a pull request instead of a direct push. Are you sure?
 
 ### Scenario 6: Team-wide conventions via committed config
 
-Your team uses JIRA and wants strict enforcement. One dev runs `/git-branch-naming:setup`, commits `.claude/git-branch-naming.json`, and from that point every teammate's Claude Code session enforces the same rules — no onboarding docs required.
+Your team uses JIRA and wants strict enforcement. One dev runs `/git-branch-naming:setup`, commits `.claude-plugin/git-branch-naming.json`, and from that point every teammate's Claude Code session enforces the same rules — no onboarding docs required.
 
 ## Branch Name Format
 
@@ -152,11 +152,11 @@ In a Claude Code session:
 /git-branch-naming:setup
 ```
 
-This creates `.claude/git-branch-naming.json` with your project's conventions. Commit it to git to share with your team.
+This creates `.claude-plugin/git-branch-naming.json` with your project's conventions. Commit it to git to share with your team.
 
 ## Configuration
 
-Configuration lives in `.claude/git-branch-naming.json` (committed to git, team-wide).
+Configuration lives in `.claude-plugin/git-branch-naming.json` (committed to git, team-wide).
 
 ### Schema
 
@@ -224,7 +224,7 @@ This requires ticket numbers: `feature/PROJ-123-add-login`
 
 2. **Commit both files:**
    ```bash
-   git add .claude/settings.json .claude/git-branch-naming.json
+   git add .claude/settings.json .claude-plugin/git-branch-naming.json
    git commit -m "chore: add git branch naming conventions"
    git push
    ```
@@ -274,7 +274,7 @@ git config core.hooksPath .githooks
 
 Or let the setup wizard install it: `/git-branch-naming:setup` → answer "Yes" to hook installation.
 
-The hook reads the same `.claude/git-branch-naming.json` config file.
+The hook reads `.claude-plugin/git-branch-naming.json` (falls back to `.claude/git-branch-naming.json` for backwards compatibility).
 
 ## Architecture
 

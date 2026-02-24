@@ -27,7 +27,15 @@ fi
 
 # ─── Config loading ─────────────────────────────────────────────────────────
 
-CONFIG_FILE="${CLAUDE_PROJECT_DIR:-.}/.claude/git-branch-naming.json"
+_new="${CLAUDE_PROJECT_DIR:-.}/.claude-plugin/git-branch-naming.json"
+_old="${CLAUDE_PROJECT_DIR:-.}/.claude/git-branch-naming.json"
+if [[ -f "$_new" ]]; then
+  CONFIG_FILE="$_new"
+elif [[ -f "$_old" ]]; then
+  CONFIG_FILE="$_old"
+else
+  CONFIG_FILE="$_new"
+fi
 
 # Defaults
 PREFIXES="feature|bugfix|hotfix|release|docs|test|chore|refactor"

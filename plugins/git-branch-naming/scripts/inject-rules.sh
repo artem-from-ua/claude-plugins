@@ -26,7 +26,7 @@ Rules:
 - ALWAYS use kebab-case (lowercase, hyphens only — no underscores, no spaces)
 - NEVER commit directly to `main`, `master`, or `develop` — always use a feature branch
 - NEVER push directly to `main`, `master`, or `develop` without confirmation
-- Check `.claude/git-branch-naming.json` for project-specific rules (ticket patterns, custom prefixes, enforcement levels)
+- Check `.claude-plugin/git-branch-naming.json` for project-specific rules (ticket patterns, custom prefixes, enforcement levels)
 - Before commit/push, verify your staged files match the branch type (e.g., `docs/` branch should not contain only code files)
 - Run `/git-branch-naming:setup` to create or update project configuration
 RULES

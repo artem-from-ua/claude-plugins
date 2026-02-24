@@ -4,7 +4,7 @@
 
 The `git-branch-naming` plugin enforces git branch naming conventions via PreToolUse hooks and injected SessionStart rules. These tests verify:
 - Branch name validation (format, prefix, kebab-case, ticket, length)
-- Config loading from `.claude/git-branch-naming.json`
+- Config loading from `.claude-plugin/git-branch-naming.json`
 - Protected branch warnings before push
 - Content mismatch detection at `git commit` and `git push`
 - SessionStart rules injection
@@ -161,15 +161,15 @@ printf '%s' '{"tool_input":{"command":"git push origin main"}}' \
 
 ## 4. Config Loading Tests
 
-**Objective:** Verify config loading from `.claude/git-branch-naming.json`.
+**Objective:** Verify config loading from `.claude-plugin/git-branch-naming.json`.
 
 **Automation:** ✅
 
 **Setup:**
 ```bash
-# Create test config
-mkdir -p /tmp/test-project/.claude
-cat > /tmp/test-project/.claude/git-branch-naming.json <<'EOF'
+# Create test config (new path .claude-plugin/)
+mkdir -p /tmp/test-project/.claude-plugin
+cat > /tmp/test-project/.claude-plugin/git-branch-naming.json <<'EOF'
 {
   "prefixes": ["feat", "fix"],
   "maxLength": 30,
@@ -303,7 +303,8 @@ bash .githooks/pre-push
 echo "Exit: $?"  # Expected: 0 (ask = warn, don't block)
 
 # Test: deny enforcement → exit 1
-cat > .claude/git-branch-naming.json <<'EOF'
+mkdir -p .claude-plugin
+cat > .claude-plugin/git-branch-naming.json <<'EOF'
 {"prefixes":["feature"],"enforcement":{"invalidName":"deny","protectedBranch":"deny","contentMismatch":"ask"}}
 EOF
 git checkout -q -b my-bad-branch2
@@ -333,7 +334,7 @@ echo "Exit: $?"  # Expected: 1 (deny = block)
 
 2. Verify rules loaded:
    Ask: "What are the rules for git branch naming in this session?"
-   Expected: Claude mentions prefixes, kebab-case, and `.claude/git-branch-naming.json`
+   Expected: Claude mentions prefixes, kebab-case, and `.claude-plugin/git-branch-naming.json`
 
 3. Test proactive enforcement — invalid branch name:
    Ask: "Create a git branch called `my-new-feature`"
@@ -385,12 +386,12 @@ If rules are NOT enforced in your test session:
 4. When prompted for max length: select 60
 5. When prompted for enforcement: select "Ask (warn)"
 6. When prompted for pre-push hook: select "No"
-7. Verify file created: `cat .claude/git-branch-naming.json`
-8. Verify JSON is valid: `jq . .claude/git-branch-naming.json`
+7. Verify file created: `cat .claude-plugin/git-branch-naming.json`
+8. Verify JSON is valid: `jq . .claude-plugin/git-branch-naming.json`
 
 **Acceptance criteria:**
 - ✅ Wizard asks all 7 questions
-- ✅ Config file created at `.claude/git-branch-naming.json`
+- ✅ Config file created at `.claude-plugin/git-branch-naming.json`
 - ✅ File is valid JSON
 - ✅ All selected values appear in output
 - ✅ Summary with "next steps" shown after completion
@@ -438,7 +439,7 @@ docker run --rm -v $(pwd):/plugins alpine sh -c \
 5. Verify same enforcement levels apply
 
 **Acceptance criteria:**
-- ✅ Cloned repo has `.claude/git-branch-naming.json`
+- ✅ Cloned repo has `.claude-plugin/git-branch-naming.json`
 - ✅ Plugin reads config from cloned repo
 - ✅ Same enforcement levels apply in both repos
 

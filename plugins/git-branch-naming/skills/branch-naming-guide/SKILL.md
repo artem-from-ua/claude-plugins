@@ -54,7 +54,7 @@ description: >
 
 ## Checking Project Config
 
-If `.claude/git-branch-naming.json` exists in the project, it may override:
+If `.claude-plugin/git-branch-naming.json` exists in the project, it may override:
 - Allowed prefixes
 - Required ticket pattern (e.g., `JIRA-\d+`, `#\d+`)
 - Max branch name length
