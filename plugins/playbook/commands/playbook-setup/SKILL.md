@@ -2,7 +2,7 @@
 name: playbook-setup
 description: >
   Interactive setup wizard for playbook presets. Creates or updates
-  ~/.claude/playbook.json (global) or .claude/playbook.json (project).
+  ~/.claude/playbook.json (global) or .claude-plugin/playbook.json (project).
   Run this command to choose which coding guideline presets to enable.
   Keywords: playbook setup, configure guidelines, enable presets.
 ---
@@ -21,7 +21,7 @@ Read all `.md` files in `${SKILL_DIR}/../../presets/`. For each file, extract th
 
 Check both config files and display current state:
 - Global (`~/.claude/playbook.json`): list enabled presets
-- Project (`.claude/playbook.json` in repo root): list enabled presets and excludes
+- Project (`.claude-plugin/playbook.json` in repo root): list enabled presets and excludes
 - If neither exists, say "No presets configured yet."
 
 ### 3. Ask which presets to enable
@@ -32,7 +32,7 @@ Use `AskUserQuestion` with `multiSelect: true`. List all available presets with 
 
 Use `AskUserQuestion`:
 - **Global** (`~/.claude/playbook.json`) — applies to all projects by default
-- **Project** (`.claude/playbook.json`) — applies only to this project, committed to git
+- **Project** (`.claude-plugin/playbook.json`) — applies only to this project, committed to git
 
 ### 5. Handle excludes (project level only)
 

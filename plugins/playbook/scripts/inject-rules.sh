@@ -9,7 +9,15 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 PRESETS_DIR="$PLUGIN_ROOT/presets"
 
 GLOBAL_CONFIG="$HOME/.claude/playbook.json"
-PROJECT_CONFIG="${CLAUDE_PROJECT_DIR:-.}/.claude/playbook.json"
+_new="${CLAUDE_PROJECT_DIR:-.}/.claude-plugin/playbook.json"
+_old="${CLAUDE_PROJECT_DIR:-.}/.claude/playbook.json"
+if [[ -f "$_new" ]]; then
+  PROJECT_CONFIG="$_new"
+elif [[ -f "$_old" ]]; then
+  PROJECT_CONFIG="$_old"
+else
+  PROJECT_CONFIG="$_new"
+fi
 
 # Collect preset names from both configs
 global_presets=""
