@@ -89,10 +89,18 @@ if ! echo "$CURRENT_BRANCH" | grep -qE "^($PROTECTED)$"; then
     elif [[ "$REQUIRE_KEBAB_CASE" == "true" ]] && echo "$DESC" | grep -qE '[A-Z_]'; then
       FIXED=$(echo "$DESC" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
       INVALID_REASON="not kebab-case. Suggested: ${CURRENT_BRANCH%%/*}/$FIXED"
-    elif [[ ${#CURRENT_BRANCH} -gt $MAX_LENGTH ]]; then
-      INVALID_REASON="too long (${#CURRENT_BRANCH} > $MAX_LENGTH characters)"
-    elif [[ -n "$TICKET_PATTERN" ]] && ! echo "$DESC" | grep -qE "$TICKET_PATTERN"; then
-      INVALID_REASON="missing required ticket number (pattern: $TICKET_PATTERN)"
+    else
+      # Ensure MAX_LENGTH is a valid non-empty integer before numeric comparison.
+      # Fall back to a sensible default (50) if configuration is missing or malformed.
+      if [[ -z "${MAX_LENGTH:-}" || ! "$MAX_LENGTH" =~ ^[0-9]+$ ]]; then
+        MAX_LENGTH=50
+      fi
+
+      if [[ ${#CURRENT_BRANCH} -gt $MAX_LENGTH ]]; then
+        INVALID_REASON="too long (${#CURRENT_BRANCH} > $MAX_LENGTH characters)"
+      elif [[ -n "$TICKET_PATTERN" ]] && ! echo "$DESC" | grep -qE "$TICKET_PATTERN"; then
+        INVALID_REASON="missing required ticket number (pattern: $TICKET_PATTERN)"
+      fi
     fi
   fi
 
