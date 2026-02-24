@@ -35,7 +35,15 @@ fi
 # ─── Config loading ──────────────────────────────────────────────────────────
 
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-CONFIG_FILE="$PROJECT_DIR/.claude/semver.json"
+_new="$PROJECT_DIR/.claude-plugin/semver.json"
+_old="$PROJECT_DIR/.claude/semver.json"
+if [[ -f "$_new" ]]; then
+  CONFIG_FILE="$_new"
+elif [[ -f "$_old" ]]; then
+  CONFIG_FILE="$_old"
+else
+  CONFIG_FILE="$_new"
+fi
 GLOBAL_CONFIG="$HOME/.claude/semver.json"
 
 # Defaults
@@ -53,7 +61,8 @@ LICENSE
 .gitignore
 *.md
 docs/**
-.claude/**"
+.claude/**
+.claude-plugin/**"
 
 load_config() {
   local cfg="$1"

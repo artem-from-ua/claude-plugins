@@ -2,7 +2,7 @@
 name: semver-setup
 description: >
   Interactive setup wizard for semantic versioning enforcement.
-  Creates or updates .claude/semver.json with version files, trigger strategy, and enforcement rules.
+  Creates or updates .claude-plugin/semver.json with version files, trigger strategy, and enforcement rules.
   Run this command to configure SemVer for your project.
   Keywords: setup semver, configure versioning, version config, semver setup, version bump config.
 ---
@@ -16,7 +16,7 @@ Configure semantic versioning enforcement for this project.
 ### 1. Detect existing config and version files
 
 Check for existing configuration:
-- Read `.claude/semver.json` if present (use as defaults for all questions)
+- Read `.claude-plugin/semver.json` if present (use as defaults for all questions)
 - Auto-detect common version files in the project root: `package.json`, `pyproject.toml`, `Cargo.toml`, `.claude-plugin/plugin.json`, `version.txt`
 - For monorepos: also scan one level deep (e.g., `packages/*/package.json`)
 
@@ -65,14 +65,14 @@ Show default patterns and let user customize:
 
 Default exclusions (files that never require a version bump):
 ```
-README.md, CHANGELOG.md, LICENSE, .gitignore, *.md, docs/**, .claude/**
+README.md, CHANGELOG.md, LICENSE, .gitignore, *.md, docs/**, .claude/**, .claude-plugin/**
 ```
 
 Use `AskUserQuestion` — ask if user wants to add or remove any patterns.
 
 ### 7. Write config
 
-Write `.claude/semver.json` with all chosen settings:
+Write `.claude-plugin/semver.json` with all chosen settings:
 
 ```json
 {
@@ -85,22 +85,22 @@ Write `.claude/semver.json` with all chosen settings:
     "missingBump": "ask"
   },
   "commitFormat": "chore: bump version to {version}",
-  "excludePatterns": ["README.md", "CHANGELOG.md", "LICENSE", ".gitignore", "*.md", "docs/**", ".claude/**"]
+  "excludePatterns": ["README.md", "CHANGELOG.md", "LICENSE", ".gitignore", "*.md", "docs/**", ".claude/**", ".claude-plugin/**"]
 }
 ```
 
-Create `.claude/` directory if it doesn't exist.
+Create `.claude-plugin/` directory if it doesn't exist.
 
 ### 8. Show confirmation
 
 Display:
-- Path written: `.claude/semver.json`
+- Path written: `.claude-plugin/semver.json`
 - Summary of settings (version files, strategy, enforcement, base branch)
 - Next steps:
 
 ```
 Next steps:
-1. git add .claude/semver.json && git commit -m "chore: add semver config"
+1. git add .claude-plugin/semver.json && git commit -m "chore: add semver config"
 2. Push to share enforcement rules with your team
 3. Run /semver:guide for the full SemVer 2.0.0 reference
 ```

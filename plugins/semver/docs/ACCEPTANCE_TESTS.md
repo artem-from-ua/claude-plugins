@@ -89,9 +89,9 @@ echo "$output" | grep -q "auto" && echo "✅ auto strategy in output" || echo "�
 echo "$output" | grep -q "MANDATORY" && echo "✅ MANDATORY keyword present" || echo "❌ MANDATORY missing"
 echo "$output" | grep -q "semver:setup" && echo "✅ setup pointer present" || echo "❌ setup pointer missing"
 
-# 2.2 Config with "always" strategy
-mkdir -p /tmp/semver-test/.claude
-printf '%s' '{"triggerStrategy":"always"}' > /tmp/semver-test/.claude/semver.json
+# 2.2 Config with "always" strategy (new path .claude-plugin/)
+mkdir -p /tmp/semver-test/.claude-plugin
+printf '%s' '{"triggerStrategy":"always"}' > /tmp/semver-test/.claude-plugin/semver.json
 output=$(env CLAUDE_PLUGIN_ROOT=/Users/artem/devel/claude-plugins/plugins/semver \
   CLAUDE_PROJECT_DIR=/tmp/semver-test bash "$SCRIPT")
 echo "$output" | grep -q "always" && echo "✅ always strategy in output" || echo "❌ always strategy missing"
@@ -127,9 +127,9 @@ echo "$result" | grep -q "exit:0" && ! echo "$result" | grep -q "permissionDecis
   echo "✅ git status passes through" || echo "❌ unexpected output"
 
 # 3.3 Passthrough: enforcement "allow"
-mkdir -p /tmp/semver-test2/.claude
+mkdir -p /tmp/semver-test2/.claude-plugin
 printf '%s' '{"versionFiles":[{"path":"package.json","field":"version","format":"json"}],"enforcement":{"missingBump":"allow"}}' \
-  > /tmp/semver-test2/.claude/semver.json
+  > /tmp/semver-test2/.claude-plugin/semver.json
 result=$(printf '%s' '{"tool_input":{"command":"git commit -m \"test\""}}' | \
   env CLAUDE_PLUGIN_ROOT=/Users/artem/devel/claude-plugins/plugins/semver \
       CLAUDE_PROJECT_DIR=/tmp/semver-test2 bash "$SCRIPT"; echo "exit:$?")
@@ -163,9 +163,9 @@ output=$(env CLAUDE_PLUGIN_ROOT=/Users/artem/devel/claude-plugins/plugins/semver
   CLAUDE_PROJECT_DIR=/tmp/semver-no-project HOME=/tmp/semver-global-test bash "$SCRIPT")
 echo "$output" | grep -q "always" && echo "✅ global config used" || echo "❌ global config not picked up"
 
-# 4.2 Project config overrides global
-mkdir -p /tmp/semver-project-test/.claude
-printf '%s' '{"triggerStrategy":"auto"}' > /tmp/semver-project-test/.claude/semver.json
+# 4.2 Project config overrides global (new path .claude-plugin/)
+mkdir -p /tmp/semver-project-test/.claude-plugin
+printf '%s' '{"triggerStrategy":"auto"}' > /tmp/semver-project-test/.claude-plugin/semver.json
 
 output=$(env CLAUDE_PLUGIN_ROOT=/Users/artem/devel/claude-plugins/plugins/semver \
   CLAUDE_PROJECT_DIR=/tmp/semver-project-test HOME=/tmp/semver-global-test bash "$SCRIPT")

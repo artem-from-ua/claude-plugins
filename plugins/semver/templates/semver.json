@@ -18,6 +18,7 @@
     "LICENSE",
     ".gitignore",
     ".claude/**",
+    ".claude-plugin/**",
     "docs/**",
     "*.md"
   ]
