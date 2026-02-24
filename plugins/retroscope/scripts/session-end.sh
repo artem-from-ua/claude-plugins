@@ -36,5 +36,5 @@ fi
 
 if [ "$SUGGEST" = "true" ]; then
   echo ""
-  echo "💡 Run \`/retro session\` to save a session summary before exiting."
+  echo "💡 Run \`/retro session\` to view a session summary before exiting."
 fi
