@@ -37,6 +37,11 @@
       "name": "semver",
       "source": "./plugins/semver",
       "description": "Semantic versioning enforcement: validates version bumps before commit/push/PR, supports multiple version files"
+    },
+    {
+      "name": "context",
+      "source": "./plugins/context",
+      "description": "Inspect full Claude Code session context: CLAUDE.md files, auto-memory, and SessionStart hook output"
     }
   ]
 }
