@@ -1,0 +1,18 @@
+{
+  "versionFiles": [
+    { "path": "plugins/statusline/.claude-plugin/plugin.json", "field": "version", "format": "json" },
+    { "path": "plugins/statusline-compact/.claude-plugin/plugin.json", "field": "version", "format": "json" },
+    { "path": "plugins/plantuml/.claude-plugin/plugin.json", "field": "version", "format": "json" },
+    { "path": "plugins/git-branch-naming/.claude-plugin/plugin.json", "field": "version", "format": "json" },
+    { "path": "plugins/playbook/.claude-plugin/plugin.json", "field": "version", "format": "json" },
+    { "path": "plugins/semver/.claude-plugin/plugin.json", "field": "version", "format": "json" },
+    { "path": "plugins/retroscope/.claude-plugin/plugin.json", "field": "version", "format": "json" }
+  ],
+  "triggerStrategy": "auto",
+  "baseBranch": "main",
+  "enforcement": {
+    "missingBump": "ask"
+  },
+  "commitFormat": "chore: bump version to {version}",
+  "excludePatterns": ["README.md", "CHANGELOG.md", "LICENSE", ".gitignore", "*.md", "docs/**", ".claude/**", ".claude-plugin/**"]
+}

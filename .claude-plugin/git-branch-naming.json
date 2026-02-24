@@ -6,7 +6,7 @@
   "requireKebabCase": true,
   "warnOnContentMismatch": true,
   "enforcement": {
-    "invalidName": "ask",
+    "invalidName": "deny",
     "protectedBranch": "ask",
     "contentMismatch": "ask"
   }
