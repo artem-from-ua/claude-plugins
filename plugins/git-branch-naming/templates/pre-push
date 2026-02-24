@@ -113,12 +113,10 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 for w in "${WARNINGS[@]:-}"; do
-  [[ -z "$w" ]] && continue
   echo -e "${YELLOW}⚠ [git-branch-naming] WARNING: $w${NC}" >&2
 done
 
 for e in "${ERRORS[@]:-}"; do
-  [[ -z "$e" ]] && continue
   echo -e "${RED}✗ [git-branch-naming] ERROR: $e${NC}" >&2
 done
 
