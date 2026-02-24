@@ -1,6 +1,6 @@
 {
   "name": "retroscope",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Retrospective session reports: summarize tasks, decisions, open questions from Claude Code sessions",
   "author": {
     "name": "Tribe Coding"
@@ -10,6 +10,6 @@
     "./commands/"
   ],
   "skills": [
-    "./commands/"
+    "./skills/"
   ]
 }
