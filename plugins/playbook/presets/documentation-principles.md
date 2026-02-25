@@ -9,16 +9,16 @@ tags: [docs, commits]
 
 MANDATORY: Documentation is part of the codebase. A change is not complete until docs reflect it.
 
-- Before EVERY commit → run the documentation checklist:
-  1. Architecture changed? → update `docs/architecture.md`
-  2. API changed? → update `docs/api/`
-  3. Significant decision? → create/update `docs/adr/`
-  4. Coding conventions affected? → update `docs/conventions.md`
-  5. Cross-links still valid?
-- If none apply → state why in commit message
-- NEVER leave `TODO: document this` in code
+- After adding, removing, or renaming a module/component → update `docs/architecture.md`
+- After changing a public function/method signature or API endpoint → update its entry in `docs/api/`
+- After choosing between two viable approaches or deviating from a convention → create `docs/adr/NNNN-title.md` (Context → Decision → Consequences)
+- After changing coding patterns, naming conventions, or tooling → update `docs/conventions.md`
+- After adding or updating any doc → verify all cross-links to/from it are valid
+- ALWAYS keep `CLAUDE.md` minimal — build/test commands + links to docs only; details live in `docs/`; user-facing project overview belongs in `README.md`
+- NEVER leave `TODO: document this` in code — write the doc now or create a tracked issue
 - NEVER duplicate info across docs — single source of truth, link instead
-- For full principles: invoke `/playbook-browse` and select "documentation-principles"
+- NEVER use inline comments as a substitute for documentation
+- For full reference: invoke `/playbook-browse` and select "documentation-principles"
 <!-- /RULES -->
 
 <!-- REFERENCE -->
