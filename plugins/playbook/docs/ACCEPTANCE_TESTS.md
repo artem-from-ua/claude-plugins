@@ -58,7 +58,7 @@ done
 
 ## 2. Script Unit Tests — inject-rules.sh
 
-**Objective:** Verify RULES extraction, config loading, and silent exit.
+**Objective:** Verify RULES extraction, config loading, silent exit, and `<!-- Source: ... Preset ... -->` markers.
 
 **Automation:** ✅
 
@@ -100,14 +100,36 @@ output=$(env CLAUDE_PROJECT_DIR=/tmp/playbook-test-5 CLAUDE_PLUGIN_ROOT="$PLUGIN
 echo "$output" | grep -q "Documentation" && echo "✅ 2.5: New path wins" || echo "❌ 2.5: New path not prioritized"
 echo "$output" | grep -q "GitHub Workflow" && echo "❌ 2.5: Old path should not win" || echo "✅ 2.5: Old path correctly ignored"
 
+# Test 2.6: Preset markers emitted before each preset (v0.3.1+)
+# Each preset output must be preceded by:
+# <!-- Source: Plugin playbook@tribe-coding (vX.Y.Z) Preset <name> -->
+mkdir -p /tmp/playbook-test-6/.claude-plugin
+printf '{"presets":["documentation-principles","github-workflow"]}' > /tmp/playbook-test-6/.claude-plugin/playbook.json
+output=$(env CLAUDE_PROJECT_DIR=/tmp/playbook-test-6 CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT")
+marker_count=$(echo "$output" | grep -c '<!-- Source: Plugin playbook@tribe-coding (v[^)]*) Preset ' || true)
+[[ "$marker_count" -ge 2 ]] && echo "✅ 2.6: Preset markers present ($marker_count)" || echo "❌ 2.6: Expected ≥2 markers, got $marker_count"
+# Verify marker format
+echo "$output" | grep -q '<!-- Source: Plugin playbook@tribe-coding (v[0-9]*\.[0-9]*\.[0-9]*) Preset documentation-principles -->' \
+  && echo "✅ 2.6: documentation-principles marker correct" || echo "❌ 2.6: documentation-principles marker missing or wrong format"
+echo "$output" | grep -q '<!-- Source: Plugin playbook@tribe-coding (v[0-9]*\.[0-9]*\.[0-9]*) Preset github-workflow -->' \
+  && echo "✅ 2.6: github-workflow marker correct" || echo "❌ 2.6: github-workflow marker missing or wrong format"
+# Verify marker appears BEFORE preset content (not after)
+first_marker_line=$(echo "$output" | grep -n '<!-- Source: Plugin playbook' | head -1 | cut -d: -f1)
+first_content_line=$(echo "$output" | grep -n "^MANDATORY\|^## Documentation\|^## GitHub" | head -1 | cut -d: -f1)
+[[ -n "$first_marker_line" && -n "$first_content_line" && "$first_marker_line" -lt "$first_content_line" ]] \
+  && echo "✅ 2.6: Marker precedes content" || echo "❌ 2.6: Marker order wrong"
+
 # Cleanup
-rm -rf /tmp/playbook-test-2 /tmp/playbook-test-3 /tmp/playbook-test-4 /tmp/playbook-test-5
+rm -rf /tmp/playbook-test-2 /tmp/playbook-test-3 /tmp/playbook-test-4 /tmp/playbook-test-5 /tmp/playbook-test-6
 ```
 
 **Expected result:**
 - ✅ 2.1: Both presets extracted with MANDATORY rules
 - ✅ 2.2: Zero output when no config exists
 - ✅ 2.3: Nonexistent presets skipped without error
+- ✅ 2.6: Preset markers `<!-- Source: Plugin playbook@tribe-coding (vX.Y.Z) Preset NAME -->` emitted before each preset
+- ✅ 2.6: Marker format matches `playbook@tribe-coding (v{semver}) Preset {name}`
+- ✅ 2.6: Marker appears on the line immediately before preset content
 
 ---
 

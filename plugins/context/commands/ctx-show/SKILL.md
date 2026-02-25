@@ -3,7 +3,8 @@ name: ctx-show
 description: >
   Show the full Claude Code session context assembled in load order.
   Outputs all CLAUDE.md files, auto-memory, and SessionStart hook output
-  in one document with source separators.
+  in one document with source separators. Prints a summary table to stderr
+  with scope, type, source, status, lines, tokens, and context% per source.
   Keywords: session context, what is loaded, show context, debug context, rules, hooks.
 ---
 
@@ -27,6 +28,21 @@ Assemble and display everything Claude Code loads at session start, in load orde
 5. Plugin SessionStart hooks (enabled plugins in `~/.claude/plugins/cache/`)
 
 Each source is wrapped with `<!-- Source: ... -->` comments. Missing files are noted but do not cause errors.
+
+## Summary Table
+
+After the file is written (or content printed), a summary table is printed to **stderr** with:
+
+| Column | Description |
+|--------|-------------|
+| Scope | 👤 `User` (global `~/.claude/`) or 📁 `Project` (project-level + plugins) |
+| Type | 📝 CLAUDE.md · 🧠 Memory · ⚙️ Plugin hook · 📚 Playbook Preset |
+| Source/ID | Shortened path (`~/`, `./`) or plugin identifier `name@marketplace (vX.Y.Z)` |
+| Status | ✅ has content · ⚠️ missing/empty · ❌ command failed |
+| Lines / ~Tokens | Content metrics; tokens ≈ chars/4 |
+| Context% | Each source's share of total context |
+
+Playbook presets (from `playbook@tribe-coding`) appear as individual rows when using playbook v0.3.1+.
 
 ## Steps
 
@@ -52,9 +68,11 @@ Each source is wrapped with `<!-- Source: ... -->` comments. Missing files are n
 3. Display the result:
    - `--file` mode: show the file path. Offer to open or read the file.
    - `--stdout` mode: show the full output.
+   - In both modes: show the summary table (it prints to stderr automatically).
 
 ## Notes
 
 - Requires `jq` for parsing `settings.json` and plugin hooks. If `jq` is missing, static file sources (CLAUDE.md, MEMORY.md) are still shown.
 - SessionStart hook commands are executed in isolation — their output may differ slightly from a real session start (e.g., different working directory).
 - For plugin hooks, the script uses `${CLAUDE_PLUGIN_ROOT}` substitution with the actual cache path.
+- Playbook preset splitting requires playbook plugin v0.3.1+ in cache (emits `<!-- Source: Plugin playbook@... Preset NAME -->` markers).

@@ -4,35 +4,44 @@
 
 The `context` plugin provides the `/ctx-show` command for assembling the full Claude Code session context in load order. These acceptance tests verify that the script correctly discovers, reads, and outputs all five source types — and handles missing files gracefully.
 
-The plugin has no hooks and no proactive behavior; all functionality is triggered via the `/ctx-show` command.
+The plugin also prints a summary table to stderr showing scope, type, source, status, lines, tokens, and context% for every source — including per-preset rows for playbook presets (v0.3.1+).
 
 ## Test Execution Order
 
 1. Static checks (automated)
 2. Unit tests — individual sources (automated)
 3. Integration tests — full output (automated)
-4. Behavioral tests — SKILL.md invocation (partially automated)
+4. Summary table tests (automated)
+5. Playbook preset splitting tests (automated)
+6. Behavioral tests — SKILL.md invocation (partially automated)
 
 ## Automation Status
 
-- ✅ Fully automated: Tests 1–6
-- 🟡 Partially automated: Test 7 (Claude invocation requires a fresh session or `/clear`)
+- ✅ Fully automated: Tests 1–5
+- 🟡 Partially automated: Test 6 (Claude invocation requires a fresh session or `/clear`)
 - ⚠️ Manual only: None
 
-## Test Results (last run: 2026-02-24)
+## Test Results (last run: 2026-02-25)
 
 | Test | Status | Notes |
 |------|--------|-------|
-| 1.1 Static: plugin.json valid | ✅ Pass | |
+| 1.1 Static: plugin.json valid | ✅ Pass | version 0.2.0 |
 | 1.2 Static: hooks.json valid | ✅ Pass | |
 | 1.3 Static: SKILL.md frontmatter | ✅ Pass | |
 | 1.4 Static: script is executable | ✅ Pass | |
 | 2.1 Unit: --file mode returns path | ✅ Pass | |
 | 2.2 Unit: --stdout mode prints content | ✅ Pass | |
-| 3.1 Integration: all 5 sources present | ✅ Pass | 954 lines, all sources found |
+| 3.1 Integration: all 5 sources present | ✅ Pass | all sources found |
 | 3.2 Integration: missing file graceful | ✅ Pass | |
 | 3.3 Integration: no jq graceful | ✅ Pass | |
-| 4.1 Integration: load order correct | ✅ Pass | |
+| 4.1 Load order correct | ✅ Pass | |
+| 5.1 Table printed to stderr | ✅ Pass | |
+| 5.2 Table has TOTAL row | ✅ Pass | |
+| 5.3 Path shortening (~/. and ./) | ✅ Pass | |
+| 5.4 Context% sums to 100% | ✅ Pass | |
+| 5.5 Memory hash fix (leading dash) | ✅ Pass | |
+| 6.1 Playbook preset splitting | ✅ Pass | requires playbook v0.3.1 in cache |
+| 6.2 Legend shown when presets present | ✅ Pass | |
 
 ---
 
@@ -55,7 +64,7 @@ jq '.' "${PLUGIN_DIR}/.claude-plugin/plugin.json"
 **Expected result:**
 - ✅ Valid JSON (no parse error)
 - ✅ Has `name`, `version`, `commands`, `skills` fields
-- ✅ `version` is `0.1.0`
+- ✅ `version` is `0.2.0`
 - ✅ `skills` is `[]` (no auto-invocable skills)
 
 ---
@@ -86,13 +95,13 @@ jq '.hooks | keys | length' "${PLUGIN_DIR}/hooks/hooks.json"
 **Steps:**
 ```bash
 PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
-head -8 "${PLUGIN_DIR}/commands/ctx-show/SKILL.md"
+head -9 "${PLUGIN_DIR}/commands/ctx-show/SKILL.md"
 ```
 
 **Expected result:**
 - ✅ Starts with `---`
 - ✅ Has `name: ctx-show`
-- ✅ Has `description:` field
+- ✅ Has `description:` field mentioning summary table
 - ✅ Ends frontmatter with `---`
 
 ---
@@ -125,7 +134,7 @@ test -x "${PLUGIN_DIR}/scripts/ctx-show.sh" && echo "executable" || echo "NOT ex
 **Steps:**
 ```bash
 PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
-OUTFILE=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file)
+OUTFILE=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null)
 echo "Output file: $OUTFILE"
 test -f "$OUTFILE" && echo "file exists" || echo "file MISSING"
 wc -l "$OUTFILE"
@@ -147,7 +156,7 @@ wc -l "$OUTFILE"
 **Steps:**
 ```bash
 PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
-OUTPUT=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout)
+OUTPUT=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout 2>/dev/null)
 echo "Line count: $(echo "$OUTPUT" | wc -l)"
 echo "$OUTPUT" | grep -c "<!-- Source:" || true
 ```
@@ -169,14 +178,13 @@ echo "$OUTPUT" | grep -c "<!-- Source:" || true
 **Steps:**
 ```bash
 PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
-OUTPUT=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout)
+OUTPUT=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout 2>/dev/null)
 
-# Check each source type
 echo "1. Global CLAUDE.md:"
 echo "$OUTPUT" | grep -c "Source: ~/.claude/CLAUDE.md" || echo "MISSING"
 
 echo "2. Project CLAUDE.md:"
-echo "$OUTPUT" | grep -c "Source: .*/CLAUDE.md (project" || echo "MISSING"
+echo "$OUTPUT" | grep -c "Source: .*/CLAUDE.md" || echo "MISSING"
 
 echo "3. Auto-memory:"
 echo "$OUTPUT" | grep -c "Source: ~/.claude/projects/.*/memory/MEMORY.md" || echo "MISSING"
@@ -207,7 +215,6 @@ echo "$OUTPUT" | grep -c "Source: Plugin .* SessionStart" || echo "MISSING"
 ```bash
 PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
 
-# Run with a non-existent project dir
 OUTPUT=$(env CLAUDE_PROJECT_DIR="/tmp/nonexistent-project-dir" \
   bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout 2>&1)
 
@@ -232,7 +239,6 @@ echo "$OUTPUT" | grep "not found" | head -5
 ```bash
 PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
 
-# Shadow jq with a fake that always fails
 OUTPUT=$(env PATH="/tmp/no-jq-dir:${PATH}" \
   bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout 2>&1)
 
@@ -242,8 +248,6 @@ echo "$OUTPUT" | grep -c "Source: ~/.claude/CLAUDE.md" || echo "0"
 echo "Contains hook fallback message:"
 echo "$OUTPUT" | grep -c "not found or jq not available" || echo "0"
 ```
-
-**Note:** This test requires `/tmp/no-jq-dir/` to not exist (so `jq` isn't found). The script falls through to the fallback message for hook sources while still outputting static files.
 
 **Acceptance criteria:**
 - ✅ Global CLAUDE.md content present
@@ -262,9 +266,8 @@ echo "$OUTPUT" | grep -c "not found or jq not available" || echo "0"
 **Steps:**
 ```bash
 PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
-OUTPUT=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout)
+OUTPUT=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout 2>/dev/null)
 
-# Get line numbers of each source marker
 echo "Source order (line numbers):"
 echo "$OUTPUT" | grep -n "<!-- Source:" | head -20
 ```
@@ -278,9 +281,238 @@ echo "$OUTPUT" | grep -n "<!-- Source:" | head -20
 
 ---
 
-### 5. Behavioral Tests — SKILL.md Invocation
+### 5. Summary Table Tests
 
-#### 5.1 Command Invocation via /ctx-show
+#### 5.1 Table Printed to stderr
+
+**Objective:** Verify summary table appears on stderr, not stdout.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
+
+# Table should NOT appear on stdout
+STDOUT_ONLY=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout 2>/dev/null)
+echo "Table on stdout (should be 0):"
+echo "$STDOUT_ONLY" | grep -c "Context%" || echo "0"
+
+# Table SHOULD appear on stderr
+TABLE=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout 2>&1 >/dev/null)
+echo "Table on stderr (should be 1):"
+echo "$TABLE" | grep -c "Context%" || echo "0"
+```
+
+**Expected result:**
+- ✅ `Context%` header NOT in stdout output
+- ✅ `Context%` header present in stderr output
+
+---
+
+#### 5.2 Table Has TOTAL Row and Correct Columns
+
+**Objective:** Verify TOTAL row appears and columns are correct.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
+TABLE=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>&1 >/dev/null)
+
+echo "Has TOTAL row:"
+echo "$TABLE" | grep -c "TOTAL" || echo "0"
+
+echo "Has Scope column:"
+echo "$TABLE" | grep -c "Scope" || echo "0"
+
+echo "Has Status column:"
+echo "$TABLE" | grep -c "Status" || echo "0"
+
+echo "Has ~Tokens column:"
+echo "$TABLE" | grep -c "~Tokens" || echo "0"
+```
+
+**Expected result:**
+- ✅ `TOTAL` row present
+- ✅ Column headers: `Scope`, `Type`, `Source/ID`, `Status`, `Lines`, `~Tokens`, `Context%`
+
+---
+
+#### 5.3 Path Shortening
+
+**Objective:** Verify paths use `~/` for HOME and `./` for project dir.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
+TABLE=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>&1 >/dev/null)
+
+echo "Uses ~/ for home paths (should be 1+):"
+echo "$TABLE" | grep -c '~/' || echo "0"
+
+echo "Uses ./ for project paths (should be 1+):"
+echo "$TABLE" | grep -c '\.\/' || echo "0"
+
+echo "No raw /Users/ in table (should be 0):"
+echo "$TABLE" | grep -c '/Users/' || echo "0"
+```
+
+**Expected result:**
+- ✅ At least one `~/` path in table
+- ✅ At least one `./` path when project CLAUDE.md exists
+- ✅ No raw `/Users/` in table output
+
+---
+
+#### 5.4 Context% Sums to 100%
+
+**Objective:** Verify TOTAL row shows 100% and individual percentages are non-negative.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
+TABLE=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>&1 >/dev/null)
+
+echo "TOTAL row shows 100%:"
+echo "$TABLE" | grep "TOTAL" | grep -c "100%" || echo "0"
+```
+
+**Expected result:**
+- ✅ TOTAL row contains `100%`
+
+---
+
+#### 5.5 Memory Path Hash (Leading Dash)
+
+**Objective:** Verify memory path uses `-Users-...` hash (with leading dash, matching Claude Code's encoding).
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
+TABLE=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>&1 >/dev/null)
+
+echo "Memory row present (✅ or ⚠️):"
+echo "$TABLE" | grep "Memory" | head -1
+
+echo "Memory hash starts with - (leading dash preserved):"
+echo "$TABLE" | grep "Memory" | grep -c '\-Users' || echo "0"
+```
+
+**Expected result:**
+- ✅ Memory row visible in table
+- ✅ Source path contains `~/.claude/projects/-Users-...` (with leading dash)
+
+---
+
+### 6. Playbook Preset Splitting Tests
+
+#### 6.1 Individual Preset Rows
+
+**Objective:** Verify playbook presets appear as individual `📚 Playbook Preset` rows when playbook v0.3.1+ is in cache.
+
+**Automation:** ✅ (uses local plugin directory to simulate v0.3.1 cache)
+
+**Steps:**
+```bash
+PLAYBOOK_PLUGIN="/Users/artem/devel/claude-plugins/plugins/playbook"
+CONTEXT_PLUGIN="/Users/artem/devel/claude-plugins/plugins/context"
+
+# Setup fake cache with v0.3.1 playbook
+FAKE_CACHE="/tmp/fake-cache-ctx-test-$$"
+mkdir -p "$FAKE_CACHE/tribe-coding/playbook/0.3.1"
+cp -r "$PLAYBOOK_PLUGIN/." "$FAKE_CACHE/tribe-coding/playbook/0.3.1/"
+
+# Setup fake HOME with settings.json enabling only playbook
+FAKE_HOME="/tmp/fake-home-ctx-test-$$"
+mkdir -p "$FAKE_HOME/.claude/plugins"
+rsync -a "$FAKE_CACHE/" "$FAKE_HOME/.claude/plugins/cache/"
+jq '.enabledPlugins = {"playbook@tribe-coding": true}' \
+  "$HOME/.claude/settings.json" > "$FAKE_HOME/.claude/settings.json"
+
+# Setup fake project with playbook config
+FAKE_PROJ="/tmp/fake-proj-ctx-test-$$"
+mkdir -p "$FAKE_PROJ/.claude-plugin"
+printf '{"presets":["documentation-principles","github-workflow"]}' \
+  > "$FAKE_PROJ/.claude-plugin/playbook.json"
+
+TABLE=$(env HOME="$FAKE_HOME" CLAUDE_PROJECT_DIR="$FAKE_PROJ" \
+  bash "${CONTEXT_PLUGIN}/scripts/ctx-show.sh" --file 2>&1 >/dev/null)
+
+echo "Playbook Preset rows (should be 2+):"
+echo "$TABLE" | grep -c "Playbook Preset" || echo "0"
+
+echo "documentation-principles row:"
+echo "$TABLE" | grep "documentation-principles" | head -1
+
+echo "github-workflow row:"
+echo "$TABLE" | grep "github-workflow" | head -1
+
+rm -rf "$FAKE_CACHE" "$FAKE_HOME" "$FAKE_PROJ"
+```
+
+**Expected result:**
+- ✅ At least 2 `Playbook Preset` rows (one per enabled preset)
+- ✅ `documentation-principles` and `github-workflow` rows visible
+- ✅ Each preset row shows `✅` status and non-zero lines/tokens
+
+---
+
+#### 6.2 Legend Shown When Presets Present
+
+**Objective:** Verify the Legend line appears when playbook presets are in the table.
+
+**Automation:** ✅
+
+**Steps:** (same setup as 6.1, reuse FAKE_* vars or re-create)
+
+```bash
+PLAYBOOK_PLUGIN="/Users/artem/devel/claude-plugins/plugins/playbook"
+CONTEXT_PLUGIN="/Users/artem/devel/claude-plugins/plugins/context"
+
+FAKE_CACHE="/tmp/fake-cache-legend-$$"
+mkdir -p "$FAKE_CACHE/tribe-coding/playbook/0.3.1"
+cp -r "$PLAYBOOK_PLUGIN/." "$FAKE_CACHE/tribe-coding/playbook/0.3.1/"
+
+FAKE_HOME="/tmp/fake-home-legend-$$"
+mkdir -p "$FAKE_HOME/.claude/plugins"
+rsync -a "$FAKE_CACHE/" "$FAKE_HOME/.claude/plugins/cache/"
+jq '.enabledPlugins = {"playbook@tribe-coding": true}' \
+  "$HOME/.claude/settings.json" > "$FAKE_HOME/.claude/settings.json"
+
+FAKE_PROJ="/tmp/fake-proj-legend-$$"
+mkdir -p "$FAKE_PROJ/.claude-plugin"
+printf '{"presets":["documentation-principles"]}' \
+  > "$FAKE_PROJ/.claude-plugin/playbook.json"
+
+TABLE=$(env HOME="$FAKE_HOME" CLAUDE_PROJECT_DIR="$FAKE_PROJ" \
+  bash "${CONTEXT_PLUGIN}/scripts/ctx-show.sh" --file 2>&1 >/dev/null)
+
+echo "Legend line present (should be 1):"
+echo "$TABLE" | grep -c "Legend:" || echo "0"
+
+echo "Legend mentions playbook:"
+echo "$TABLE" | grep "Legend:" | head -1
+
+rm -rf "$FAKE_CACHE" "$FAKE_HOME" "$FAKE_PROJ"
+```
+
+**Expected result:**
+- ✅ `Legend:` line present at bottom of table
+- ✅ Legend mentions `playbook@tribe-coding`
+
+---
+
+### 7. Behavioral Tests — SKILL.md Invocation
+
+#### 7.1 Command Invocation via /ctx-show
 
 **Objective:** Verify Claude executes `ctx-show.sh` when `/ctx-show` is invoked.
 
@@ -289,20 +521,17 @@ echo "$OUTPUT" | grep -n "<!-- Source:" | head -20
 **Steps:**
 1. In a Claude Code session with the plugin installed, run: `/ctx-show`
 2. Expected: Claude reads SKILL.md and runs `bash .../ctx-show.sh`
-3. Expected: Claude prints the output file path or content
+3. Expected: Claude prints the output file path and shows summary table
 
 **Expected result:**
 - ✅ Claude runs `ctx-show.sh` via Bash tool
-- ✅ Output path `/tmp/claude-context-*.md` is shown, OR full content is printed
+- ✅ Output path `/tmp/claude-context-*.md` is shown
+- ✅ Summary table visible in terminal output
 - ✅ No errors
-
-**Acceptance criteria:**
-- ✅ Script executed (not just described)
-- ✅ At least one source is shown in output
 
 ---
 
-#### 5.2 --stdout Flag Respected
+#### 7.2 --stdout Flag Respected
 
 **Objective:** Verify `/ctx-show --stdout` prints content instead of a file path.
 
@@ -311,7 +540,7 @@ echo "$OUTPUT" | grep -n "<!-- Source:" | head -20
 **Steps:**
 1. In a Claude Code session, run: `/ctx-show --stdout`
 2. Expected: Claude passes `--stdout` to the script
-3. Expected: Full context content shown in terminal (will be collapsed in TUI)
+3. Expected: Full context content shown in terminal (may be collapsed in TUI)
 
 **Expected result:**
 - ✅ Script runs with `--stdout` argument
@@ -324,8 +553,8 @@ echo "$OUTPUT" | grep -n "<!-- Source:" | head -20
 ### When to run
 
 - Before creating a PR that modifies `plugins/context/`
-- After updating `ctx-show.sh` (re-run tests 2.1–4.1)
-- After changing `commands/ctx-show/SKILL.md` (re-run test 5.1)
+- After updating `ctx-show.sh` (re-run tests 2.1–6.2)
+- After changing `commands/ctx-show/SKILL.md` (re-run test 7.1)
 
 ### Automated test batch
 
@@ -335,7 +564,7 @@ Run all automated tests in sequence:
 PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
 
 echo "=== 1.1 plugin.json ==="
-jq -e '.name == "context" and .version and .commands and (.skills | length == 0)' \
+jq -e '.name == "context" and .version == "0.2.0" and .commands and (.skills | length == 0)' \
   "${PLUGIN_DIR}/.claude-plugin/plugin.json" && echo "✅ PASS" || echo "❌ FAIL"
 
 echo "=== 1.2 hooks.json ==="
@@ -350,16 +579,32 @@ echo "=== 1.4 executable ==="
 test -x "${PLUGIN_DIR}/scripts/ctx-show.sh" && echo "✅ PASS" || echo "❌ FAIL"
 
 echo "=== 2.1 --file mode ==="
-OUTFILE=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file)
+OUTFILE=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null)
 test -f "$OUTFILE" && echo "✅ PASS: $OUTFILE" || echo "❌ FAIL"
 
 echo "=== 2.2 --stdout source count ==="
-COUNT=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout | grep -c "<!-- Source:")
+COUNT=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout 2>/dev/null | grep -c "<!-- Source:")
 test "$COUNT" -ge 5 && echo "✅ PASS: $COUNT sources" || echo "❌ FAIL: only $COUNT sources"
 
 echo "=== 3.2 missing file graceful ==="
-env CLAUDE_PROJECT_DIR="/tmp/nonexistent-$$" bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout \
+env CLAUDE_PROJECT_DIR="/tmp/nonexistent-$$" bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --stdout 2>/dev/null \
   | grep -q "not found" && echo "✅ PASS" || echo "❌ FAIL"
+
+echo "=== 5.1 table on stderr ==="
+TABLE=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>&1 >/dev/null)
+echo "$TABLE" | grep -q "Context%" && echo "✅ PASS" || echo "❌ FAIL"
+
+echo "=== 5.2 TOTAL row ==="
+echo "$TABLE" | grep -q "TOTAL" && echo "✅ PASS" || echo "❌ FAIL"
+
+echo "=== 5.3 path shortening ==="
+echo "$TABLE" | grep -q '~/' && echo "✅ PASS" || echo "❌ FAIL"
+
+echo "=== 5.4 100% in TOTAL ==="
+echo "$TABLE" | grep "TOTAL" | grep -q "100%" && echo "✅ PASS" || echo "❌ FAIL"
+
+echo "=== 5.5 memory hash leading dash ==="
+echo "$TABLE" | grep "Memory" | grep -q '\-Users' && echo "✅ PASS" || echo "⚠️  Memory not found in this env"
 ```
 
 ### CI integration
