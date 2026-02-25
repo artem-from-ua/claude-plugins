@@ -12,7 +12,7 @@ MANDATORY: Documentation is part of the codebase. A change is not complete until
 - After adding, removing, or renaming a module/component → update `docs/architecture.md`
 - After changing a public function/method signature or API endpoint → update its entry in `docs/api/`
 - After choosing between two viable approaches or deviating from a convention → create `docs/adr/NNNN-title.md` (Context → Decision → Consequences)
-- After changing coding patterns, naming conventions, or tooling → update `docs/conventions.md`
+- After adding a linter rule, formatter config, naming convention, or toolchain dependency → update `docs/conventions.md`
 - After adding or updating any doc → verify all cross-links to/from it are valid
 - ALWAYS keep `CLAUDE.md` minimal — build/test commands + links to docs only; details live in `docs/`; user-facing project overview belongs in `README.md`
 - NEVER leave `TODO: document this` in code — write the doc now or create a tracked issue
