@@ -110,7 +110,7 @@ Format: **ALWAYS invoke the `<skill-name> [args]` skill BEFORE <trigger>** to <p
 
 **Good** (from `playbook/presets/readme.md`):
 ```
-- **ALWAYS invoke the `playbook-browse readme` skill BEFORE creating or improving any README** to load full guidelines. This is MANDATORY — do not skip this step.
+- **ALWAYS invoke the `playbook-browse readme` skill BEFORE writing or modifying any README.md file** to load full guidelines. This is MANDATORY — do not skip even when executing a plan or implementing a task that produces a README.
 ```
 
 **Bad:**
@@ -118,7 +118,19 @@ Format: **ALWAYS invoke the `<skill-name> [args]` skill BEFORE <trigger>** to <p
 - For full reference: invoke `/playbook-browse` and select "readme"
 ```
 
-Why it works: the soft form reads as an optional hint and is skipped under context pressure. The MANDATORY form with bold formatting matches the strength of other ALWAYS/NEVER rules in the same zone.
+```
+- **ALWAYS invoke the `playbook-browse readme` skill BEFORE creating or improving any README**
+```
+
+Why the second bad example fails: `"creating or improving"` describes a **direct user request** but misses **indirect triggers** — when the user says "implement the plan" or "execute this task" and a README is one of the artifacts produced. Claude does not re-evaluate the trigger for each artifact; it evaluates the top-level intent.
+
+**Trigger scope rule:** write triggers that match the **artifact**, not the **user's intent**:
+
+| Narrow (misses indirect triggers) | Broad (catches all cases) |
+|-----------------------------------|--------------------------|
+| `BEFORE creating or improving any README` | `BEFORE writing or modifying any README.md file` |
+| `When user asks to add a diagram` | `Before creating any PlantUML diagram` |
+| `When committing documentation changes` | `After modifying any file in docs/` |
 
 **Important:** this pattern is a reinforcement, not a substitute for self-contained RULES. The RULES zone must still work if the skill is not invoked (e.g., offline, timeout). Use this pattern when the REFERENCE zone adds significant value beyond what fits in the RULES budget.
 
@@ -159,6 +171,7 @@ The decomposed version provides observable triggers (Claude can detect them mech
 | Soft browse line: "For full reference: invoke..." | Reads as optional hint, skipped under context pressure | Use MANDATORY pattern: `**ALWAYS invoke the \`playbook-browse <preset>\` skill BEFORE...**` |
 | Overly broad triggers: "before every commit" | Becomes noise — most commits don't match | Narrow to specific change types |
 | Rules outside Claude's scope: "update the team" | Claude cannot email or message | Scope to actions Claude can actually perform |
+| Trigger matches user intent, not artifact: "when user asks to create a README" | Misses indirect triggers — plan execution, task implementation — where README is just one artifact | Write triggers that match the artifact: "before writing or modifying any README.md file" |
 
 ---
 
@@ -229,7 +242,7 @@ NEVER have the same `name:` frontmatter in both `commands/foo/SKILL.md` and `ski
 Before submitting a preset or SKILL.md, verify:
 
 1. Every RULES bullet answers: "What exactly does Claude do, and when?"
-2. Every trigger is an observable event, not a judgment call
+2. Every trigger is an observable event, not a judgment call; triggers match the **artifact** produced, not the user's stated intent (see §3 Pattern 5 — Trigger scope rule)
 3. Every action is concrete — Claude can execute it without further clarification
 4. No RULES rule depends on reading the REFERENCE zone to be understood
 5. No vague language: "consider", "may", "recommended", "try to", "when appropriate"
