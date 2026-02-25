@@ -7,6 +7,7 @@ set -euo pipefail
 
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 PRESETS_DIR="$PLUGIN_ROOT/presets"
+VERSION=$(jq -r '.version' "$PLUGIN_ROOT/.claude-plugin/plugin.json" 2>/dev/null || echo "?")
 
 GLOBAL_CONFIG="$HOME/.claude/playbook.json"
 _new="${CLAUDE_PROJECT_DIR:-.}/.claude-plugin/playbook.json"
@@ -60,6 +61,7 @@ while IFS= read -r name; do
   [[ -z "$name" ]] && continue
   preset_file="$PRESETS_DIR/$name.md"
   if [[ -f "$preset_file" ]]; then
+    printf '<!-- Source: Plugin playbook@tribe-coding (v%s) Preset %s -->\n' "$VERSION" "$name"
     sed -n '/^<!-- RULES -->/,/^<!-- \/RULES -->/{/^<!-- /d; p;}' "$preset_file"
     printf '\n'
   fi
