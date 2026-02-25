@@ -98,7 +98,6 @@ Adapt to the project — not all sections are needed for every project:
 5. **Usage** — concrete examples beyond the demo, covering additional use cases
 6. **Documentation** — links to `docs/` for deeper reference
 7. **Contributing** — link to `CONTRIBUTING.md` or brief guidelines
-8. **License** — one line
 
 Omit sections that don't apply. A 60-line focused README beats a 300-line comprehensive one.
 
@@ -194,4 +193,5 @@ Use answers to decide: section order, technical depth, and how much to explain v
 - **Stale examples** — code that no longer works after a refactor
 - **Placeholder commands** — `npm install <your-package>` without showing the actual package name
 - **Unlinked table items** — listing plugins, modules, or presets by name without linking to their source
+- **License section** — a one-line "MIT" section adds no value; readers who care will check the `LICENSE` file; omit it from README
 <!-- /REFERENCE -->
