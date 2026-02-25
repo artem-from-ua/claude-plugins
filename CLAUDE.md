@@ -143,53 +143,14 @@ If your plugin has both directories:
 - **Command-only plugins** (no auto-invocable skills, only user-invoked commands like `/retro`): use `"skills": []` in plugin.json. Commands work fine without the skills field — they are loaded from `commands/` when invoked.
 - **Never** have the same `name:` in both `commands/foo/SKILL.md` and `skills/foo/SKILL.md`.
 
-## Skills Standard
+## Skills & Presets
 
 All SKILL.md files must follow the [agentskills.io specification](https://agentskills.io/specification):
 - YAML frontmatter with `name` and `description` is required
 - Optional: `compatibility`, `license`, `metadata`
 - When creating or editing SKILL.md files, always include valid frontmatter
 
-### Hybrid Skill Design
-
-SKILL.md is loaded entirely into context when the skill is invoked. Keep it **small** — under ~100 lines — containing only the decision logic and orchestration steps. Move bulky reference data (catalogs, examples, templates) into separate files that the skill reads on demand.
-
-**Pattern: routing SKILL.md + external reference files**
-
-```
-skills/<name>/
-├── SKILL.md              # ≤100 lines: routing logic, step descriptions
-└── references/
-    ├── catalog.md        # large lookup table, loaded only when needed
-    ├── examples.md       # code examples / templates
-    └── ...
-```
-
-In SKILL.md, instruct Claude to read only the files it needs:
-
-```markdown
-## Steps
-
-1. Ask the user which category they need (A, B, or C).
-2. Based on the answer, read the matching reference file:
-   - A → `references/category-a.md`
-   - B → `references/category-b.md`
-   - C → `references/category-c.md`
-3. Follow the instructions from the loaded file.
-```
-
-**Guidelines:**
-
-- **SKILL.md** contains: purpose, decision tree / routing logic, step-by-step orchestration, pointers to reference files. No large data.
-- **Reference files** contain: lookup tables, catalogs, examples, templates, verbose instructions. Read via `Read` tool at runtime.
-- Use `${SKILL_DIR}` (resolves to the SKILL.md directory) or relative paths from the skill directory to reference sibling files.
-- If the skill has a single reference that is always needed, it's fine to keep everything in SKILL.md — the hybrid pattern is for cases where content is large or conditionally needed.
-
-**Anti-patterns:**
-
-- Inlining a 200-line catalog directly in SKILL.md (wastes context on every invocation).
-- A SKILL.md that just says "read everything in `references/`" without routing logic (defeats the purpose — Claude loads all files anyway).
-- Splitting a 40-line skill into 5 tiny files (unnecessary overhead for small skills).
+For full authoring guidelines — SKILL.md hybrid design, preset RULES/REFERENCE zones, rule patterns, anti-patterns, and quality checklist — see **[`docs/AUTHORING.md`](docs/AUTHORING.md)**.
 
 ## Proactive Plugin Behavior
 
