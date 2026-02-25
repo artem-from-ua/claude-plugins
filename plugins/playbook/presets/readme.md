@@ -10,7 +10,7 @@ tags: [docs, readme]
 MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "what is this?" and "why would I use it?".
 
 - When creating/editing README.md → first 5 lines: project name, one-line description, problem it solves, target audience
-- After header block → add a bold nav line: `**[Demo](#demo) [Installation](#installation) ...**`
+- After header block → add a nav line as blockquote: `> **Scroll to: [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)**` — exclude the first section, use ` · ` as separator
 - Use emoji in headings (🚀 📦 ⚡ ⚙️) unless user explicitly forbids it
 - For tools/CLIs/plugins → lead with a concrete demo (real input → real output), NOT a feature list
 - Installation: official method only — no workarounds; merge Quick Start + Installation into one section
@@ -26,10 +26,10 @@ MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "w
 <!-- REFERENCE -->
 ## Navigation Line
 
-Add a single bold line after the header block (tagline + intro paragraph) with anchor links to all sections except the first:
+Add a nav line as a blockquote after the header block (tagline + intro paragraph). Exclude the first section (usually Demo) — it's already visible. Use ` · ` as separator. Prefix with `Scroll to:` for clarity:
 
 ```markdown
-**[Demo](#demo) [Installation](#installation) [Usage](#usage) [How it works](#how-it-works) [License](#license)**
+> **Scroll to: [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [License](#license)**
 ```
 
 This gives regulars instant access to any section without scrolling. Keep it on one line — no bullets, no numbering.
@@ -152,6 +152,14 @@ Use PlantUML (integrate with the plantuml plugin if available).
 | 300+ | Red flag — extract sections to `docs/` |
 
 A README is a landing page, not a manual. Long sections belong in `docs/`.
+
+Also extract sections that are short but cover edge cases, advanced workflows, or non-primary use cases — even if under 20 lines. The trigger is not just length but relevance to the primary reader's goal.
+
+**Requirements:** merge short requirements into the Installation section as a single inline line rather than a separate section:
+
+```markdown
+**Requirements:** Python 3.6+
+```
 
 ## CLAUDE.md ↔ README Relationship
 
