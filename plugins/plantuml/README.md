@@ -4,7 +4,9 @@
 
 With this plugin, Claude proactively illustrates architecture, flows, and data structures using [PlantUML](https://plantuml.com): in markdown documentation and directly in the terminal during conversations.
 
-## Demo
+> **Scroll to: [⚙️ How it works](#%EF%B8%8F-how-it-works) · [📦 Installation](#-installation)**
+
+## 🎬 Demo
 
 A developer asks Claude to document the login flow. Claude adds a diagram to the docs — then, during the conversation, renders the same diagram as ASCII art in the terminal.
 
@@ -26,11 +28,6 @@ I'll create docs/auth.md. The flow involves four actors — I'll use a sequence 
   │ ```plantuml                                                       │
   │ @startuml                                                         │
   │ title Login Request Flow                                          │
-  │ hide footbox                                                      │
-  │ skinparam participantBackgroundColor #E8F4FD                      │
-  │ skinparam participantBorderColor #7FB3D8                          │
-  │ skinparam sequenceArrowColor #5B9BD5                              │
-  │ skinparam sequenceLifeLineBorderColor #7FB3D8                     │
   │                                                                   │
   │ actor User                                                        │
   │ participant "Web App" as Web                                      │
@@ -94,15 +91,18 @@ Here's the full flow:
 ![Login Request Flow (PNG image)](https://www.plantuml.com/...)
 ```
 
-## Validation
+## ⚙️ How it works
 
-```
-/plantuml:plantuml-validate
-```
+Every diagram has two parts: a `plantuml` source block and an image URL below it. Claude writes both — you only edit the source. When you save, the URL updates automatically.
 
-Checks all diagram URLs in the project. Also runs automatically as a git pre-commit hook and in GitHub Actions CI.
+| Trigger | What happens |
+|---------|-------------|
+| SessionStart | Injects diagram formatting rules and ASCII rendering workflow |
+| PostToolUse (Write/Edit on `.md`) | Auto-updates image URLs when source changes ([validation & CI](docs/VALIDATION.md)) |
+| PreToolUse | Auto-allows all PlantUML operations — no permission prompts |
+| Before creating any diagram | `plantuml-diagram-guide` skill invoked automatically — picks the right type from 17 options |
 
-## Installation
+## 📦 Installation
 
 ```bash
 /plugin marketplace add Tribe-Coding/claude-plugins
@@ -112,18 +112,7 @@ Checks all diagram URLs in the project. Also runs automatically as a git pre-com
 
 Select **plantuml** → enable **auto-update**. Restart your session — done.
 
-## Requirements
-
-- Python 3.x
-
-## How it works
-
-| Trigger | What happens |
-|---------|-------------|
-| SessionStart | Injects diagram formatting rules and ASCII rendering workflow |
-| PostToolUse (Write/Edit on `.md`) | Auto-updates image URLs when source changes |
-| PreToolUse | Auto-allows all PlantUML operations — no permission prompts |
-| Before creating any diagram | `plantuml-diagram-guide` skill invoked automatically — picks the right type from 17 options |
+**Requirements:** Python 3.6+
 
 ## License
 
