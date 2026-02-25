@@ -10,7 +10,7 @@ tags: [docs, readme]
 MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "what is this?" and "why would I use it?".
 
 - When creating/editing README.md → first 5 lines: project name, one-line description, problem it solves, target audience
-- After header block → add a nav line as blockquote with ALL sections except the first one (usually Demo). Use ` · ` as separator. Example: `> **Scroll to: [⚙️ How it works](#how-it-works) · [📋 Sources](#sources) · [⚡ Commands](#commands) · [📦 Installation](#installation)**`. GitHub strips emoji from anchors: `## ⚙️ How it works` → `#how-it-works`
+- After header block → add a nav line as blockquote with ALL sections except the first one (usually Demo). Use ` · ` as separator. Add explicit `<a name="...">` anchor to each emoji heading: `## ⚙️ How it works <a name="how-it-works"></a>`. Then nav links use the explicit anchor: `[⚙️ How it works](#how-it-works)`
 - Use emoji in headings (🚀 📦 ⚡ ⚙️) unless user explicitly forbids it
 - For tools/CLIs/plugins → lead with a concrete demo (real input → real output), NOT a feature list
 - Installation: official method only — no workarounds; merge Quick Start + Installation into one section
@@ -35,15 +35,21 @@ Add a nav line as a blockquote after the header block (tagline + intro paragraph
 
 This gives regulars instant access to any section without scrolling. Keep it on one line — no bullets, no numbering.
 
-**GitHub anchor rules for emoji headings:** GitHub strips emoji when generating anchors — use only the text part in lowercase kebab-case:
+**GitHub anchor rules for emoji headings:** GitHub's anchor generation for emoji headings is unreliable — the resulting anchor depends on the specific emoji and may include leading dashes or other artifacts. The only reliable approach is explicit `<a name>` anchors:
 
-| Heading | Correct anchor | Wrong |
-|---------|---------------|-------|
-| `## ⚙️ How it works` | `#how-it-works` | `#️⃣-how-it-works`, `#%EF%B8%8F-how-it-works` |
-| `## 📦 Installation` | `#installation` | `#-installation` |
-| `## 🎬 Demo` | `#demo` | `#-demo` |
+```markdown
+## ⚙️ How it works <a name="how-it-works"></a>
+## 📋 Sources <a name="sources"></a>
+## 📦 Installation <a name="installation"></a>
+```
 
-Never use percent-encoded emoji or emoji characters in anchor links.
+Then nav links reference the explicit anchor name directly:
+
+```markdown
+> **Scroll to: [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)**
+```
+
+Never rely on GitHub's auto-generated anchors for emoji headings — they differ per emoji and break silently.
 
 ## Emoji
 

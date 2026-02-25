@@ -38,7 +38,7 @@ Summary:
 - Total context load: ~11,400 tokens
 ```
 
-## ⚙️ How it works
+## ⚙️ How it works <a name="how-it-works"></a>
 
 The plugin runs `ctx-show.sh`, which:
 
@@ -52,7 +52,7 @@ The plugin runs `ctx-show.sh`, which:
 
 Missing files are noted but do not cause errors.
 
-## 📋 Sources
+## 📋 Sources <a name="sources"></a>
 
 Collected in load order:
 
@@ -63,7 +63,7 @@ Collected in load order:
 5. Project SessionStart hooks (from `{project}/.claude/settings.json`)
 6. Plugin SessionStart hooks (enabled plugins in `~/.claude/plugins/cache/`)
 
-## 📊 Summary Table Columns
+## 📊 Summary Table Columns <a name="summary-table-columns"></a>
 
 | Column | Description |
 |--------|-------------|
@@ -77,14 +77,14 @@ Collected in load order:
 
 Playbook presets appear as individual rows when using playbook plugin v0.3.1+.
 
-## ⚡ Commands
+## ⚡ Commands <a name="commands"></a>
 
 | Command | Flags | Description |
 |---------|-------|-------------|
 | `/ctx-show` | `--file` (default) | Write context to `/tmp/claude-context-{timestamp}.md` and print path |
 | `/ctx-show` | `--stdout` | Print full context content to terminal |
 
-## 📦 Installation
+## 📦 Installation <a name="installation"></a>
 
 ```bash
 /plugin marketplace add Tribe-Coding/claude-plugins
