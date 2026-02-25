@@ -113,7 +113,3 @@ Every diagram has two parts: a `plantuml` source block and an image URL below it
 Select **plantuml** → enable **auto-update**. Restart your session — done.
 
 **Requirements:** Python 3.6+
-
-## License
-
-MIT
