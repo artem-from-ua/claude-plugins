@@ -48,7 +48,7 @@ Playbook presets (from `playbook@tribe-coding`) appear as individual rows when u
 
 1. Resolve `PLUGIN_DIR` from `${SKILL_DIR}` — it is `${SKILL_DIR}/../../scripts`.
 
-2. Run the script via Bash:
+2. Run the script via Bash. It prints two paths on stdout: the context file path and the table file path.
 
    **Default (write to file):**
    ```bash
@@ -65,10 +65,14 @@ Playbook presets (from `playbook@tribe-coding`) appear as individual rows when u
    bash "${SKILL_DIR}/../../scripts/ctx-show.sh" --file
    ```
 
-3. Display the result:
-   - `--file` mode: show the file path. Offer to open or read the file.
-   - `--stdout` mode: show the full output.
-   - In both modes: show the summary table (it prints to stderr automatically).
+3. After running the script, **always** read the table file (second line of output) using the Read tool and display its contents verbatim in the response. Example — if the script output is:
+   ```
+   /tmp/claude-context-20260225-123456.md
+   /tmp/claude-ctx-table-20260225-123456.txt
+   ```
+   Then read `/tmp/claude-ctx-table-20260225-123456.txt` with the Read tool and show the table content.
+   - `--file` mode: also show the context file path and offer to open or read it.
+   - `--stdout` mode: also show the full context output.
 
 ## Notes
 
