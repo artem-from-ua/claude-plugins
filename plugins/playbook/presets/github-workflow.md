@@ -14,7 +14,7 @@ MANDATORY: Follow these rules for all PR and branch operations.
 - After committing on a PR branch → offer to update the PR description
 - When creating PR without linked issue → ask user to create one first
 - "Not mergeable" after another PR merged → `git fetch origin main && git rebase origin/main && git push --force-with-lease`
-- For full workflow: invoke `/playbook-browse` and select "github-workflow"
+- **ALWAYS invoke the `playbook-browse github-workflow` skill BEFORE performing PR or branch operations** to load full guidelines. This is MANDATORY — do not skip this step.
 <!-- /RULES -->
 
 <!-- REFERENCE -->

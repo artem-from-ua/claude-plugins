@@ -29,4 +29,5 @@ Rules:
 - Check `.claude-plugin/git-branch-naming.json` for project-specific rules (ticket patterns, custom prefixes, enforcement levels)
 - Before commit/push, verify your staged files match the branch type (e.g., `docs/` branch should not contain only code files)
 - Run `/git-branch-naming:setup` to create or update project configuration
+- **ALWAYS invoke the `branch-naming-guide` skill BEFORE creating or renaming any git branch** to load full naming guidelines. This is MANDATORY — do not skip this step.
 RULES

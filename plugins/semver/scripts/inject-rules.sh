@@ -56,5 +56,5 @@ ${STRATEGY_RULE}
 4. On rebase conflict: check base branch version first, increment from there (not your original)
 
 - Run \`/semver:setup\` to configure versioning for this project
-- Run \`/semver:guide\` for full SemVer 2.0.0 reference and decision tree
+- **ALWAYS invoke the \`semver-guide\` skill BEFORE deciding version bump increment** to load full SemVer 2.0.0 reference and decision tree. This is MANDATORY — do not skip this step.
 RULES

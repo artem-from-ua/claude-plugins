@@ -15,7 +15,7 @@ MANDATORY: Target Python 3.12 exclusively. System Python 3.9 will break modern s
 - Modern type syntax is valid: `str | None`, `X | Y`, `tuple[X, Y]`, `list[str]`
 - When running Python from Bash tool: ALWAYS prefix with `PYTHONPATH=""` to isolate from CWD
 - If CWD has `__init__.py` or `__main__.py`, Python may treat it as a package — `PYTHONPATH=""` prevents this
-- For full reference: invoke `/playbook-browse` and select "macos-python"
+- **ALWAYS invoke the `playbook-browse macos-python` skill BEFORE writing Python scripts** to load full guidelines. This is MANDATORY — do not skip this step.
 <!-- /RULES -->
 
 <!-- REFERENCE -->
