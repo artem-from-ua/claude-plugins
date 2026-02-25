@@ -10,16 +10,48 @@ tags: [docs, readme]
 MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "what is this?" and "why would I use it?".
 
 - When creating/editing README.md → first 5 lines: project name, one-line description, problem it solves, target audience
+- After header block → add a bold nav line: `**[Demo](#demo) [Installation](#installation) ...**`
+- Use emoji in headings (🚀 📦 ⚡ ⚙️) unless user explicitly forbids it
+- For tools/CLIs/plugins → lead with a concrete demo (real input → real output), NOT a feature list
+- Installation: official method only — no workarounds; merge Quick Start + Installation into one section
 - Every install/usage instruction MUST include a copy-pasteable command block — no placeholder-only steps
 - When a README section exceeds 20 lines → extract to `docs/<topic>.md` and replace with a one-line summary + link
 - README.md MUST NOT exceed 300 lines — if approaching limit, extract detail sections to docs/
 - After adding/removing a public API, CLI command, or major feature → remind: "README may need updating"
 - When user asks to create/improve README → start with audience interview: who reads this? what's their level?
-- NEVER leave outdated examples in README — if code changed, update the example or remove it
+- NEVER leave outdated examples — if code changed, update or remove them
 - For full reference: invoke `/playbook-browse` and select "readme"
 <!-- /RULES -->
 
 <!-- REFERENCE -->
+## Navigation Line
+
+Add a single bold line after the header block (tagline + intro paragraph) with anchor links to all sections except the first:
+
+```markdown
+**[Demo](#demo) [Installation](#installation) [Usage](#usage) [How it works](#how-it-works) [License](#license)**
+```
+
+This gives regulars instant access to any section without scrolling. Keep it on one line — no bullets, no numbering.
+
+## Emoji
+
+Use emoji proactively in README headings and key elements to improve scannability:
+
+```markdown
+## 🎬 Demo
+## 📦 Installation
+## ⚡ Usage
+## ⚙️ How it works
+```
+
+Emoji make sections visually distinct when scanning a long page. Use them **unless the user explicitly forbids emoji** in their instructions or project conventions.
+
+Guidelines:
+- One emoji per heading, placed before the text
+- Use universally recognized emoji (🚀 🎬 📦 ⚡ ⚙️ 📝 🔧 📋) — avoid obscure or ambiguous ones
+- Do NOT use emoji in body text or table cells — headings only
+
 ## The 5-Second Test
 
 A visitor landing on your README has 5 seconds to decide: stay or leave. The first screen (without scrolling) must answer:
@@ -41,20 +73,44 @@ Design for two distinct audiences:
 
 Structure the README to serve both. Newcomers read top-to-bottom; regulars scan headings.
 
+## Demo-First Structure
+
+For tools, CLIs, and plugins: **a demo outperforms a feature list**. Show the tool working — not what it can do.
+
+**Pattern:**
+1. One paragraph: what problem this solves
+2. A code block showing real interaction: user input → tool output
+3. Installation
+4. Anything else
+
+**For CLI/TUI tools** — simulate a terminal session using the tool's actual UI markers (prompts, status indicators, tool call outputs). The reader should be able to imagine themselves using it.
+
+**Coherent narrative:** reuse the same example across sections rather than introducing new context each time. If the demo uses a login flow, use the same login flow in the detailed docs, the diagram, and the terminal rendering example.
+
 ## Recommended Sections
 
 Adapt to the project — not all sections are needed for every project:
 
 1. **Header** — project name (H1), tagline/motto (blockquote), badges
 2. **What & Why** — one paragraph: problem → solution → key benefit
-3. **Quick Start** — minimal steps to get something working (copy-pasteable commands)
-4. **Installation** — full install instructions if Quick Start is too brief
-5. **Usage** — concrete examples covering the most common use cases
+3. **Demo** — for tools/CLIs: real interaction in a code block (see Demo-First Structure)
+4. **Installation** — copy-pasteable commands; merge with Quick Start if they overlap
+5. **Usage** — concrete examples beyond the demo, covering additional use cases
 6. **Documentation** — links to `docs/` for deeper reference
 7. **Contributing** — link to `CONTRIBUTING.md` or brief guidelines
 8. **License** — one line
 
 Omit sections that don't apply. A 60-line focused README beats a 300-line comprehensive one.
+
+## Platform-Aware Rendering
+
+README renders on a specific platform — design for where it will actually be read.
+
+**GitHub:**
+- Use **PNG** for inline images (`/png/` path), not SVG — SVG rendering is inconsistent in some GitHub contexts
+- Make item names in tables **clickable links** to their source file or docs: `[`name`](https://github.com/org/repo/blob/main/path/to/file.md)`
+- Code blocks render as monospace — use them for terminal simulations, TUI output, and file content previews
+- Test images, links, and table formatting by viewing the file on GitHub before merging
 
 ## Motto / Tagline
 
@@ -121,9 +177,13 @@ Use answers to decide: section order, technical depth, and how much to explain v
 ## Anti-Patterns
 
 - **Wall of text** — no headings, no structure, paragraph after paragraph
+- **Feature list without demo** — bullet points describing capabilities, no concrete example of use
+- **Separate Quick Start + Installation** — redundant sections that duplicate each other; merge them
+- **Internal install methods** — workarounds, dev scripts, or unofficial paths that may break for users
 - **TODO items** — "TODO: add examples", "Coming soon" — either write it or omit it
 - **Screenshots of text** — not searchable, not copyable; use code blocks
 - **Entire API reference inline** — use `docs/api/` and link from README
 - **Stale examples** — code that no longer works after a refactor
 - **Placeholder commands** — `npm install <your-package>` without showing the actual package name
+- **Unlinked table items** — listing plugins, modules, or presets by name without linking to their source
 <!-- /REFERENCE -->
