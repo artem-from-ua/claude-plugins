@@ -100,6 +100,30 @@ Why it works: maps symptom → fix in one line. Claude pattern-matches the error
 
 ---
 
+### Pattern 5: Mandatory Skill Invocation
+
+**Best for:** presets with a REFERENCE zone too large for RULES — forces Claude to load full guidelines before acting.
+
+```
+Format: **ALWAYS invoke the `<skill-name> [args]` skill BEFORE <trigger>** to <purpose>. This is MANDATORY — do not skip this step.
+```
+
+**Good** (from `playbook/presets/readme.md`):
+```
+- **ALWAYS invoke the `playbook-browse readme` skill BEFORE creating or improving any README** to load full guidelines. This is MANDATORY — do not skip this step.
+```
+
+**Bad:**
+```
+- For full reference: invoke `/playbook-browse` and select "readme"
+```
+
+Why it works: the soft form reads as an optional hint and is skipped under context pressure. The MANDATORY form with bold formatting matches the strength of other ALWAYS/NEVER rules in the same zone.
+
+**Important:** this pattern is a reinforcement, not a substitute for self-contained RULES. The RULES zone must still work if the skill is not invoked (e.g., offline, timeout). Use this pattern when the REFERENCE zone adds significant value beyond what fits in the RULES budget.
+
+---
+
 ### Pattern 4: Checklist
 
 **Use sparingly.** Checklists are the weakest pattern because each item requires a judgment call ("Did the architecture change?") that Claude must evaluate without clear criteria.
@@ -131,7 +155,8 @@ The decomposed version provides observable triggers (Claude can detect them mech
 | Vague verbs: "consider", "you may", "recommended" | Claude treats as optional, skips under context pressure | Use ALWAYS / NEVER / MUST |
 | Abstract goals: "keep docs up to date" | No observable trigger, no specific action | Decompose into trigger-action pairs |
 | Judgment without criteria: "if significant change" | Claude cannot evaluate "significant" consistently | Replace with observable conditions |
-| `/playbook-browse` as the primary action | Claude rarely self-invokes skills | Make RULES self-contained; browse is a bonus |
+| `/playbook-browse` as the **only** mechanism | Claude rarely self-invokes skills without explicit instruction | Make RULES self-contained; add MANDATORY browse line as reinforcement (see §3 Pattern 5) |
+| Soft browse line: "For full reference: invoke..." | Reads as optional hint, skipped under context pressure | Use MANDATORY pattern: `**ALWAYS invoke the \`playbook-browse <preset>\` skill BEFORE...**` |
 | Overly broad triggers: "before every commit" | Becomes noise — most commits don't match | Narrow to specific change types |
 | Rules outside Claude's scope: "update the team" | Claude cannot email or message | Scope to actions Claude can actually perform |
 
@@ -209,7 +234,8 @@ Before submitting a preset or SKILL.md, verify:
 4. No RULES rule depends on reading the REFERENCE zone to be understood
 5. No vague language: "consider", "may", "recommended", "try to", "when appropriate"
 6. RULES zone is within budget (standard: ≤14 lines; critical: ≤20 lines)
-7. The preset works correctly if `/playbook-browse` is never invoked
+7. The preset works correctly if `/playbook-browse` is never invoked (RULES must be self-contained)
+8. If the preset has a REFERENCE zone with significant additional content → last RULES line uses the MANDATORY skill invocation pattern (§3 Pattern 5), not the soft "For full reference" form
 
 ---
 
@@ -230,7 +256,7 @@ MANDATORY: One-sentence scope declaration.
 - ALWAYS/NEVER <specific action> — <reason or alternative>
 - When/After <observable event> → <specific action>
 - <error symptom> → root cause is <X> — fix with <Y>
-- For full reference: invoke `/playbook-browse` and select "preset-name"
+- **ALWAYS invoke the `playbook-browse preset-name` skill BEFORE <trigger>** to load full guidelines. This is MANDATORY — do not skip this step.
 <!-- /RULES -->
 
 <!-- REFERENCE -->

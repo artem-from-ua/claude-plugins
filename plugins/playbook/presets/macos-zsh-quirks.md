@@ -15,7 +15,7 @@ MANDATORY: Shell is `/bin/zsh` 5.9. CWD does NOT persist between Bash tool calls
 - ALWAYS use `env VAR=val command` for environment variable injection (not `VAR=val command`)
 - Root cause of most "No such file" errors: CWD not set + relative path — fix with absolute paths
 - When running Python scripts: ALWAYS prefix with `PYTHONPATH=""` (see macos-python preset)
-- For full reference: invoke `/playbook-browse` and select "macos-zsh-quirks"
+- **ALWAYS invoke the `playbook-browse macos-zsh-quirks` skill BEFORE writing Bash tool commands** to load full guidelines. This is MANDATORY — do not skip this step.
 <!-- /RULES -->
 
 <!-- REFERENCE -->

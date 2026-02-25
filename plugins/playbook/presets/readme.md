@@ -20,7 +20,7 @@ MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "w
 - After adding/removing a public API, CLI command, or major feature → remind: "README may need updating"
 - When user asks to create/improve README → start with audience interview: who reads this? what's their level?
 - NEVER leave outdated examples — if code changed, update or remove them
-- For full reference: invoke `/playbook-browse` and select "readme"
+- **ALWAYS invoke the `playbook-browse readme` skill BEFORE creating or improving any README** to load full guidelines. This is MANDATORY — do not skip this step.
 <!-- /RULES -->
 
 <!-- REFERENCE -->

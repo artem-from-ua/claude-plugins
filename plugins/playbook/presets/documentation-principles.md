@@ -18,7 +18,7 @@ MANDATORY: Documentation is part of the codebase. A change is not complete until
 - NEVER leave `TODO: document this` in code — write the doc now or create a tracked issue
 - NEVER duplicate info across docs — single source of truth, link instead
 - NEVER use inline comments as a substitute for documentation
-- For full reference: invoke `/playbook-browse` and select "documentation-principles"
+- **ALWAYS invoke the `playbook-browse documentation-principles` skill BEFORE making documentation decisions** to load full guidelines. This is MANDATORY — do not skip this step.
 <!-- /RULES -->
 
 <!-- REFERENCE -->
