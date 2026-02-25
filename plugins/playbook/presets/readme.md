@@ -10,7 +10,7 @@ tags: [docs, readme]
 MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "what is this?" and "why would I use it?".
 
 - When creating/editing README.md → first 5 lines: project name, one-line description, problem it solves, target audience
-- After header block → add a nav line as blockquote: `> **Scroll to: [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)**` — exclude the first section, use ` · ` as separator
+- After header block → add a nav line as blockquote with ALL sections except the first one (usually Demo). Use ` · ` as separator. Example: `> **Scroll to: [⚙️ How it works](#how-it-works) · [📋 Sources](#sources) · [⚡ Commands](#commands) · [📦 Installation](#installation)**`. GitHub strips emoji from anchors: `## ⚙️ How it works` → `#how-it-works`
 - Use emoji in headings (🚀 📦 ⚡ ⚙️) unless user explicitly forbids it
 - For tools/CLIs/plugins → lead with a concrete demo (real input → real output), NOT a feature list
 - Installation: official method only — no workarounds; merge Quick Start + Installation into one section
@@ -20,19 +20,29 @@ MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "w
 - After adding/removing a public API, CLI command, or major feature → remind: "README may need updating"
 - When user asks to create/improve README → start with audience interview: who reads this? what's their level?
 - NEVER leave outdated examples — if code changed, update or remove them
-- **ALWAYS invoke the `playbook-browse readme` skill BEFORE creating or improving any README** to load full guidelines. This is MANDATORY — do not skip this step.
+- **ALWAYS invoke the `playbook-browse readme` skill BEFORE writing or modifying any README.md file** to load full guidelines. This is MANDATORY — do not skip even when executing a plan or implementing a task that produces a README.
 <!-- /RULES -->
 
 <!-- REFERENCE -->
 ## Navigation Line
 
-Add a nav line as a blockquote after the header block (tagline + intro paragraph). Exclude the first section (usually Demo) — it's already visible. Use ` · ` as separator. Prefix with `Scroll to:` for clarity:
+Add a nav line as a blockquote after the header block (tagline + intro paragraph). Include ALL sections except the first one (usually Demo — it's already visible above the fold). Use ` · ` as separator. Prefix with `Scroll to:` for clarity:
 
 ```markdown
-> **Scroll to: [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [License](#license)**
+> **Scroll to: [⚙️ How it works](#how-it-works) · [📋 Sources](#sources) · [⚡ Commands](#commands) · [📦 Installation](#installation)**
 ```
 
 This gives regulars instant access to any section without scrolling. Keep it on one line — no bullets, no numbering.
+
+**GitHub anchor rules for emoji headings:** GitHub strips emoji when generating anchors — use only the text part in lowercase kebab-case:
+
+| Heading | Correct anchor | Wrong |
+|---------|---------------|-------|
+| `## ⚙️ How it works` | `#how-it-works` | `#️⃣-how-it-works`, `#%EF%B8%8F-how-it-works` |
+| `## 📦 Installation` | `#installation` | `#-installation` |
+| `## 🎬 Demo` | `#demo` | `#-demo` |
+
+Never use percent-encoded emoji or emoji characters in anchor links.
 
 ## Emoji
 
