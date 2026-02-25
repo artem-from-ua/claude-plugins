@@ -22,29 +22,25 @@ OUTPUT=""
 # Parallel arrays (bash 3.2 compatible — no associative arrays)
 TBL_SCOPE=()    # "User" or "Project"
 TBL_TYPE=()     # "CLAUDE.md", "Memory", "Plugin hook", "Playbook Preset"
-TBL_SOURCE=()   # display identifier (shortened path or plugin id)
+TBL_SOURCE=()   # display identifier (full shortened path or plugin id)
 TBL_STATUS=()   # "ok", "missing", "empty", "failed"
 TBL_LINES=()    # integer
 TBL_CHARS=()    # integer
+PLAYBOOK_PLUGIN_ID=""  # captured from first playbook preset marker
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-# shorten_path: replace $PROJECT_DIR/ → ./  and $HOME/ → ~/  then truncate >45
+# shorten_path: replace $PROJECT_DIR/ → ./  and $HOME/ → ~/  (no truncation)
 # Note: PROJECT_DIR check must come before HOME check — PROJECT_DIR is inside HOME,
 # so checking HOME first would turn it into ~/rel/path which no longer matches PROJECT_DIR.
 shorten_path() {
   local path="$1"
-  local max=45
   # Replace PROJECT_DIR prefix first (more specific)
   if [[ "$path" == "$PROJECT_DIR/"* ]]; then
     path="./${path#$PROJECT_DIR/}"
   # Replace HOME prefix only if not already a project-relative path
   elif [[ "$path" == "$HOME/"* ]]; then
     path="~/${path#$HOME/}"
-  fi
-  # Truncate if still too long
-  if [ ${#path} -gt $max ]; then
-    path="${path:0:$((max-3))}..."
   fi
   echo "$path"
 }
@@ -97,13 +93,14 @@ append_source() {
 
 # append_command_output: run a command and capture its output.
 # If output contains <!-- Source: Plugin playbook@... Preset NAME --> markers,
-# split into individual preset rows. Otherwise record as a single Plugin hook row.
-# Args: label cmd plugin_id scope
+# split into individual preset rows. Otherwise record as a single hook row.
+# Args: label cmd plugin_id scope hook_type
 append_command_output() {
   local label="$1"
   local cmd="$2"
   local plugin_id="$3"   # e.g. "plantuml@tribe-coding (v1.6.0)"
   local scope="${4:-Project}"
+  local hook_type="${5:-Plugin hook}"
 
   OUTPUT+=$'\n'"<!-- Source: ${label} -->"$'\n'
   local result exit_code
@@ -112,13 +109,13 @@ append_command_output() {
 
   if [ $exit_code -ne 0 ]; then
     OUTPUT+="<!-- (command failed: ${cmd}) -->"$'\n'
-    record_meta "$scope" "Plugin hook" "$plugin_id" "failed" ""
+    record_meta "$scope" "$hook_type" "$plugin_id" "failed" ""
     return
   fi
 
   if [ -z "$result" ]; then
     OUTPUT+="<!-- (no output) -->"$'\n'
-    record_meta "$scope" "Plugin hook" "$plugin_id" "empty" ""
+    record_meta "$scope" "$hook_type" "$plugin_id" "empty" ""
     return
   fi
 
@@ -146,6 +143,8 @@ append_command_output() {
         current_name="$preset_name"
         current_content=""
         playbook_id="$pid"
+        # Capture for legend (only first time)
+        [ -z "$PLAYBOOK_PLUGIN_ID" ] && PLAYBOOK_PLUGIN_ID="$pid"
       else
         if [ -n "$current_name" ]; then
           current_content+="${line}"$'\n'
@@ -158,8 +157,8 @@ append_command_output() {
       record_meta "Project" "Playbook Preset" "$current_name" "ok" "$current_content"
     fi
   else
-    # Regular plugin hook — record as single row
-    record_meta "$scope" "Plugin hook" "$plugin_id" "ok" "$result"
+    # Regular hook — record as single row
+    record_meta "$scope" "$hook_type" "$plugin_id" "ok" "$result"
   fi
 }
 
@@ -177,13 +176,13 @@ print_table() {
     total_lines=$(( total_lines + TBL_LINES[i] ))
   done
 
-  printf '| Scope | Type | Source/ID | Status | Lines | ~Tokens | Context%% |\n'
-  printf '|-------|------|-----------|:------:|------:|--------:|---------:|\n'
+  printf '| Scope | Type | Source/ID | Lines | ~Tokens | Context%% |\n'
+  printf '|-------|------|-----------|------:|--------:|---------:|\n'
 
   local has_presets=0
 
   for i in "${!TBL_SCOPE[@]}"; do
-    local scope_icon type_icon status_icon ctx_pct
+    local scope_label type_label ctx_pct lines_cell tokens_cell ctx_cell
     local scope="${TBL_SCOPE[i]}"
     local type="${TBL_TYPE[i]}"
     local source="${TBL_SOURCE[i]}"
@@ -191,43 +190,67 @@ print_table() {
     local lines="${TBL_LINES[i]}"
     local tok="${tokens[i]}"
 
+    # Skip hooks that produced no output (empty or missing — not errors)
+    if { [ "$type" = "Plugin hook" ] || [ "$type" = "User hook" ] || [ "$type" = "Project hook" ]; } && \
+       { [ "$status" = "empty" ] || [ "$status" = "missing" ]; }; then
+      continue
+    fi
+
     case "$scope" in
-      User)    scope_icon="👤 User" ;;
-      Project) scope_icon="📁 Project" ;;
-      *)       scope_icon="$scope" ;;
+      User)    scope_label="User" ;;
+      Project) scope_label="Project" ;;
+      *)       scope_label="$scope" ;;
     esac
 
     case "$type" in
-      "CLAUDE.md")       type_icon="📝 CLAUDE.md" ;;
-      "Memory")          type_icon="🧠 Memory" ;;
-      "Plugin hook")     type_icon="⚙️ Plugin hook" ;;
-      "Playbook Preset") type_icon="📚 Playbook Preset"; has_presets=1 ;;
-      *)                 type_icon="$type" ;;
+      "CLAUDE.md")       type_label="CLAUDE.md" ;;
+      "Memory")          type_label="Memory" ;;
+      "Plugin hook")     type_label="Plugin hook" ;;
+      "User hook")       type_label="User hook" ;;
+      "Project hook")    type_label="Project hook" ;;
+      "Playbook Preset") type_label="Playbook Preset"; has_presets=1 ;;
+      *)                 type_label="$type" ;;
     esac
 
+    # Lines / Tokens / Context% columns
     case "$status" in
-      ok)      status_icon="✅" ;;
-      missing) status_icon="⚠️" ;;
-      empty)   status_icon="⚠️" ;;
-      failed)  status_icon="❌" ;;
-      *)       status_icon="?" ;;
+      ok)
+        if [ "$total_tokens" -gt 0 ]; then
+          ctx_pct=$(( 100 * tok / total_tokens ))
+        else
+          ctx_pct=0
+        fi
+        lines_cell="$lines"
+        tokens_cell="$tok"
+        ctx_cell="${ctx_pct}%"
+        ;;
+      missing)
+        lines_cell="no file"
+        tokens_cell=""
+        ctx_cell=""
+        ;;
+      failed)
+        lines_cell="script error"
+        tokens_cell=""
+        ctx_cell=""
+        ;;
+      *)
+        lines_cell="$lines"
+        tokens_cell="$tok"
+        ctx_cell=""
+        ;;
     esac
 
-    if [ "$total_tokens" -gt 0 ]; then
-      ctx_pct=$(( 100 * tok / total_tokens ))
-    else
-      ctx_pct=0
-    fi
-
-    printf '| %s | %s | `%s` | %s | %d | %d | %d%% |\n' \
-      "$scope_icon" "$type_icon" "$source" "$status_icon" "$lines" "$tok" "$ctx_pct"
+    printf '| %s | %s | %s | %s | %s | %s |\n' \
+      "$scope_label" "$type_label" "$source" "$lines_cell" "$tokens_cell" "$ctx_cell"
   done
 
-  printf '| | **TOTAL** | | | **%d** | **%d** | **100%%** |\n' \
+  printf '| | **TOTAL** | | **%d** | **%d** | **100%%** |\n' \
     "$total_lines" "$total_tokens"
 
   if [ "$has_presets" -eq 1 ]; then
-    printf '\n> 📚 **Playbook Presets** — compact rule sets injected by `playbook@tribe-coding`\n'
+    local legend_id="${PLAYBOOK_PLUGIN_ID:-playbook@tribe-coding}"
+    printf '\nPlaybook Presets injected by %s\n' "$legend_id"
   fi
 }
 
@@ -271,9 +294,10 @@ if [ -f "$SETTINGS" ] && command -v jq >/dev/null 2>&1; then
       # Expand common variables
       cmd_expanded="${cmd/\${HOME}/$HOME}"
       cmd_expanded="${cmd_expanded/\~/$HOME}"
-      # Use script basename as plugin_id for global hooks
-      local_label="Global hook: $(basename "${cmd%% *}")"
-      append_command_output "Global SessionStart hook: ${cmd}" "${cmd_expanded}" "$local_label" "User"
+      # Source/ID: settings.json path · script name
+      hook_script=$(echo "$cmd_expanded" | grep -oE '[^/ ]+\.(py|sh)' | tail -1)
+      local_id="~/.claude/settings.json · ${hook_script}"
+      append_command_output "Global SessionStart hook: ${cmd}" "${cmd_expanded}" "$local_id" "User" "User hook"
     done <<< "$HOOK_COMMANDS"
   else
     OUTPUT+=$'\n'"<!-- Source: Global SessionStart hooks -->"$'\n'"<!-- (none configured in ${SETTINGS}) -->"$'\n'
@@ -282,7 +306,33 @@ else
   OUTPUT+=$'\n'"<!-- Source: Global SessionStart hooks -->"$'\n'"<!-- (settings.json not found or jq not available) -->"$'\n'
 fi
 
-# ── 5. Plugin SessionStart hooks ─────────────────────────────────────────────
+# ── 5. Project SessionStart hooks from .claude/settings.json ─────────────────
+
+PROJECT_SETTINGS="${PROJECT_DIR}/.claude/settings.json"
+if [ -f "$PROJECT_SETTINGS" ] && command -v jq >/dev/null 2>&1; then
+  PROJ_HOOK_COMMANDS=$(jq -r '
+    .hooks.SessionStart[]?.hooks[]?
+    | select(.type == "command")
+    | .command
+  ' "$PROJECT_SETTINGS" 2>/dev/null || true)
+
+  if [ -n "$PROJ_HOOK_COMMANDS" ]; then
+    while IFS= read -r cmd; do
+      [ -z "$cmd" ] && continue
+      cmd_expanded="${cmd/\${HOME}/$HOME}"
+      cmd_expanded="${cmd_expanded/\~/$HOME}"
+      hook_script=$(echo "$cmd_expanded" | grep -oE '[^/ ]+\.(py|sh)' | tail -1)
+      proj_id="./.claude/settings.json · ${hook_script}"
+      append_command_output "Project SessionStart hook: ${cmd}" "${cmd_expanded}" "$proj_id" "Project" "Project hook"
+    done <<< "$PROJ_HOOK_COMMANDS"
+  else
+    OUTPUT+=$'\n'"<!-- Source: Project SessionStart hooks -->"$'\n'"<!-- (none configured in ${PROJECT_SETTINGS}) -->"$'\n'
+  fi
+else
+  OUTPUT+=$'\n'"<!-- Source: Project SessionStart hooks -->"$'\n'"<!-- (.claude/settings.json not found in project) -->"$'\n'
+fi
+
+# ── 6. Plugin SessionStart hooks ─────────────────────────────────────────────
 
 CACHE_DIR="${CLAUDE_DIR}/plugins/cache"
 
