@@ -19,6 +19,7 @@ MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "w
 - README.md MUST NOT exceed 300 lines — if approaching limit, extract detail sections to docs/
 - After adding/removing a public API, CLI command, or major feature → remind: "README may need updating"
 - When user asks to create/improve README → start with audience interview: who reads this? what's their level?
+- When creating a Demo section for a new README → NEVER invent output; ask the user for real demo material first: propose 1–3 concrete actions they could perform (e.g. "run the command", "trigger the hook", "use the slash command") and request a screenshot, terminal output paste, or copy-paste of a real agent dialogue
 - NEVER leave outdated examples — if code changed, update or remove them
 - **ALWAYS invoke the `playbook-browse readme` skill BEFORE writing or modifying any README.md file** to load full guidelines. This is MANDATORY — do not skip even when executing a plan or implementing a task that produces a README.
 <!-- /RULES -->
@@ -82,6 +83,32 @@ Design for two distinct audiences:
 | **Regular** | Navigation — "where's the X reference?" | Fast scanning, clear headings, links to docs |
 
 Structure the README to serve both. Newcomers read top-to-bottom; regulars scan headings.
+
+## Getting Real Demo Material
+
+NEVER invent demo output — fabricated output erodes trust when readers try to reproduce it. Before writing the Demo section, ask the user for real material.
+
+**How to ask:**
+
+1. Propose 1–3 concrete actions that would produce good demo output. Tailor to the tool type:
+   - CLI/command: "Run `/<command>` in a fresh session and paste the terminal output"
+   - Hook/automation: "Trigger the hook (e.g. edit a file it watches) and share what appeared in the terminal"
+   - Agent dialogue: "Copy-paste a real exchange where the plugin did something useful"
+
+2. Specify what format you need:
+   - **Screenshot** — best for showing UI, colors, layout (attach as image)
+   - **Terminal paste** — best for text output, tables, command sequences (paste as text)
+   - **Agent dialogue copy-paste** — best for showing Claude's reasoning + tool calls + result
+
+3. If the user can't provide material right now (tool not yet built, no session recorded), say explicitly: "I'll write a placeholder demo — update it with real output before publishing."
+
+**Example ask:**
+
+> To write the Demo section, I need real output — invented examples erode trust. Could you:
+> - Run `/ctx-show` in a fresh Claude Code session, and
+> - Paste the summary table that appears in the terminal?
+>
+> Alternatively, share a screenshot of the output.
 
 ## Demo-First Structure
 
