@@ -1,183 +1,129 @@
-# PlantUML Plugin
+# PlantUML
 
-PlantUML diagram automation for Claude Code: auto-sync markdown URLs, ASCII rendering in terminal, validation, and diagram type guide.
+> Add diagrams to your docs and conversations — Claude picks the type, draws, and keeps them in sync.
 
-## Features
+With this plugin, Claude proactively illustrates architecture, flows, and data structures using [PlantUML](https://plantuml.com): in markdown documentation and directly in the terminal during conversations.
 
-### 1. Markdown Diagram Sync (PostToolUse)
-- Automatically updates PlantUML image URLs in markdown files after edits
-- Ensures URLs always match source code blocks
-- No manual encoding needed
+## Demo
 
-### 2. ASCII Terminal Rendering (SessionStart + PreToolUse)
-- Renders diagrams as ASCII art for terminal explanations
-- **Zero permission prompts** — PreToolUse hooks auto-allow all operations
-- **Full diagram display** — WebFetch approach prevents UI collapse
-- Workflow: encode source → WebFetch from plantuml.com/txt/{encoded} → display
+A developer asks Claude to document the login flow. Claude adds a diagram to the docs — then, during the conversation, renders the same diagram as ASCII art in the terminal.
 
-### 3. Diagram Type Guide (Skill)
-- Automatically invoked before creating PlantUML diagrams
-- Covers 17 diagram types with selection guidance
-- Ensures correct diagram type for each use case
+### Step 1 — Claude writes `docs/auth.md` and adds a diagram proactively
 
-### 4. Validation (Command)
-- `/plantuml-validate` command checks all diagrams in markdown files
-- CI/CD integration via `--check` flag
-- Git pre-commit hooks prevent stale URLs
+```
+> Document the login flow for the auth service.
+
+✦ Using skill: plantuml-diagram-guide
+
+I'll create docs/auth.md. The flow involves four actors — I'll use a sequence diagram.
+
+● Write(docs/auth.md)
+  ┌───────────────────────────────────────────────────────────────────┐
+  │ # Auth Service                                                    │
+  │                                                                   │
+  │ ## Login Request Flow                                             │
+  │                                                                   │
+  │ ```plantuml                                                       │
+  │ @startuml                                                         │
+  │ title Login Request Flow                                          │
+  │ hide footbox                                                      │
+  │ skinparam participantBackgroundColor #E8F4FD                      │
+  │ skinparam participantBorderColor #7FB3D8                          │
+  │ skinparam sequenceArrowColor #5B9BD5                              │
+  │ skinparam sequenceLifeLineBorderColor #7FB3D8                     │
+  │                                                                   │
+  │ actor User                                                        │
+  │ participant "Web App" as Web                                      │
+  │ participant "Auth API" as API                                     │
+  │ database "PostgreSQL" as DB                                       │
+  │                                                                   │
+  │ User -> Web : POST /login                                         │
+  │ Web -> API : forward credentials                                  │
+  │ API -> DB : SELECT user WHERE email = ?                           │
+  │ DB --> API : user row                                             │
+  │ API --> Web : 200 OK + token                                      │
+  │ Web --> User : redirect + set cookie                              │
+  │ @enduml                                                           │
+  │ ```                                                               │
+  │                                                                   │
+  │ ![Login Request Flow (PNG image)](https://www.plantuml.com/...)   │
+  └───────────────────────────────────────────────────────────────────┘
+
+⏺ Done — docs/auth.md created. The image URL stays in sync automatically whenever you edit the source block.
+```
+
+![Login Request Flow](https://www.plantuml.com/plantuml/png/TP7HJi8m58Rl-nGdU6c8H2KYYSh6jcXSmWGCrsKxGBFHCzkpuEDxDWd112-sjVs-_l_IJZnhnys-KcouGaXfQopCyQj1pv1KT50xKo1iY7XDtygNnjRQwJt8cqrkQcqvr7cvTTJOOaeLERYAHybz4lqZaolG7SM79BoBHcUYRvjjZe5pT3XAm_0nZ8ONfDHivB5uALBfd6NwwT6fitRehN0DGLttG7kGyLyODBo387lhg7nLeLcljKVePUHvwt3naNOm2fLgmw7_tCR06BBPOWatLNk0gbqH80a2DkGEsXMGEopGij6LLoqH8Gg5B-8qdYwXQTDMh_4y1jnhKy4Jl2WH-gUWpf1p-TrzAhuT363s3jV0LEAnMs3tTsEGKkCmP-4U6NAYqg2Qe2tardy0)
+
+### Step 2 — Later in the conversation, Claude renders it as ASCII in the terminal
+
+```
+> Walk me through the login flow step by step.
+
+✦ Using skill: plantuml-diagram-guide
+
+Here's the full flow:
+
+                                     Login Request Flow
+
+       ┌─┐                                                                    ,.-^^-._
+       ║"│                                                                   |-.____.-|
+       └┬┘                                                                   |        |
+       ┌┼┐                                                                   |        |
+        │                  ┌───────┐           ┌────────┐                    |        |
+       ┌┴┐                 │Web App│           │Auth API│                    '-.____.-'
+      User                 └───┬───┘           └────┬───┘                   PostgreSQL
+        │     POST /login      │                    │                            │
+        │─────────────────────>│                    │                            │
+        │                      │                    │                            │
+        │                      │forward credentials │                            │
+        │                      │───────────────────>│                            │
+        │                      │                    │                            │
+        │                      │                    │SELECT user WHERE email = ? │
+        │                      │                    │───────────────────────────>│
+        │                      │                    │                            │
+        │                      │                    │         user row           │
+        │                      │                    │<─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│
+        │                      │                    │                            │
+        │                      │  200 OK + token    │                            │
+        │                      │<─ ─ ─ ─ ─ ─ ─ ─ ─ ─│                            │
+        │                      │                    │                            │
+        │redirect + set cookie │                    │                            │
+        │<─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│                    │                            │
+        │                      │                    │                            │
+
+![Login Request Flow (PNG image)](https://www.plantuml.com/...)
+```
+
+## Validation
+
+```
+/plantuml:plantuml-validate
+```
+
+Checks all diagram URLs in the project. Also runs automatically as a git pre-commit hook and in GitHub Actions CI.
 
 ## Installation
 
-This plugin is available in the **Tribe Coding** marketplace.
-
-1. Add marketplace to Claude Code:
-   ```bash
-   claude marketplace add tribe-coding https://github.com/Tribe-Coding/claude-plugins.git
-   ```
-
-2. Install plugin:
-   ```bash
-   claude plugin install plantuml@tribe-coding
-   ```
-
-3. (Optional) Install marketplace sync for auto-updates:
-   ```bash
-   bash <(curl -fsSL https://raw.githubusercontent.com/Tribe-Coding/claude-plugins/main/scripts/install-sync.sh)
-   ```
-
-## Usage
-
-### Markdown Documentation
-When creating `.md` files, Claude will automatically:
-1. Invoke diagram type guide skill
-2. Create PlantUML diagrams with two-part format:
-   - Code block with `plantuml` language tag
-   - Image link to rendered SVG
-3. Auto-update URLs when source changes
-
-Example:
-```markdown
-```plantuml
-@startuml
-Alice -> Bob: Hello
-@enduml
-```
-
-![Sequence Diagram](https://www.plantuml.com/plantuml/svg/SoWkIImgAStDuNBCoKnELT2rKt3AJx9Iy4ZDoSddSaZDIm7A0G00)
-```
-
-### Terminal Explanations
-When explaining architecture or flows, Claude will:
-1. Encode diagram source
-2. Fetch ASCII from PlantUML API
-3. Display full diagram without prompts or UI collapse
-
-No user action needed — fully automatic.
-
-### Validation
-Check all diagrams in project:
 ```bash
-/plantuml-validate
+/plugin marketplace add Tribe-Coding/claude-plugins
+/plugin install plantuml@tribe-coding
+/plugin
 ```
 
-## How It Works
+Select **plantuml** → enable **auto-update**. Restart your session — done.
 
-### SessionStart Hooks
-1. **inject-base-rules.sh** — Outputs formatting rules and ASCII rendering workflow
-2. **setup-project.sh** — Installs git pre-commit hooks
+## Requirements
 
-### PostToolUse Hooks
-- **sync-plantuml.sh** — Runs after Write/Edit on `.md` files, updates diagram URLs
+- Python 3.x
 
-### PreToolUse Hooks
-- **allow-rendering.sh** — Auto-allows PlantUML operations without prompts:
-  - Encoding commands (`plantuml-encode.py`)
-  - Temp file operations (`/tmp/*.puml` via Bash or Write tool)
-  - Cleanup commands (`rm /tmp/*.puml`)
+## How it works
 
-### Skills
-- **plantuml-diagram-guide** — Invoked automatically before diagram creation
-
-### Commands
-- **plantuml-validate** — Manual validation and CI/CD checks
-
-## Technical Details
-
-### ASCII Rendering Architecture (v1.5.6+)
-
-**Problem:** Claude Code UI collapses Bash tool results >40-50 lines.
-
-**Solution:** Use WebFetch instead of Bash commands.
-- WebFetch results are NOT collapsed by UI
-- Versions 1.4.0-1.5.5 used Bash (regression)
-- Version 1.5.6+ reverted to WebFetch (original working approach)
-
-**Workflow:**
-1. Claude encodes PlantUML source via `plantuml-encode.py`
-2. WebFetch ASCII from `https://www.plantuml.com/plantuml/txt/{encoded}`
-3. Full diagram displayed in terminal
-
-**PreToolUse Hook Patterns:**
-```bash
-# Auto-allow encoding
-plantuml-encode.py
-
-# Auto-allow temp file creation
-cat > /tmp/*.puml
-
-# Auto-allow cleanup
-rm /tmp/*.puml
-
-# Auto-allow Write tool
-/tmp/*.puml
-```
-
-**Security:** All patterns restricted to `/tmp` directory and `.puml` extension.
-
-### SessionStart Path Resolution
-
-**Problem:** `${CLAUDE_PLUGIN_ROOT}` doesn't resolve in heredoc output.
-
-**Solution:** Dynamic resolution in script:
-```bash
-PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
-```
-
-Outputs absolute paths like:
-```
-/Users/user/.claude/plugins/cache/tribe-coding/plantuml/1.5.8/scripts/plantuml-encode.py
-```
-
-**Key insight:** `${CLAUDE_PLUGIN_ROOT}` only works in hooks.json `command` fields, NOT in text output.
-
-## Configuration
-
-No configuration needed — works out of the box.
-
-Optional git pre-commit hook installed automatically via SessionStart hook.
-
-## Troubleshooting
-
-### Permission prompts still appearing
-- Ensure version 1.5.8+: `cat ~/.claude/plugins/installed_plugins.json | jq '.plugins["plantuml@tribe-coding"]'`
-- Restart Claude Code session to reload hooks
-- Check PreToolUse hook is active: operations should execute without prompts
-
-### ASCII diagrams collapsed in UI
-- Ensure version 1.5.6+: WebFetch approach prevents collapse
-- If using older version, upgrade: `claude plugin update plantuml@tribe-coding`
-
-### URLs not syncing
-- PostToolUse hook runs automatically on Write/Edit
-- Manual sync: edit any line in `.md` file and save
-- Check hook output for errors in Claude Code console
-
-## Contributing
-
-See [ACCEPTANCE_TESTS.md](docs/ACCEPTANCE_TESTS.md) for comprehensive test documentation.
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for version history.
+| Trigger | What happens |
+|---------|-------------|
+| SessionStart | Injects diagram formatting rules and ASCII rendering workflow |
+| PostToolUse (Write/Edit on `.md`) | Auto-updates image URLs when source changes |
+| PreToolUse | Auto-allows all PlantUML operations — no permission prompts |
+| Before creating any diagram | `plantuml-diagram-guide` skill invoked automatically — picks the right type from 17 options |
 
 ## License
 
