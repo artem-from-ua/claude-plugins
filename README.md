@@ -9,11 +9,27 @@ A marketplace of reusable plugins for [Claude Code](https://docs.anthropic.com/e
 | **plantuml** | hook | PostToolUse | *automatic* | Auto-sync PlantUML image URLs on `.md` edits |
 | | hook | SessionStart | *automatic* | Inject base formatting rules + install pre-commit hook |
 | | command | [`plantuml-validate`](plugins/plantuml/commands/plantuml-validate/SKILL.md) | `/plantuml:plantuml-validate` | Check all diagram URLs are in sync |
-| | skill | [`plantuml-diagram-guide`](plugins/plantuml/skills/plantuml-diagram-guide/SKILL.md) | *on-demand* | Full catalog of 16 diagram types with selection guide |
+| | skill | [`plantuml-diagram-guide`](plugins/plantuml/skills/plantuml-diagram-guide/SKILL.md) | *on-demand* | Full catalog of 17 diagram types with selection guide |
 | **statusline** | hook | SessionStart | *automatic* | Install statusline script to `~/.claude/` |
 | | command | [`statusline-setup`](plugins/statusline/commands/statusline-setup/SKILL.md) | `/statusline:statusline-setup` | Configure statusline in `~/.claude/settings.json` |
 | **statusline-compact** | hook | SessionStart | *automatic* | Install compact statusline script to `~/.claude/` |
 | | command | [`statusline-setup`](plugins/statusline-compact/commands/statusline-setup/SKILL.md) | `/statusline-compact:statusline-setup` | Configure compact statusline |
+| **git-branch-naming** | hook | PreToolUse | *automatic* | Validate branch names before git push |
+| | hook | SessionStart | *automatic* | Inject branch naming rules |
+| | command | [`git-branch-naming-setup`](plugins/git-branch-naming/commands/git-branch-naming-setup/SKILL.md) | `/git-branch-naming:git-branch-naming-setup` | Configure branch naming conventions |
+| | skill | [`branch-naming-guide`](plugins/git-branch-naming/skills/branch-naming-guide/SKILL.md) | *on-demand* | Branch prefix and naming reference |
+| **retroscope** | hook | SessionStart | *automatic* | Inject retrospective capture rules |
+| | hook | SessionEnd | *automatic* | Auto-capture session data on exit |
+| | command | [`retro`](plugins/retroscope/commands/retro/SKILL.md) | `/retroscope:retro` | Generate session/daily retrospective report |
+| | command | [`retroscope-setup`](plugins/retroscope/commands/retroscope-setup/SKILL.md) | `/retroscope:retroscope-setup` | Configure retrospective storage and options |
+| **playbook** | hook | SessionStart | *automatic* | Inject enabled preset coding guidelines |
+| | command | [`playbook-setup`](plugins/playbook/commands/playbook-setup/SKILL.md) | `/playbook:playbook-setup` | Choose which guideline presets to enable |
+| | skill | [`playbook-browse`](plugins/playbook/skills/playbook-browse/SKILL.md) | *on-demand* | Browse full preset reference content |
+| **semver** | hook | PreToolUse | *automatic* | Validate version bumps before commit/push |
+| | hook | SessionStart | *automatic* | Inject semantic versioning rules |
+| | command | [`semver-setup`](plugins/semver/commands/semver-setup/SKILL.md) | `/semver:semver-setup` | Configure version files and trigger strategy |
+| | skill | [`semver-guide`](plugins/semver/skills/semver-guide/SKILL.md) | *on-demand* | SemVer decision tree and conflict resolution |
+| **context** | command | [`ctx-show`](plugins/context/commands/ctx-show/SKILL.md) | `/context:ctx-show` | Show full session context with token counts |
 
 > - **hook** — runs automatically in response to events (e.g. after every file edit or on session start). No user action needed.
 > - **command** — a `/slash-command` that the user invokes explicitly when needed.
@@ -27,12 +43,17 @@ A marketplace of reusable plugins for [Claude Code](https://docs.anthropic.com/e
 /plugin marketplace add Tribe-Coding/claude-plugins
 ```
 
-### Install a plugin
+### Install plugins
 
 ```bash
 /plugin install plantuml@tribe-coding
 /plugin install statusline@tribe-coding
 /plugin install statusline-compact@tribe-coding
+/plugin install git-branch-naming@tribe-coding
+/plugin install retroscope@tribe-coding
+/plugin install playbook@tribe-coding
+/plugin install semver@tribe-coding
+/plugin install context@tribe-coding
 ```
 
 ### Enable auto-updates
@@ -110,6 +131,68 @@ Compact single-line Claude Code statusline with brightness-coded API usage value
 - Anthropic OAuth usage API integration (cached 60s)
 - Setup command: `/statusline-compact:statusline-setup`
 
+### git-branch-naming
+
+Branch naming convention enforcement with automatic validation.
+
+**Features:**
+
+- Validates branch names against configured patterns before git push (PreToolUse hook)
+- Warns when staged content doesn't match branch type (e.g. code-only changes on a `docs/` branch)
+- Injects branch naming rules into every session (SessionStart hook)
+- Interactive setup wizard: `/git-branch-naming:git-branch-naming-setup`
+- Project config in `.claude-plugin/git-branch-naming.json`; global fallback in `~/.claude/git-branch-naming.json`
+- Supports custom prefixes, ticket number patterns, and enforcement levels
+
+### retroscope
+
+Retrospective session reports — automatic capture and structured summaries.
+
+**Features:**
+
+- Auto-captures session data on exit (SessionEnd hook)
+- `/retroscope:retro session` — summarizes the current session (display only)
+- `/retroscope:retro today` / `yesterday` — generates saved daily reports
+- Configurable storage directory, language, and model via setup wizard
+- Project config in `.claude-plugin/retroscope.json`; global config in `~/.claude/retroscope.json`
+- Setup command: `/retroscope:retroscope-setup`
+
+### playbook
+
+Curated coding guideline presets injected into sessions on demand.
+
+**Features:**
+
+- Presets: `readme`, `documentation-principles`, `github-workflow`, `macos-python`, `macos-zsh-quirks`
+- Enabled presets inject MANDATORY rules via SessionStart hook
+- Full preset reference content available on-demand via `playbook-browse` skill
+- Project config in `.claude-plugin/playbook.json`; global config in `~/.claude/playbook.json`
+- Setup command: `/playbook:playbook-setup`
+
+### semver
+
+Semantic versioning enforcement before commit, push, and PR creation.
+
+**Features:**
+
+- Validates version bumps are present before `git commit`, `git push`, and PR creation (PreToolUse hook)
+- Injects SemVer rules into every session (SessionStart hook)
+- `semver-guide` skill: MAJOR/MINOR/PATCH decision tree, conflict resolution, common mistakes
+- Supports multiple version files (e.g. `package.json`, `pyproject.toml`, `plugin.json`)
+- Configurable trigger strategy and enforcement level
+- Setup command: `/semver:semver-setup`
+
+### context
+
+Inspect the full Claude Code session context assembled in load order.
+
+**Features:**
+
+- Shows all CLAUDE.md files, auto-memory, and SessionStart hook output in one document
+- Prints a summary table to stderr: scope, type, source, status, lines, tokens, and context% per source
+- Useful for debugging what rules and context Claude is actually operating with
+- Command: `/context:ctx-show`
+
 ## Plugin Structure
 
 Each plugin follows the Claude Code plugin spec:
@@ -148,6 +231,10 @@ plugins/<name>/
 - `curl` — API requests
 - `python3` — OAuth token parsing (macOS)
 - macOS Keychain or `~/.claude/.credentials.json` (for Anthropic OAuth token)
+
+### git-branch-naming / retroscope / playbook / semver / context
+
+- No additional dependencies (pure bash/shell)
 
 ## Plugin Cache Sync
 
