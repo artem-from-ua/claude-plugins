@@ -17,6 +17,8 @@ Configure which coding guideline presets are active for your sessions.
 
 Read all `.md` files in `${SKILL_DIR}/../../presets/`. For each file, extract the YAML frontmatter fields `name`, `description`, and `tags`.
 
+> When **creating a new preset** (not just enabling existing ones), read `docs/AUTHORING.md` at the project root first for authoring guidelines (rule patterns, budget, anti-patterns).
+
 ### 2. Show current configuration
 
 Check both config files and display current state:
