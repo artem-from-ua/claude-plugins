@@ -17,6 +17,7 @@ Every PlantUML diagram MUST have two parts, in this order:
 Example:
 \`\`\`plantuml
 @startuml
+hide footbox
 title Greeting Sequence
 skinparam participantBackgroundColor #E8F4FD
 skinparam participantBorderColor #7FB3D8
@@ -56,4 +57,5 @@ Rules:
 - Use SVG format (\`/svg/\` path) unless PNG is specifically requested.
 - The alt text in the image link should be a short description of the diagram.
 - Place a blank line between the closing \`\`\` and the image link.
+- For sequence diagrams with ≤ 10 arrows (fits on screen without scrolling), add \`hide footbox\` immediately after \`@startuml\` to suppress the repeated participant row at the bottom. For longer diagrams (> 10 arrows), omit \`hide footbox\` — the footer aids navigation.
 RULES
