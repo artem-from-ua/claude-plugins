@@ -29,17 +29,18 @@ TBL_CHARS=()    # integer
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-# shorten_path: replace $HOME/ → ~/  and $PROJECT_DIR/ → ./  then truncate >45
+# shorten_path: replace $PROJECT_DIR/ → ./  and $HOME/ → ~/  then truncate >45
+# Note: PROJECT_DIR check must come before HOME check — PROJECT_DIR is inside HOME,
+# so checking HOME first would turn it into ~/rel/path which no longer matches PROJECT_DIR.
 shorten_path() {
   local path="$1"
   local max=45
-  # Replace HOME prefix
-  if [[ "$path" == "$HOME/"* ]]; then
-    path="~/${path#$HOME/}"
-  fi
-  # Replace PROJECT_DIR prefix (only if not already shortened)
+  # Replace PROJECT_DIR prefix first (more specific)
   if [[ "$path" == "$PROJECT_DIR/"* ]]; then
     path="./${path#$PROJECT_DIR/}"
+  # Replace HOME prefix only if not already a project-relative path
+  elif [[ "$path" == "$HOME/"* ]]; then
+    path="~/${path#$HOME/}"
   fi
   # Truncate if still too long
   if [ ${#path} -gt $max ]; then
@@ -162,14 +163,13 @@ append_command_output() {
   fi
 }
 
-# ── print_table ───────────────────────────────────────────────────────────────
+# ── print_table — markdown format ────────────────────────────────────────────
 print_table() {
   local total_tokens=0
   local total_lines=0
   local -a tokens=()
   local i
 
-  # Calculate tokens (chars/4) for each row
   for i in "${!TBL_CHARS[@]}"; do
     local t=$(( TBL_CHARS[i] / 4 ))
     tokens+=("$t")
@@ -177,25 +177,10 @@ print_table() {
     total_lines=$(( total_lines + TBL_LINES[i] ))
   done
 
-  # Column widths
-  local W_SCOPE=12
-  local W_TYPE=20
-  local W_SOURCE=46
-  local W_STATUS=8
-  local W_LINES=7
-  local W_TOKENS=9
-  local W_CTX=9
-
-  # Header
-  local sep
-  sep=$(printf '%*s' $((W_SCOPE + W_TYPE + W_SOURCE + W_STATUS + W_LINES + W_TOKENS + W_CTX + 6)) '' | tr ' ' '─')
-
-  printf "%-${W_SCOPE}s  %-${W_TYPE}s  %-${W_SOURCE}s  %-${W_STATUS}s  %${W_LINES}s  %${W_TOKENS}s  %${W_CTX}s\n" \
-    "Scope" "Type" "Source/ID" "Status" "Lines" "~Tokens" "Context%"
-  printf '%s\n' "$sep"
+  printf '| Scope | Type | Source/ID | Status | Lines | ~Tokens | Context%% |\n'
+  printf '|-------|------|-----------|:------:|------:|--------:|---------:|\n'
 
   local has_presets=0
-  local playbook_plugin_id=""
 
   for i in "${!TBL_SCOPE[@]}"; do
     local scope_icon type_icon status_icon ctx_pct
@@ -206,23 +191,20 @@ print_table() {
     local lines="${TBL_LINES[i]}"
     local tok="${tokens[i]}"
 
-    # Scope icon
     case "$scope" in
       User)    scope_icon="👤 User" ;;
       Project) scope_icon="📁 Project" ;;
       *)       scope_icon="$scope" ;;
     esac
 
-    # Type icon
     case "$type" in
       "CLAUDE.md")       type_icon="📝 CLAUDE.md" ;;
       "Memory")          type_icon="🧠 Memory" ;;
-      "Plugin hook")     type_icon="⚙️  Plugin hook" ;;
+      "Plugin hook")     type_icon="⚙️ Plugin hook" ;;
       "Playbook Preset") type_icon="📚 Playbook Preset"; has_presets=1 ;;
       *)                 type_icon="$type" ;;
     esac
 
-    # Status icon
     case "$status" in
       ok)      status_icon="✅" ;;
       missing) status_icon="⚠️" ;;
@@ -231,33 +213,21 @@ print_table() {
       *)       status_icon="?" ;;
     esac
 
-    # Context%
     if [ "$total_tokens" -gt 0 ]; then
       ctx_pct=$(( 100 * tok / total_tokens ))
     else
       ctx_pct=0
     fi
 
-    printf "%-${W_SCOPE}s  %-${W_TYPE}s  %-${W_SOURCE}s  %-${W_STATUS}s  %${W_LINES}d  %${W_TOKENS}d  %${W_CTX}s\n" \
-      "$scope_icon" "$type_icon" "\`${source}\`" "$status_icon" "$lines" "$tok" "${ctx_pct}%"
+    printf '| %s | %s | `%s` | %s | %d | %d | %d%% |\n' \
+      "$scope_icon" "$type_icon" "$source" "$status_icon" "$lines" "$tok" "$ctx_pct"
   done
 
-  # TOTAL row
-  printf '%s\n' "$sep"
-  printf "%-${W_SCOPE}s  %-${W_TYPE}s  %-${W_SOURCE}s  %-${W_STATUS}s  %${W_LINES}d  %${W_TOKENS}d  %${W_CTX}s\n" \
-    "" "TOTAL" "" "" "$total_lines" "$total_tokens" "100%"
+  printf '| | **TOTAL** | | | **%d** | **%d** | **100%%** |\n' \
+    "$total_lines" "$total_tokens"
 
-  # Legend for presets
   if [ "$has_presets" -eq 1 ]; then
-    # Find the playbook plugin id from sources list
-    for i in "${!TBL_TYPE[@]}"; do
-      if [ "${TBL_TYPE[i]}" = "Playbook Preset" ]; then
-        # Reconstruct from first preset marker seen in output
-        break
-      fi
-    done
-    printf '\n'
-    printf 'Legend: 📚 Playbook Presets are compact rule sets injected by playbook@tribe-coding\n'
+    printf '\n> 📚 **Playbook Presets** — compact rule sets injected by `playbook@tribe-coding`\n'
   fi
 }
 
@@ -378,10 +348,14 @@ if [ -f "$SETTINGS" ] && command -v jq >/dev/null 2>&1 && [ -d "$CACHE_DIR" ]; t
         [ -z "$cmd" ] && continue
         # Replace ${CLAUDE_PLUGIN_ROOT} with actual plugin root
         cmd_expanded="${cmd/\$\{CLAUDE_PLUGIN_ROOT\}/$PLUGIN_ROOT}"
+        # Include script basename in ID so multiple hooks from same plugin are distinguishable
+        # Extract the .sh filename from the command (handles quoted paths)
+        HOOK_SCRIPT=$(echo "$cmd_expanded" | sed 's/.*\/\([^/]*\)\.sh.*/\1/')
+        HOOK_ID="${PLUGIN_NAME}@${MARKETPLACE} (v${LATEST_VERSION}) · ${HOOK_SCRIPT}"
         append_command_output \
           "Plugin ${plugin_key} (v${LATEST_VERSION}) SessionStart: ${cmd}" \
           "${cmd_expanded}" \
-          "$PLUGIN_ID"
+          "$HOOK_ID"
       done <<< "$PLUGIN_HOOKS"
 
     done <<< "$ENABLED_PLUGINS"
