@@ -1,5 +1,5 @@
 ---
-name: statusline-setup
+name: compact-statusline-setup
 description: >
   Configure the compact Claude Code statusline showing API rate limits,
   context window usage, git branch, and model info on a single line.

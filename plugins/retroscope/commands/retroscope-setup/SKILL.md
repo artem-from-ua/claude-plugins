@@ -27,75 +27,22 @@ Read existing configs (show current values as defaults):
 
 ## Step 2: Ask Configuration Questions
 
-Use `AskUserQuestion` to collect settings.
+Use `AskUserQuestion` to collect settings in this order:
 
-**Question 1 — Storage directory:**
+1. **Storage directory** — where to store reports. Suggest: `~/devel/retroscope`. If doesn't exist: offer to create + `git init`.
+2. **Remote URL** (optional) — detect GitHub username via `gh api user -q .login`, offer `https://github.com/{username}/retroscope`, custom URL, or skip.
+3. **Report language** — system default (recommended), English, or custom.
+4. **Report generation model** — `haiku` (fastest, ~$0.01–0.03/report, recommended), `sonnet` (higher quality, ~$0.05–0.15/report), or `inherit` (current session model).
+5. **Extract mode** — On (default, pre-filter to text-only, ~80–90% token reduction) or Off (full session data, ~5–10x more tokens, better for debugging insights).
+6. **Session data source** — `logs` (default, reads full JSONL, reliable even after `/compact` or `/clear`) or `context` (current conversation, faster but may be incomplete).
+7. **Suggest /retro on exit?** — Yes (default) or No.
+8. **Auto-push reports?** — No (default, commit locally only) or Yes.
 
-Ask: "Where should retroscope store reports?"
-
-Provide a text input field. Suggest: `/Users/<username>/devel/retroscope` or `~/retroscope`.
-
-If the directory doesn't exist: offer to create it and run `git init`.
-
-**Question 2 — Remote URL (optional):**
-
-Detect GitHub username:
-```bash
-gh api user -q .login 2>/dev/null
-```
-
-Options:
-- `https://github.com/{username}/retroscope` — use detected GitHub repo (if username found)
-- Enter custom URL
-- Skip (no remote)
-
-**Question 3 — Report language:**
-
-Options:
-- System default (from `~/.claude/settings.json` locale or `$LANG`) — Recommended
-- English
-- Custom (ask for language name)
-
-**Question 4 — Report generation model:**
-
-Options:
-- `haiku` — Claude Haiku (fastest, cheapest; ~$0.01–0.03 per daily report) — Recommended
-- `sonnet` — Claude Sonnet (higher quality; ~$0.05–0.15 per daily report)
-- `inherit` — Use current session model (no subagent spawned)
-
-**Question 5 — Extract mode:**
-
-Options:
-- On (default) — Pre-filter sessions to user prompts + assistant responses only. Reduces tokens by ~80–90%. Good for task tracking, decisions, and status overviews.
-- Off — Send complete session data including tool inputs/outputs, file contents, error messages. ~5–10x more tokens. Better for detailed debugging insights and nuanced communication analysis.
-
-**Question 5b — /retro session data source:**
-
-This setting controls how `/retro session` reads data about the current session.
-
-Claude Code automatically compresses long conversations (`/compact`) and users may run `/clear` to reset context. When this happens, earlier turns are no longer visible in memory — so a report based on "what Claude can see right now" will be incomplete.
-
-Options:
-- **Session logs** (default, recommended) — Always reads the full JSONL session file from `~/.claude/projects/`. Complete and reliable regardless of context compression or `/clear`. Slightly slower due to file I/O.
-- **Current context** — Uses whatever Claude can see in the active conversation. Faster and simpler, but will produce incomplete reports if context was compressed or cleared earlier in the session.
-
-**Question 6 — Suggest /retro on exit?**
-
-Options:
-- Yes — SessionEnd hook shows reminder before exiting (default)
-- No — Silent exit
-
-**Question 7 — Auto-push reports?**
-
-Options:
-- No — Commit locally only (default, recommended)
-- Yes — Push to remote after each report commit
+For full field descriptions and defaults, see `${SKILL_DIR}/references/config-schema.md`.
 
 ## Step 3: Write Config Files
 
-### User-level config: `~/.claude/retroscope.json`
-
-Write global defaults (storageDir, language, timezone):
+### User-level: `~/.claude/retroscope.json`
 
 ```json
 {
@@ -104,48 +51,34 @@ Write global defaults (storageDir, language, timezone):
   "language": "{language}",
   "timezone": "{detected_timezone}",
   "model": "{haiku|sonnet|inherit}",
-  "extractMode": {true|false},
-  "sessionSource": "{logs|context}",
-  "suggestRetroOnExit": {true|false},
-  "autoPush": {false|true}
+  "extractMode": true,
+  "sessionSource": "logs",
+  "suggestRetroOnExit": true,
+  "autoPush": false
 }
 ```
 
 Detect timezone:
 ```bash
-python3 -c "import datetime; print(datetime.datetime.now().astimezone().tzname())"
-# or on macOS:
 readlink /etc/localtime | sed 's|.*/zoneinfo/||'
+# fallback:
+python3 -c "import datetime; print(datetime.datetime.now().astimezone().tzname())"
 ```
 
-### Project-level config: `.claude-plugin/retroscope.json`
+### Project-level: `.claude-plugin/retroscope.json`
 
-Create `.claude-plugin/` if needed, write project-level overrides. By default, identical to user-level config (user can manually edit to override per project later).
+Create `.claude-plugin/` if needed. By default, identical to user-level (user can override per-project later).
 
 ## Step 4: Initialize Storage Repository
 
-If storage directory doesn't exist:
 ```bash
 mkdir -p "{storageDir}"
 git -C "{storageDir}" init
-```
-
-If remote URL provided:
-```bash
+# if remote URL provided:
 git -C "{storageDir}" remote add origin "{remoteUrl}"
 ```
 
-Create initial `.gitignore` in storage dir (if it doesn't exist):
-```
-.DS_Store
-*.tmp
-```
-
-Create initial commit if repo is empty:
-```bash
-git -C "{storageDir}" add .gitignore
-git -C "{storageDir}" commit -m "chore: initialize retroscope storage"
-```
+Create `.gitignore` (if missing) with `.DS_Store` and `*.tmp`. Create initial commit if repo is empty.
 
 ## Step 5: Show Confirmation
 
@@ -163,21 +96,4 @@ Next steps:
 1. Run /retro session — summarize current session (display only)
 2. Run /retro today — generate today's report (saved to storage)
 3. Run /retro yesterday — generate yesterday's report
-
-Tip: Reports are saved to:
-  {storageDir}/reports/{project}/daily/{YYYY}/{MM}/{DD}/summary.md
 ```
-
-## Config Schema Reference
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `storageDir` | string | — | Absolute path to storage git repo (REQUIRED) |
-| `remoteUrl` | string | `""` | Git remote URL for pushing reports |
-| `language` | string | `"en"` | Report language code (e.g. "en", "uk", "de") |
-| `timezone` | string | system TZ | IANA timezone name (e.g. "Europe/Kyiv") |
-| `model` | string | `"haiku"` | Report model: `haiku`, `sonnet`, or `inherit` |
-| `extractMode` | boolean | `true` | Pre-filter sessions to text-only content |
-| `sessionSource` | string | `"logs"` | `/retro session` data source: `logs` (full JSONL, reliable) or `context` (current conversation, fast but may be incomplete) |
-| `suggestRetroOnExit` | boolean | `true` | Show /retro reminder in SessionEnd hook |
-| `autoPush` | boolean | `false` | Git push after each report commit |
