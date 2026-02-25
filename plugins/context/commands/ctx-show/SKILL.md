@@ -25,7 +25,8 @@ Assemble and display everything Claude Code loads at session start, in load orde
 2. `{project}/CLAUDE.md` — project instructions
 3. `~/.claude/projects/{hash}/memory/MEMORY.md` — auto-memory
 4. Global SessionStart hooks (from `~/.claude/settings.json`)
-5. Plugin SessionStart hooks (enabled plugins in `~/.claude/plugins/cache/`)
+5. Project SessionStart hooks (from `{project}/.claude/settings.json`)
+6. Plugin SessionStart hooks (enabled plugins in `~/.claude/plugins/cache/`)
 
 Each source is wrapped with `<!-- Source: ... -->` comments. Missing files are noted but do not cause errors.
 
@@ -35,10 +36,10 @@ After the file is written (or content printed), a summary table is printed to **
 
 | Column | Description |
 |--------|-------------|
-| Scope | 👤 `User` (global `~/.claude/`) or 📁 `Project` (project-level + plugins) |
-| Type | 📝 CLAUDE.md · 🧠 Memory · ⚙️ Plugin hook · 📚 Playbook Preset |
+| Scope | `User` (global `~/.claude/`) or `Project` (project-level + plugins) |
+| Type | CLAUDE.md · Memory · Plugin hook · User hook · Project hook · Playbook Preset |
 | Source/ID | Shortened path (`~/`, `./`) or plugin identifier `name@marketplace (vX.Y.Z)` |
-| Status | ✅ has content · ⚠️ missing/empty · ❌ command failed |
+| Status | has content · missing/empty · command failed (shown as "script error" in Lines column) |
 | Lines / ~Tokens | Content metrics; tokens ≈ chars/4 |
 | Context% | Each source's share of total context |
 
