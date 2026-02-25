@@ -190,9 +190,9 @@ print_table() {
   local sep
   sep=$(printf '%*s' $((W_SCOPE + W_TYPE + W_SOURCE + W_STATUS + W_LINES + W_TOKENS + W_CTX + 6)) '' | tr ' ' '─')
 
-  printf >&2 "%-${W_SCOPE}s  %-${W_TYPE}s  %-${W_SOURCE}s  %-${W_STATUS}s  %${W_LINES}s  %${W_TOKENS}s  %${W_CTX}s\n" \
+  printf "%-${W_SCOPE}s  %-${W_TYPE}s  %-${W_SOURCE}s  %-${W_STATUS}s  %${W_LINES}s  %${W_TOKENS}s  %${W_CTX}s\n" \
     "Scope" "Type" "Source/ID" "Status" "Lines" "~Tokens" "Context%"
-  printf >&2 '%s\n' "$sep"
+  printf '%s\n' "$sep"
 
   local has_presets=0
   local playbook_plugin_id=""
@@ -238,13 +238,13 @@ print_table() {
       ctx_pct=0
     fi
 
-    printf >&2 "%-${W_SCOPE}s  %-${W_TYPE}s  %-${W_SOURCE}s  %-${W_STATUS}s  %${W_LINES}d  %${W_TOKENS}d  %${W_CTX}s\n" \
-      "$scope_icon" "$type_icon" "$source" "$status_icon" "$lines" "$tok" "${ctx_pct}%"
+    printf "%-${W_SCOPE}s  %-${W_TYPE}s  %-${W_SOURCE}s  %-${W_STATUS}s  %${W_LINES}d  %${W_TOKENS}d  %${W_CTX}s\n" \
+      "$scope_icon" "$type_icon" "\`${source}\`" "$status_icon" "$lines" "$tok" "${ctx_pct}%"
   done
 
   # TOTAL row
-  printf >&2 '%s\n' "$sep"
-  printf >&2 "%-${W_SCOPE}s  %-${W_TYPE}s  %-${W_SOURCE}s  %-${W_STATUS}s  %${W_LINES}d  %${W_TOKENS}d  %${W_CTX}s\n" \
+  printf '%s\n' "$sep"
+  printf "%-${W_SCOPE}s  %-${W_TYPE}s  %-${W_SOURCE}s  %-${W_STATUS}s  %${W_LINES}d  %${W_TOKENS}d  %${W_CTX}s\n" \
     "" "TOTAL" "" "" "$total_lines" "$total_tokens" "100%"
 
   # Legend for presets
@@ -256,8 +256,8 @@ print_table() {
         break
       fi
     done
-    printf >&2 '\n'
-    printf >&2 'Legend: 📚 Playbook Presets are compact rule sets injected by playbook@tribe-coding\n'
+    printf '\n'
+    printf 'Legend: 📚 Playbook Presets are compact rule sets injected by playbook@tribe-coding\n'
   fi
 }
 
@@ -394,15 +394,18 @@ fi
 
 # ── Output ────────────────────────────────────────────────────────────────────
 
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+TABLE_FILE="/tmp/claude-ctx-table-${TIMESTAMP}.txt"
+
 if [ "$MODE" = "--stdout" ]; then
   echo "$OUTPUT"
 else
-  TIMESTAMP=$(date +%Y%m%d-%H%M%S)
   OUTFILE="/tmp/claude-context-${TIMESTAMP}.md"
   echo "$OUTPUT" > "$OUTFILE"
   echo "$OUTFILE"
 fi
 
-# ── Summary table (always to stderr) ─────────────────────────────────────────
+# ── Summary table — write to file, print path on stdout ──────────────────────
 
-print_table
+print_table > "$TABLE_FILE"
+echo "$TABLE_FILE"
