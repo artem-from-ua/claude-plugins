@@ -1,6 +1,6 @@
 {
   "name": "retroscope",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Retrospective session reports: summarize tasks, decisions, open questions from Claude Code sessions",
   "author": {
     "name": "Tribe Coding"
