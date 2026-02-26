@@ -397,8 +397,8 @@ def load_pricing() -> tuple[dict, str]:
                     cached = json.load(f)
                 if isinstance(cached.get("models"), dict) and cached["models"]:
                     return cached["models"], "cached"
-    except Exception:
-        pass
+    except (OSError, json.JSONDecodeError):
+        pass  # Cache read failure is non-fatal; fall back to fetching or static pricing.
 
     # 2. Fetch fresh pricing from Anthropic docs
     fetched = fetch_pricing()
