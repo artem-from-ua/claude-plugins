@@ -67,24 +67,75 @@ Key components:
 - `commands/plantuml-validate/` — user-invocable `/plantuml-validate` command
 
 ### statusline
-Two-line Claude Code statusline: progress bars (line 1) + session info (line 2). Tracks 5h/7d rate limits, extra usage (monthly billing), context window, git branch, and model. Features warning icons (❌ at 100%, ⚠️ at >90%) and pacing visualization.
+Three-line Claude Code statusline: rate limits (line 1) + context/branch (line 2) + extra usage (line 3). Tracks 5h/7d rate limits, extra usage (monthly billing), context window, git branch, and model.
 
 **Layout:**
-- **Line 1:** ⏳ 5h limit | 📅 7d limit | 💸 extra usage (status icon, progress bar, money spent)
-- **Line 2:** 📁 directory | 🌿 branch | 🤖 model | 📚 context%
+- **Line 1:** 5h limit progress bar (30 blocks/10m) + model + directory
+- **Line 2:** 7d limit progress bar (28 blocks/6h) + context% + branch
+- **Line 3:** extra usage (monthly billing, N blocks/1d) + money spent
 
 **Progress bar resolution:**
-- **5h**: 20 blocks → 15 minutes per block (5h / 20 = 900s)
-- **7d**: 21 blocks → 8 hours per block (7d / 21 = 28800s)
-- **Extra**: N blocks (days in month) → 1 day per block (month / N = 86400s)
+- **5h**: 30 blocks → 10 minutes per block (5h / 30 = 600s)
+- **7d**: 28 blocks → 6 hours per block (7d / 28 = 21600s)
+- **Extra**: N blocks (days in month) → 1 day per block
 - **Cache**: 60s refresh rate (minimum resolution for all bars)
 
 **Key components:**
-- `scripts/statusline.sh` — main script, reads JSON from stdin (piped by Claude Code), outputs two ANSI-colored lines. Fetches Anthropic OAuth usage API (cached 60s in `/tmp/claude-statusline-usage-cache`), reads OAuth token from macOS Keychain or Linux credentials file
+- `scripts/statusline.sh` — main script, reads JSON from stdin (piped by Claude Code), outputs three ANSI-colored lines. Fetches Anthropic OAuth usage API (cached 60s in `/tmp/claude-statusline-usage-cache`), reads OAuth token from macOS Keychain or Linux credentials file
 - `scripts/setup-statusline.sh` — SessionStart hook, copies `statusline.sh` to `~/.claude/statusline.sh`. Logs all operations to `/tmp/claude-plugin-sync.log`
 - `commands/statusline-setup/` — user-invocable `/statusline-setup` command, configures `~/.claude/settings.json`
 - `docs/ACCEPTANCE_TESTS.md` — comprehensive test documentation (8 categories, 17+ tests)
 - `docs/STDIN_JSON.md` — reference for all JSON fields piped by Claude Code to `statusline.sh`
+
+### statusline-compact
+Compact single-line Claude Code statusline with brightness-coded API usage values.
+
+Key components:
+- `scripts/statusline.sh` — main script, outputs one ANSI-colored line with brightness coding (dim at low usage → brighter → yellow >90% → red at 100%)
+- `scripts/setup-statusline.sh` — SessionStart hook, copies `statusline.sh` to `~/.claude/statusline.sh`
+- `commands/statusline-setup/` — user-invocable `/statusline-setup` command, configures `~/.claude/settings.json`
+
+### git-branch-naming
+Enforces branch naming conventions (prefix/kebab-case) and warns when branch type mismatches file changes.
+
+Key components:
+- `scripts/validate-branch.sh` — PreToolUse hook, validates branch name before every Bash command
+- `scripts/inject-rules.sh` — SessionStart hook, outputs branch naming rules
+- `commands/git-branch-naming-setup/` — setup wizard writes `.claude-plugin/git-branch-naming.json`
+- `skills/branch-naming-guide/` — auto-invocable skill with full naming guidelines
+
+### playbook
+Injects curated coding guideline presets into sessions. Presets have two zones: RULES (injected every session) and REFERENCE (loaded on demand).
+
+Key components:
+- `scripts/inject-rules.sh` — SessionStart hook, reads `playbook.json` config and outputs enabled preset RULES zones
+- `commands/playbook-setup/` — setup wizard writes `playbook.json` config
+- `skills/playbook-browse/` — on-demand skill loads REFERENCE zone for a given preset
+- `presets/` — 5 built-in presets: `documentation-principles`, `github-workflow`, `macos-python`, `macos-zsh-quirks`, `readme`
+
+### semver
+Enforces semantic versioning on commit/push/PR. Validates that version files were bumped when source files changed.
+
+Key components:
+- `scripts/validate-bump.sh` — PreToolUse hook, checks version bump before Bash git operations
+- `scripts/inject-rules.sh` — SessionStart hook, outputs semver rules
+- `commands/semver-setup/` — setup wizard writes `.claude-plugin/semver.json`
+- `skills/semver-guide/` — auto-invocable skill with MAJOR/MINOR/PATCH decision tree
+
+### retroscope
+Generates retrospective reports summarizing Claude Code sessions: tasks completed, decisions made, open questions.
+
+Key components:
+- `scripts/inject-rules.sh` — SessionStart hook, outputs retroscope behavior rules
+- `scripts/session-end.sh` — SessionEnd hook, records session metadata for daily reports
+- `commands/retro/` — user-invocable `/retro` command with three modes: `session`, `today`, `yesterday`
+- `commands/retroscope-setup/` — setup wizard writes storage directory and config
+
+### context
+Inspects the full Claude Code session context in load order: CLAUDE.md files, auto-memory, and SessionStart hook output.
+
+Key components:
+- `commands/ctx-show/` — user-invocable `/ctx-show` command. Outputs all context sources with source separators; prints summary table (scope, type, lines, tokens, context%) to stderr
 
 ## Plugin Structure Convention
 
@@ -438,7 +489,7 @@ Examples:
    Changes in X.Y.Z:
    - <list key changes>
 
-   Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
+   Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
    ```
 6. **Then create PR** (NEVER before version bump)
 7. **After merge**: User runs `claude-marketplace-sync --force` to update cache

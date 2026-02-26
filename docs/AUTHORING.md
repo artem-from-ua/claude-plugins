@@ -100,7 +100,7 @@ Why it works: maps symptom → fix in one line. Claude pattern-matches the error
 
 ---
 
-### Pattern 5: Mandatory Skill Invocation
+### Pattern 4: Mandatory Skill Invocation
 
 **Best for:** presets with a REFERENCE zone too large for RULES — forces Claude to load full guidelines before acting.
 
@@ -136,7 +136,7 @@ Why the second bad example fails: `"creating or improving"` describes a **direct
 
 ---
 
-### Pattern 4: Checklist
+### Pattern 5: Checklist
 
 **Use sparingly.** Checklists are the weakest pattern because each item requires a judgment call ("Did the architecture change?") that Claude must evaluate without clear criteria.
 
