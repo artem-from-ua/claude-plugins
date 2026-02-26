@@ -1,6 +1,6 @@
 # statusline-compact
 
-> All the essentials in one line — the most space-efficient Claude Code statusline.
+> ✨ ***All the essentials in one line — the most space-efficient Claude Code statusline.***
 
 Single-line statusline with brightness-coded API usage values.
 

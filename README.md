@@ -1,6 +1,6 @@
 # Tribe Coding — Claude Code Plugins
 
-> Good habits, better output.
+> ✨ ***Good habits, better output.***
 
 A curated collection of plugins for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that automate the routines good developers follow anyway — consistent diagrams, clean branches, version discipline, session awareness.
 

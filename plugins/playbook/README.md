@@ -1,6 +1,6 @@
 # Playbook
 
-> Inject curated coding guidelines into every Claude Code session — per project, per team.
+> ✨ ***Inject curated coding guidelines into every Claude Code session — per project, per team.***
 
 Playbook lets you define **presets** — sets of coding rules, workflow conventions, and best practices — that Claude follows automatically. No more repeating "always use squash merge" or "update docs after every change" in every conversation.
 
