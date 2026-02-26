@@ -78,13 +78,13 @@ if [ "$force" = false ] && [ -f "$FRESHNESS_FILE" ]; then
     now=$(date +%s)
     age=$(( now - last_run ))
     if [ "$age" -lt "$FRESHNESS_WINDOW" ]; then
-        log_always "⏭️  Skipping sync (last run ${age}s ago)"
+        log_always "-- Skipping sync (last run ${age}s ago)"
         _flog "Skipped: freshness window (age=${age}s < ${FRESHNESS_WINDOW}s)"
         exit 0
     fi
 fi
 
-log_always "🔄 Syncing Claude plugins..."
+log_always ":: Syncing Claude plugins..."
 _flog "=========================================="
 _flog "=== claude-marketplace-sync started (force=$force, sync_all=$sync_all) ==="
 
@@ -200,7 +200,7 @@ for key in $plugin_keys; do
         sync_reason="first install"
     elif [ "$old_version" != "$new_version" ]; then
         needs_sync=true
-        sync_reason="version changed: ${old_version} → ${new_version}"
+        sync_reason="version changed: ${old_version} -> ${new_version}"
     elif [ -n "$current_sha" ] && [ "$old_sha" != "$current_sha" ]; then
         needs_sync=true
         sync_reason="new commits"
@@ -226,16 +226,16 @@ for key in $plugin_keys; do
         mkdir -p "$cache_dir"
     fi
 
-    log "Syncing ${key} → ${cache_dir} (${sync_reason})"
-    _flog "  rsync: ${source_dir}/ → ${cache_dir}/"
+    log "Syncing ${key} -> ${cache_dir} (${sync_reason})"
+    _flog "  rsync: ${source_dir}/ -> ${cache_dir}/"
     if rsync -a --delete "${source_dir}/" "${cache_dir}/" 2>/dev/null; then
         _flog "  rsync OK. cache_dir after: $(ls -la "${cache_dir}/scripts/" 2>&1 | grep -E 'statusline|setup|total' || echo 'n/a')"
         if [ -z "$old_version" ]; then
-            log_always "✅ Installed: ${key} version ${new_version}"
+            log_always "OK Installed: ${key} version ${new_version}"
         elif [ "$old_version" != "$new_version" ]; then
-            log_always "✅ Updated: ${key} version ${new_version}"
+            log_always "OK Updated: ${key} version ${new_version}"
         else
-            log_always "✅ Updated: ${key} version ${new_version} (${sync_reason})"
+            log_always "OK Updated: ${key} version ${new_version} (${sync_reason})"
         fi
 
         # Update gitCommitSha in installed_plugins.json so next run can compare
@@ -249,7 +249,7 @@ for key in $plugin_keys; do
         synced_plugins="${synced_plugins} ${key}"
     else
         _flog "  rsync FAILED"
-        log_always "❌ Failed to sync ${key} → ${cache_dir}"
+        log_always "FAIL Failed to sync ${key} -> ${cache_dir}"
     fi
 done
 
@@ -293,10 +293,10 @@ for key in $plugin_keys; do
         _flog "  Hook command (expanded): $expanded_command"
         hook_output=$(eval "$expanded_command" 2>&1) && hook_rc=0 || hook_rc=$?
         if [ "$hook_rc" -eq 0 ]; then
-            log "  ✅ Hook executed successfully"
+            log "  OK Hook executed successfully"
             _flog "  Hook rc=0, output: $hook_output"
         else
-            log "  ⚠️ Hook failed (non-critical)"
+            log "  WARN Hook failed (non-critical)"
             _flog "  Hook rc=$hook_rc, output: $hook_output"
         fi
     done <<< "$session_start_hooks"
