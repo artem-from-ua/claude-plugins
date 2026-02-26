@@ -59,5 +59,5 @@ Omit the `"exclude"` field for global configs or when empty.
 
 Display:
 - Config file path written
-- List of enabled presets (after merge logic)
+- List of enabled presets after applying global + project configs and any project-level excludes
 - Reminder: "Restart your session or run `/clear` for changes to take effect."
