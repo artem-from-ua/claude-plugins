@@ -11,6 +11,7 @@ MANDATORY: Follow these rules for all PR and branch operations.
 
 - ALWAYS use `--squash` for PR merge (unless repo explicitly uses merge/rebase)
 - Before using `gh pr merge --auto` → check `gh api repos/OWNER/REPO --jq '.allow_auto_merge'`
+- After merging a PR → delete the source branch (remote + local)
 - After committing on a PR branch → offer to update the PR description
 - When creating PR without linked issue → ask user to create one first
 - "Not mergeable" after another PR merged → `git fetch origin main && git rebase origin/main && git push --force-with-lease`
@@ -54,4 +55,20 @@ After creating a commit on a branch that has an open PR, **always offer to updat
 When creating a PR without a linked issue:
 - Ask the user if they want to create an issue first
 - If yes, create the issue, then link it with `Closes #N`
+
+## Post-merge branch cleanup
+
+After a PR is merged, clean up the branch:
+
+```bash
+# Delete remote branch (if not auto-deleted by GitHub)
+gh pr view <N> --json headRefName --jq '.headRefName' | xargs git push origin --delete
+
+# Switch to main and delete local branch
+git checkout main
+git pull origin main
+git branch -d <branch-name>
+```
+
+If GitHub has "Automatically delete head branches" enabled, skip the remote delete step.
 <!-- /REFERENCE -->
