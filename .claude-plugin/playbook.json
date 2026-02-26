@@ -1,0 +1,3 @@
+{
+  "presets": ["debugging-discipline", "documentation-principles", "git-safety", "github-workflow", "macos-python", "macos-zsh-quirks", "readme"]
+}

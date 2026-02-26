@@ -7,7 +7,7 @@
   "warnOnContentMismatch": true,
   "enforcement": {
     "invalidName": "deny",
-    "protectedBranch": "ask",
+    "protectedBranch": "deny",
     "contentMismatch": "ask"
   }
 }
