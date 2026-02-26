@@ -15,7 +15,7 @@ Configure which coding guideline presets are active for your sessions.
 
 ### 1. Scan available presets
 
-Read all `.md` files in `${SKILL_DIR}/../../presets/`. For each file, extract the YAML frontmatter fields `name`, `description`, and `tags`.
+Read all `.md` files in `${SKILL_DIR}/../../presets/` (resolves to `plugins/playbook/presets/`). For each file, extract the YAML frontmatter fields `name`, `description`, and `tags`.
 
 > When **creating a new preset** (not just enabling existing ones), read `docs/AUTHORING.md` at the project root first for authoring guidelines (rule patterns, budget, anti-patterns).
 
@@ -59,5 +59,5 @@ Omit the `"exclude"` field for global configs or when empty.
 
 Display:
 - Config file path written
-- List of enabled presets (after merge logic)
+- List of enabled presets after applying global + project configs and any project-level excludes
 - Reminder: "Restart your session or run `/clear` for changes to take effect."
