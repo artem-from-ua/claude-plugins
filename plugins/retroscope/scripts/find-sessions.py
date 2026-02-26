@@ -172,7 +172,7 @@ def get_session_time_range(jsonl_file: Path, tz) -> tuple:
                 except json.JSONDecodeError:
                     continue
     except OSError:
-        pass
+        pass  # Unreadable/missing session files are silently skipped; return (None, None).
 
     return first_ts, last_ts
 
