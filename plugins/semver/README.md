@@ -4,6 +4,8 @@
 
 Semantic versioning enforcement for Claude Code. Validates that a version bump is staged before `git commit`, `git push`, and PR creation. Injects SemVer rules into every session so Claude knows when and how to increment versions automatically.
 
+> **Scroll to: [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [⚙️ Configuration](#configuration)**
+
 ## 🎬 Demo
 
 ```
@@ -20,7 +22,7 @@ Suggested: 2.4.0
 Bump version now, or commit anyway?
 ```
 
-## ⚙️ How it works
+## ⚙️ How it works <a name="how-it-works"></a>
 
 | Trigger | What happens |
 |---------|-------------|
@@ -36,7 +38,7 @@ Bump version now, or commit anyway?
 
 **Excluded from bump checks by default:** `*.md`, `docs/**`, `LICENSE`, `.gitignore`, `.claude-plugin/**`
 
-## 📦 Installation
+## 📦 Installation <a name="installation"></a>
 
 ```bash
 /plugin marketplace add Tribe-Coding/claude-plugins
@@ -51,7 +53,7 @@ Then run the setup wizard to configure your version files and trigger strategy:
 
 Select **semver** in `/plugin` → enable **auto-update**. Restart your session — done.
 
-## ⚙️ Configuration
+## ⚙️ Configuration <a name="configuration"></a>
 
 Config lives at `.claude-plugin/semver.json` (project, committed to git) and `~/.claude/semver.json` (global fallback). Project config takes priority.
 

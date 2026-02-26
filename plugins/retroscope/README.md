@@ -1,6 +1,10 @@
 # Retroscope
 
+> Review what you accomplished today — structured retros from your Claude Code sessions.
+
 A Claude Code plugin that generates retrospective summary reports from your Claude Code sessions. Review what you accomplished, track open questions, and get insights into your productivity and communication patterns.
+
+> **Scroll to: [⚡ Quick Start](#quick-start) · [⚙️ How it works](#how-it-works) · [⚙️ Configuration](#configuration)**
 
 ## What it does
 
@@ -10,7 +14,7 @@ A Claude Code plugin that generates retrospective summary reports from your Clau
 
 Reports include: task outcomes, decisions made, open questions, GitHub/PR references, productivity metrics, and suggestions for improving your Claude Code workflow.
 
-## Quick Start
+## ⚡ Quick Start <a name="quick-start"></a>
 
 1. Install the plugin: `/plugin install retroscope@tribe-coding`
 2. Start a Claude Code session
@@ -76,7 +80,7 @@ Reports are saved as git-tracked markdown files:
                         └── summary.md
 ```
 
-## Configuration
+## ⚙️ Configuration <a name="configuration"></a>
 
 Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude-plugin/retroscope.json` (project-level overrides).
 
@@ -92,7 +96,7 @@ Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude-plugin
 | `suggestRetroOnExit` | `true` | Show `/retro` reminder on session exit |
 | `autoPush` | `false` | Auto-push after each report commit |
 
-## How it works
+## ⚙️ How it works <a name="how-it-works"></a>
 
 1. **Session discovery** — `find-sessions.py` locates JSONL session files in `~/.claude/projects/` for the target date
 2. **Content extraction** — Filters user prompts and assistant responses (skips tool inputs/outputs when extract mode is on)

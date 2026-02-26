@@ -4,6 +4,8 @@
 
 Single-line statusline with brightness-coded API usage values.
 
+> **Scroll to: [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)**
+
 ## 🎬 Demo
 
 ```
@@ -13,7 +15,7 @@ Single-line statusline with brightness-coded API usage values.
 Values dim at low usage and brighten as they climb: yellow above 90%, red at 100%.
 `!!` = warning, `XX` = exhausted.
 
-## ⚙️ How it works
+## ⚙️ How it works <a name="how-it-works"></a>
 
 | Trigger | What happens |
 |---------|-------------|
@@ -26,7 +28,7 @@ Values dim at low usage and brighten as they climb: yellow above 90%, red at 100
 
 **Tracked values:** 5h rate limit · 7d rate limit · extra usage ($ amount) · context % · directory · git branch · model name
 
-## 📦 Installation
+## 📦 Installation <a name="installation"></a>
 
 ```bash
 /plugin marketplace add Tribe-Coding/claude-plugins

@@ -4,7 +4,9 @@
 
 Playbook lets you define **presets** — sets of coding rules, workflow conventions, and best practices — that Claude follows automatically. No more repeating "always use squash merge" or "update docs after every change" in every conversation.
 
-## How it works
+> **Scroll to: [How it works](#how-it-works) · [Available Presets](#available-presets) · [Installation](#installation) · [Configuration](#configuration)**
+
+## How it works <a name="how-it-works"></a>
 
 Each preset is a markdown file with two zones:
 
@@ -13,7 +15,7 @@ Each preset is a markdown file with two zones:
 
 Claude sees the active rules in every session and follows them without being asked.
 
-## Installation
+## Installation <a name="installation"></a>
 
 ```bash
 /plugin marketplace add Tribe-Coding/claude-plugins
@@ -27,7 +29,7 @@ Then in the next session, run `/playbook-setup` to choose which presets to enabl
 
 > **Auto-update** keeps presets in sync with the latest fixes automatically on each Claude Code restart.
 
-## Available Presets
+## Available Presets <a name="available-presets"></a>
 
 | Preset | What it enforces |
 |--------|-----------------|
@@ -50,7 +52,7 @@ Use `/playbook-browse` to read the full reference for any preset.
 | `/playbook-setup` | Interactive wizard — enable/disable presets, global or per-project |
 | `/playbook-browse` | Read the full REFERENCE zone of any preset |
 
-## Configuration
+## Configuration <a name="configuration"></a>
 
 **Global** (`~/.claude/playbook.json`) — applies to all projects:
 
@@ -69,7 +71,3 @@ Project config takes priority. Use `"exclude"` to suppress global presets in a s
 ## Custom Presets
 
 You can write your own presets for team-specific conventions. See [AUTHORING.md](../../docs/AUTHORING.md) for the format, rule patterns, token budget, and anti-patterns.
-
-## License
-
-MIT

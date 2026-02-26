@@ -4,6 +4,8 @@
 
 Two-line Claude Code statusline with real-time API usage, progress bars, and session info.
 
+> **Scroll to: [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)**
+
 ## 🎬 Demo
 
 ```
@@ -14,7 +16,7 @@ Two-line Claude Code statusline with real-time API usage, progress bars, and ses
 **Line 1:** 5-hour limit · 7-day limit · extra usage (monthly billing with $ spent)
 **Line 2:** directory · git branch (yellow when dirty) · model · context window %
 
-## ⚙️ How it works
+## ⚙️ How it works <a name="how-it-works"></a>
 
 | Trigger | What happens |
 |---------|-------------|
@@ -35,7 +37,7 @@ Warning icons: ⚠️ above 90%, ❌ at 100%.
 
 Cache refresh: 60s (all bars).
 
-## 📦 Installation
+## 📦 Installation <a name="installation"></a>
 
 ```bash
 /plugin marketplace add Tribe-Coding/claude-plugins
