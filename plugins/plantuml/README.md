@@ -1,5 +1,6 @@
 # PlantUML
 
+> [!TIP]
 > ✨ ***Add diagrams to your docs and conversations — Claude picks the type, draws, and keeps them in sync.***
 
 With this plugin, Claude proactively illustrates architecture, flows, and data structures using [PlantUML](https://plantuml.com): in markdown documentation and directly in the terminal during conversations.

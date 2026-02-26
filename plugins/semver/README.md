@@ -1,5 +1,6 @@
 # semver
 
+> [!TIP]
 > ✨ ***Never ship without a version bump — Claude enforces SemVer before every commit, push, and PR.***
 
 Semantic versioning enforcement for Claude Code. Validates that a version bump is staged before `git commit`, `git push`, and PR creation. Injects SemVer rules into every session so Claude knows when and how to increment versions automatically.

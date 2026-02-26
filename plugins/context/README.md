@@ -1,5 +1,6 @@
 # Context
 
+> [!TIP]
 > ✨ ***See exactly what's loaded into your Claude Code session — and how much context budget each source consumes.***
 
 `/ctx-show` collects everything Claude Code loads at session start — CLAUDE.md files, auto-memory, and SessionStart hook output — and writes it to a single `.md` snapshot file. A summary table breaks down token usage per source so you know exactly what's filling your context window.
