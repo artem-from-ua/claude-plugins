@@ -53,6 +53,8 @@ if [[ -f "$CONFIG_FILE" ]] && command -v jq >/dev/null 2>&1; then
   [[ -n "$_e_prot" ]] && ENFORCEMENT_PROTECTED_BRANCH="$_e_prot"
 elif [[ -f "$CONFIG_FILE" ]]; then
   echo "warning: git-branch-naming config file '$CONFIG_FILE' exists but 'jq' is not installed; using built-in defaults instead." >&2
+else
+  echo "info: no git-branch-naming config file found; using built-in defaults. Expected at '$_new' or '$_old'." >&2
 fi
 
 # ─── Get current branch ───────────────────────────────────────────────────────
