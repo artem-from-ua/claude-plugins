@@ -15,10 +15,11 @@ MANDATORY: Documentation is part of the codebase. A change is not complete until
 - After adding a linter rule, formatter config, naming convention, or toolchain dependency → update `docs/conventions.md`
 - After adding or updating any doc → verify all cross-links to/from it are valid
 - ALWAYS keep `CLAUDE.md` minimal — build/test commands + links to docs only; details live in `docs/`; user-facing project overview belongs in `README.md`
+- When asked to review, audit, or improve documentation → evaluate existing docs against ALL rules in this section before proposing changes
 - NEVER leave `TODO: document this` in code — write the doc now or create a tracked issue
 - NEVER duplicate info across docs — single source of truth, link instead
 - NEVER use inline comments as a substitute for documentation
-- **ALWAYS invoke the `playbook-browse documentation-principles` skill BEFORE making documentation decisions** to load full guidelines. This is MANDATORY — do not skip this step.
+- **ALWAYS invoke the `playbook-browse documentation-principles` skill BEFORE writing, restructuring, or reviewing any documentation file** to load full guidelines. This is MANDATORY — do not skip this step even when auditing or planning changes.
 <!-- /RULES -->
 
 <!-- REFERENCE -->
