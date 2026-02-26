@@ -9,6 +9,12 @@ Thank you for contributing to the Tribe Coding plugin marketplace! This guide wi
 - [Version Bump Requirements](CLAUDE.md#version-bump-requirements) — **CRITICAL**
 - [Acceptance Test Standard](CLAUDE.md#acceptance-test-documentation-standard)
 
+## Plugin Concepts
+
+- **hook** — runs automatically in response to events (`PostToolUse`, `PreToolUse`, `SessionStart`, `SessionEnd`). No user action needed.
+- **command** — a `/slash-command` that the user invokes explicitly when needed.
+- **skill** — reference material that Claude loads on-demand when it decides the context is relevant.
+
 ## Before You Start
 
 1. Read [CLAUDE.md](CLAUDE.md) — contains all technical guidelines
@@ -66,7 +72,7 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 
 See [Version Bump Requirements](CLAUDE.md#version-bump-requirements) for detailed examples.
 
-**Why this matters:** Without version bump, `claude-marketplace-sync` won't update plugin cache and users won't see your changes.
+**Why this matters:** Without a version bump, the plugin cache won't be updated and users won't see your changes.
 
 ### 5. Create Pull Request
 
@@ -93,17 +99,9 @@ After merge:
 # Sync your local main
 git checkout main
 git pull origin main
-
-# Update plugin cache to test
-claude-marketplace-sync --force --verbose
-
-# Verify new version
-ls ~/.claude/plugins/cache/tribe-coding/<plugin-name>/
-
-# Test in fresh Claude Code session
-cd /tmp/test-plugin
-claude code
 ```
+
+Then restart Claude Code to pick up the updated plugin cache.
 
 ## Common Tasks
 
@@ -127,8 +125,7 @@ claude code
 1. Make changes
 2. Update acceptance tests if behavior changed
 3. **Bump version** (MAJOR/MINOR/PATCH based on change type)
-4. Test with `claude-marketplace-sync --force`
-5. Create PR
+4. Create PR
 
 ### Fixing Bugs
 
@@ -184,9 +181,8 @@ Run the acceptance tests from plugins/<name>/docs/ACCEPTANCE_TESTS.md
 ### Manual Testing
 
 For SessionStart hooks and fresh session behavior:
-1. Update plugin cache: `claude-marketplace-sync --force`
-2. Start fresh session in test directory
-3. Follow manual test procedures in ACCEPTANCE_TESTS.md
+1. Restart Claude Code (triggers cache refresh + SessionStart hooks)
+2. Follow manual test procedures in ACCEPTANCE_TESTS.md
 
 ## Questions?
 
