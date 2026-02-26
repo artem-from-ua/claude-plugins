@@ -4,7 +4,8 @@
 
 With this plugin, Claude proactively illustrates architecture, flows, and data structures using [PlantUML](https://plantuml.com): in markdown documentation and directly in the terminal during conversations.
 
-> **Scroll to: [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)**
+> [!NOTE]
+> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)
 
 ## 🎬 Demo
 

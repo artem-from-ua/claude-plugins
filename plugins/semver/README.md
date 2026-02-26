@@ -4,7 +4,8 @@
 
 Semantic versioning enforcement for Claude Code. Validates that a version bump is staged before `git commit`, `git push`, and PR creation. Injects SemVer rules into every session so Claude knows when and how to increment versions automatically.
 
-> **Scroll to: [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [⚙️ Configuration](#configuration)**
+> [!NOTE]
+> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [⚙️ Configuration](#configuration)
 
 ## 🎬 Demo
 

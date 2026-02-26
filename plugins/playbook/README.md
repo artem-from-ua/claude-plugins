@@ -4,7 +4,8 @@
 
 Playbook lets you define **presets** — sets of coding rules, workflow conventions, and best practices — that Claude follows automatically. No more repeating "always use squash merge" or "update docs after every change" in every conversation.
 
-> **Scroll to: [How it works](#how-it-works) · [Available Presets](#available-presets) · [Installation](#installation) · [Configuration](#configuration)**
+> [!NOTE]
+> [How it works](#how-it-works) · [Available Presets](#available-presets) · [Installation](#installation) · [Configuration](#configuration)
 
 ## How it works <a name="how-it-works"></a>
 

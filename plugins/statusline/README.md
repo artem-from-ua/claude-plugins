@@ -4,7 +4,8 @@
 
 Two-line Claude Code statusline with real-time API usage, progress bars, and session info.
 
-> **Scroll to: [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)**
+> [!NOTE]
+> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)
 
 ## 🎬 Demo
 
