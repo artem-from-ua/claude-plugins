@@ -123,7 +123,6 @@ for w in "${WARNINGS[@]:-}"; do
 done
 
 for e in "${ERRORS[@]:-}"; do
-  [[ -z "$e" ]] && continue
   echo -e "${RED}✗ [git-branch-naming] ERROR: $e${NC}" >&2
 done
 
