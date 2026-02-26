@@ -1,5 +1,6 @@
 # statusline
 
+> [!TIP]
 > ✨ ***Know your API limits, context, and git state at a glance — without leaving Claude Code.***
 
 Two-line Claude Code statusline with real-time API usage, progress bars, and session info.

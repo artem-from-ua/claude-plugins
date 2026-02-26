@@ -1,5 +1,6 @@
 # git-branch-naming
 
+> [!TIP]
 > ✨ ***Clean branch names, enforced automatically — before the mess even starts.***
 
 A Claude Code plugin that enforces git branch naming conventions. Validates branch names before creation, warns when staged/pushed files don't match the branch type, and protects against direct pushes to main branches.

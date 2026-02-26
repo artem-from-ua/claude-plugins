@@ -1,5 +1,6 @@
 # Retroscope
 
+> [!TIP]
 > ✨ ***Review what you accomplished today — structured retros from your Claude Code sessions.***
 
 A Claude Code plugin that generates retrospective summary reports from your Claude Code sessions. Review what you accomplished, track open questions, and get insights into your productivity and communication patterns.
