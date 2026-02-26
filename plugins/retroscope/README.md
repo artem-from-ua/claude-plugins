@@ -12,7 +12,7 @@ Reports include: task outcomes, decisions made, open questions, GitHub/PR refere
 
 ## Quick Start
 
-1. Install the plugin (via claude-marketplace-sync or manually)
+1. Install the plugin: `/plugin install retroscope@tribe-coding`
 2. Start a Claude Code session
 3. Run `/retro` — if no config is found, it will offer to run setup automatically
 4. Work normally in Claude Code
@@ -142,4 +142,4 @@ Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude-plugin
 
 **Plugin not loading:**
 - Verify `retroscope` is in your enabled plugins in `~/.claude/settings.json`
-- Run `claude-marketplace-sync --force` to refresh plugin cache
+- Restart Claude Code to pick up the latest plugin cache
