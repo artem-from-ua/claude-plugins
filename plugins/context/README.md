@@ -4,7 +4,8 @@
 
 `/ctx-show` collects everything Claude Code loads at session start — CLAUDE.md files, auto-memory, and SessionStart hook output — and writes it to a single `.md` snapshot file. A summary table breaks down token usage per source so you know exactly what's filling your context window.
 
-> **Scroll to: [⚙️ How it works](#how-it-works) · [📋 Sources](#sources) · [📊 Summary Table Columns](#summary-table-columns) · [⚡ Commands](#commands) · [📦 Installation](#installation)**
+> [!NOTE]
+> [⚙️ How it works](#how-it-works) · [📋 Sources](#sources) · [📊 Summary Table Columns](#summary-table-columns) · [⚡ Commands](#commands) · [📦 Installation](#installation)
 
 ## 🎬 Demo
 

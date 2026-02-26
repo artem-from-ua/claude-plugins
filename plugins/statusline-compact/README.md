@@ -4,7 +4,8 @@
 
 Single-line statusline with brightness-coded API usage values.
 
-> **Scroll to: [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)**
+> [!NOTE]
+> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)
 
 ## 🎬 Demo
 

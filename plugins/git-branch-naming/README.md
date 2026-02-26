@@ -4,7 +4,8 @@
 
 A Claude Code plugin that enforces git branch naming conventions. Validates branch names before creation, warns when staged/pushed files don't match the branch type, and protects against direct pushes to main branches.
 
-> **Scroll to: [🎬 Usage Examples](#usage-examples) · [📦 Installation](#installation) · [⚙️ Configuration](#configuration)**
+> [!NOTE]
+> [🎬 Usage Examples](#usage-examples) · [📦 Installation](#installation) · [⚙️ Configuration](#configuration)
 
 ## What It Does
 

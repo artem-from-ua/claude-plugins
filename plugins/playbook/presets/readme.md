@@ -10,7 +10,7 @@ tags: [docs, readme]
 MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "what is this?" and "why would I use it?".
 
 - When creating/editing README.md → first 5 lines: project name, one-line description, problem it solves, target audience
-- After header block → add a nav line as blockquote with ALL sections **except the first one** (usually Demo — it's already visible above the fold; never include the first section in nav). Use ` · ` as separator. Add explicit `<a name="...">` anchor to each emoji heading: `## ⚙️ How it works <a name="how-it-works"></a>`. Then nav links use the explicit anchor: `[⚙️ How it works](#how-it-works)`
+- After header block → add a nav line as `> [!NOTE]` GitHub Alert with ALL sections **except the first one** (usually Demo — it's already visible above the fold; never include the first section in nav) and **except GitHub community files** (GitHub surfaces these automatically — see Navigation Line reference section). Use ` · ` as separator. No "Scroll to:" prefix. Add explicit `<a name="...">` anchor to each emoji heading: `## ⚙️ How it works <a name="how-it-works"></a>`. Then nav links use the explicit anchor: `[⚙️ How it works](#how-it-works)`
 - Use emoji in headings (🚀 📦 ⚡ ⚙️) unless user explicitly forbids it
 - For tools/CLIs/plugins → lead with a concrete demo (real input → real output), NOT a feature list
 - Installation: official method only — no workarounds; merge Quick Start + Installation into one section
@@ -29,13 +29,25 @@ MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "w
 <!-- REFERENCE -->
 ## Navigation Line
 
-Add a nav line as a blockquote after the header block (tagline + intro paragraph). Include ALL sections except the first one (usually Demo — it's already visible above the fold). Use ` · ` as separator. Prefix with `Scroll to:` for clarity:
+Add a nav line after the header block (tagline + intro paragraph) using a `[!NOTE]` GitHub Alert. Include ALL sections except the first one (usually Demo — it's already visible above the fold) and except Contributing (GitHub renders a Contributing link automatically in its sidebar). Use ` · ` as separator:
 
 ```markdown
-> **Scroll to: [⚙️ How it works](#how-it-works) · [📋 Sources](#sources) · [⚡ Commands](#commands) · [📦 Installation](#installation)**
+> [!NOTE]
+> [⚙️ How it works](#how-it-works) · [📋 Sources](#sources) · [⚡ Commands](#commands) · [📦 Installation](#installation)
 ```
 
-This gives regulars instant access to any section without scrolling. Keep it on one line — no bullets, no numbering.
+This gives regulars instant access to any section without scrolling. Keep it on one line — no bullets, no numbering, no "Scroll to:" prefix.
+
+**Do NOT include links to GitHub community files** — GitHub surfaces these automatically in the repository sidebar, tab, or right panel, making README links redundant:
+
+| File | Where GitHub shows it |
+|------|-----------------------|
+| `CONTRIBUTING.md` | Sidebar link + Contributing tab |
+| `LICENSE` / `LICENSE.md` | Right panel (license type) |
+| `CODE_OF_CONDUCT.md` | Community Standards panel |
+| `SECURITY.md` | Security tab |
+| `SUPPORT.md` | Community Standards panel |
+| `GOVERNANCE.md` | Community Standards panel |
 
 **GitHub anchor rules for emoji headings:** GitHub's anchor generation for emoji headings is unreliable — the resulting anchor depends on the specific emoji and may include leading dashes or other artifacts. The only reliable approach is explicit `<a name>` anchors:
 
@@ -158,15 +170,44 @@ README renders on a specific platform — design for where it will actually be r
 
 ## Motto / Tagline
 
-A memorable one-liner under the H1 (as a blockquote) helps readers instantly grasp the project's identity. Format with ✨ emoji prefix and bold+italic (`***...***`) for visual emphasis:
+A memorable one-liner under the H1 helps readers instantly grasp the project's identity. Use a GitHub Alert (`[!TIP]`) with ✨ emoji prefix and bold+italic (`***...***`) for visual emphasis — this renders as a styled callout box on GitHub:
 
 ```markdown
 # my-tool
 
+> [!TIP]
 > ✨ ***Turn raw data into live dashboards in one command.***
 ```
 
 When creating a README from scratch, propose a tagline to the user and let them decide. Keep it: short (≤10 words), concrete (not generic "powerful/flexible"), action-oriented.
+
+## GitHub Alerts
+
+GitHub renders special blockquote prefixes as styled callout boxes. Use them for high-signal information:
+
+```markdown
+> [!NOTE]
+> Highlights information that users should take into account.
+
+> [!TIP]
+> Optional information to help a user be more successful.
+
+> [!IMPORTANT]
+> Crucial information necessary for users to succeed.
+
+> [!WARNING]
+> Critical content demanding immediate user attention due to potential risks.
+
+> [!CAUTION]
+> Negative potential consequences of an action.
+```
+
+Guidelines:
+- Use `[!TIP]` for the project motto/tagline (see above)
+- Use `[!IMPORTANT]` for critical prerequisites or breaking behavior
+- Use `[!WARNING]` for destructive actions or data loss risks
+- Do NOT overuse — one or two alerts per README maximum; alert fatigue cancels the effect
+- GitHub-only: alerts do not render on npm, PyPI, or plain markdown viewers
 
 ## Badges
 
