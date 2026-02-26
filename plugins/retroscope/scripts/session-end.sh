@@ -25,16 +25,17 @@ if [ -n "$CONFIG" ]; then
   # Read suggestRetroOnExit from config
   SUGGEST=$(python3 -c "
 import json, sys
+path = sys.argv[1]
 try:
-    with open('$CONFIG') as f:
+    with open(path) as f:
         cfg = json.load(f)
     print('true' if cfg.get('suggestRetroOnExit', True) else 'false')
 except Exception:
     print('true')
-" 2>/dev/null)
+" "$CONFIG" 2>/dev/null)
 fi
 
 if [ "$SUGGEST" = "true" ]; then
   echo ""
-  echo "💡 Run \`/retro session\` to save a session summary before exiting."
+  echo "💡 Run \`/retro session\` to view a session summary before exiting."
 fi
