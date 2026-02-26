@@ -13,7 +13,12 @@
 <!-- Check all that apply -->
 - [ ] plantuml
 - [ ] statusline
-- [ ] Other: ___________
+- [ ] statusline-compact
+- [ ] git-branch-naming
+- [ ] playbook
+- [ ] semver
+- [ ] retroscope
+- [ ] context
 - [ ] None (only root-level files changed)
 
 ## Version Bump Required

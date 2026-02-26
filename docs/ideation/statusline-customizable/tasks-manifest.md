@@ -1,5 +1,7 @@
 # Tasks manifest
 
+> **Status: SUPERSEDED** — This initiative was replaced by the `statusline-compact` plugin (a separate, independent plugin with single-line layout). Both phases remain pending and are no longer planned. Kept for historical context.
+
 **Project:** statusline-customizable
 **Created:** 2026-02-16
 **Branch:** feature/statusline-customizable
