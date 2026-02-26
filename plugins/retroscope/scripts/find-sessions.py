@@ -615,8 +615,9 @@ def get_stats(jsonl_file: str):
                     (inp + cw + cr) * entry["input"] / 1_000_000
                     + out * entry["output"]           / 1_000_000
                 )
-    except OSError:
-        pass
+    except OSError as e:
+        # If the file cannot be reopened/read, skip refined cost computation but still emit stats.
+        print(f"Warning: failed to recompute cost stats from {jsonl_file}: {e}", file=sys.stderr)
 
     stats["estimated_cost_usd"] = round(actual_cost, 4)
     stats["naive_cost_usd"] = round(naive_cost, 4)
