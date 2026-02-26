@@ -158,12 +158,12 @@ README renders on a specific platform — design for where it will actually be r
 
 ## Motto / Tagline
 
-A memorable one-liner under the H1 (as a blockquote) helps readers instantly grasp the project's identity:
+A memorable one-liner under the H1 (as a blockquote) helps readers instantly grasp the project's identity. Format with ✨ emoji prefix and bold+italic (`***...***`) for visual emphasis:
 
 ```markdown
 # my-tool
 
-> Turn raw data into live dashboards in one command.
+> ✨ ***Turn raw data into live dashboards in one command.***
 ```
 
 When creating a README from scratch, propose a tagline to the user and let them decide. Keep it: short (≤10 words), concrete (not generic "powerful/flexible"), action-oriented.
