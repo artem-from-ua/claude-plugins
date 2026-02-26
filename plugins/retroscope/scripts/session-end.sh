@@ -22,8 +22,9 @@ fi
 SUGGEST="true"
 
 if [ -n "$CONFIG" ]; then
-  # Read suggestRetroOnExit from config
-  SUGGEST=$(python3 -c "
+  # Read suggestRetroOnExit from config, if python3 is available
+  if command -v python3 >/dev/null 2>&1; then
+    SUGGEST=$(python3 -c "
 import json, sys
 path = sys.argv[1]
 try:
@@ -33,6 +34,7 @@ try:
 except Exception:
     print('true')
 " "$CONFIG" 2>/dev/null)
+  fi
 fi
 
 if [ "$SUGGEST" = "true" ]; then
