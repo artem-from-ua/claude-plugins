@@ -171,10 +171,8 @@ def get_session_time_range(jsonl_file: Path, tz) -> tuple:
                         last_ts = ts
                 except json.JSONDecodeError:
                     continue
-    except OSError as e:
-        # Ignore unreadable or missing session files and treat them as having no timestamps.
-        # This keeps the session discovery resilient while still surfacing a warning.
-        print(f"Warning: could not read session file {jsonl_file}: {e}", file=sys.stderr)
+    except OSError:
+        pass  # Unreadable/missing session files are silently skipped; return (None, None).
 
     return first_ts, last_ts
 
