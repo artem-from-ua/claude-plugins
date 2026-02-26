@@ -132,6 +132,13 @@ Why the second bad example fails: `"creating or improving"` describes a **direct
 | `When user asks to add a diagram` | `Before creating any PlantUML diagram` |
 | `When committing documentation changes` | `After modifying any file in docs/` |
 
+**Audit gap:** triggers must cover not just *creating/editing* artifacts but also *reviewing/auditing* them. A trigger like `"BEFORE making documentation decisions"` fails when Claude classifies its task as "research" or "analysis" rather than "decision-making" — it considers itself exempt.
+
+| Misses audits | Catches audits |
+|---------------|----------------|
+| `BEFORE making documentation decisions` | `BEFORE writing, restructuring, or reviewing any documentation file` |
+| `BEFORE creating a diagram` | `BEFORE creating or reviewing any PlantUML diagram` |
+
 **Important:** this pattern is a reinforcement, not a substitute for self-contained RULES. The RULES zone must still work if the skill is not invoked (e.g., offline, timeout). Use this pattern when the REFERENCE zone adds significant value beyond what fits in the RULES budget.
 
 ---
@@ -172,6 +179,7 @@ The decomposed version provides observable triggers (Claude can detect them mech
 | Overly broad triggers: "before every commit" | Becomes noise — most commits don't match | Narrow to specific change types |
 | Rules outside Claude's scope: "update the team" | Claude cannot email or message | Scope to actions Claude can actually perform |
 | Trigger matches user intent, not artifact: "when user asks to create a README" | Misses indirect triggers — plan execution, task implementation — where README is just one artifact | Write triggers that match the artifact: "before writing or modifying any README.md file" |
+| Trigger excludes review/audit: "before creating X" | Claude classifies audit tasks as "research", considers itself exempt from creation-scoped triggers | Include review/audit verbs: "before writing, restructuring, or reviewing X" |
 
 ---
 
@@ -249,6 +257,7 @@ Before submitting a preset or SKILL.md, verify:
 6. RULES zone is within budget (standard: ≤14 lines; critical: ≤20 lines)
 7. The preset works correctly if `/playbook-browse` is never invoked (RULES must be self-contained)
 8. If the preset has a REFERENCE zone with significant additional content → last RULES line uses the MANDATORY skill invocation pattern (§3 Pattern 5), not the soft "For full reference" form
+9. Triggers cover both creation and review scenarios — a rule about "writing X" should also fire when "auditing X" or "planning changes to X"
 
 ---
 
