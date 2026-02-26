@@ -1,6 +1,10 @@
 # git-branch-naming
 
+> Clean branch names, enforced automatically — before the mess even starts.
+
 A Claude Code plugin that enforces git branch naming conventions. Validates branch names before creation, warns when staged/pushed files don't match the branch type, and protects against direct pushes to main branches.
+
+> **Scroll to: [🎬 Usage Examples](#usage-examples) · [📦 Installation](#installation) · [⚙️ Configuration](#configuration)**
 
 ## What It Does
 
@@ -35,7 +39,7 @@ Nobody knows what's in these branches, `git branch -a` is unreadable, and automa
 
 This plugin catches the problem at the source — before the branch is created.
 
-## Usage Examples
+## 🎬 Usage Examples <a name="usage-examples"></a>
 
 ### Scenario 1: Claude creates a branch with a bad name
 
@@ -132,7 +136,7 @@ Examples:
 - ❌ `Feature/UserAuth` — wrong case
 - ❌ `feature/user_auth` — underscore not allowed
 
-## Installation
+## 📦 Installation <a name="installation"></a>
 
 ### 1. Add to `enabledPlugins`
 
@@ -154,7 +158,7 @@ In a Claude Code session:
 
 This creates `.claude-plugin/git-branch-naming.json` with your project's conventions. Commit it to git to share with your team.
 
-## Configuration
+## ⚙️ Configuration <a name="configuration"></a>
 
 Configuration lives in `.claude-plugin/git-branch-naming.json` (committed to git, team-wide).
 

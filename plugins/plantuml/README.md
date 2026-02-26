@@ -4,7 +4,7 @@
 
 With this plugin, Claude proactively illustrates architecture, flows, and data structures using [PlantUML](https://plantuml.com): in markdown documentation and directly in the terminal during conversations.
 
-> **Scroll to: [⚙️ How it works](#%EF%B8%8F-how-it-works) · [📦 Installation](#-installation)**
+> **Scroll to: [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)**
 
 ## 🎬 Demo
 
@@ -91,7 +91,7 @@ Here's the full flow:
 ![Login Request Flow (PNG image)](https://www.plantuml.com/...)
 ```
 
-## ⚙️ How it works
+## ⚙️ How it works <a name="how-it-works"></a>
 
 Every diagram has two parts: a `plantuml` source block and an image URL below it. Claude writes both — you only edit the source. When you save, the URL updates automatically.
 
@@ -102,7 +102,7 @@ Every diagram has two parts: a `plantuml` source block and an image URL below it
 | PreToolUse | Auto-allows all PlantUML operations — no permission prompts |
 | Before creating any diagram | `plantuml-diagram-guide` skill invoked automatically — picks the right type from 17 options |
 
-## 📦 Installation
+## 📦 Installation <a name="installation"></a>
 
 ```bash
 /plugin marketplace add Tribe-Coding/claude-plugins

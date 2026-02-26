@@ -19,7 +19,7 @@ A curated collection of plugins for [Claude Code](https://docs.anthropic.com/en/
 | [**statusline**](plugins/statusline/README.md) | Two-line statusline showing API rate limits, context window usage, git branch, and model |
 | [**statusline-compact**](plugins/statusline-compact/README.md) | Single-line statusline with brightness-coded values — the minimal-footprint option |
 
-## 📦 Installation
+## 📦 Installation <a name="installation"></a>
 
 ### 1. Add the marketplace
 
@@ -39,6 +39,6 @@ Repeat for each plugin you want.
 
 Open `/plugin`, select each installed plugin, and enable **auto-update**.
 
-## 🤝 Contributing
+## 🤝 Contributing <a name="contributing"></a>
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow, plugin structure, and code standards.
