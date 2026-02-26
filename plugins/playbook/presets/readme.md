@@ -10,7 +10,7 @@ tags: [docs, readme]
 MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "what is this?" and "why would I use it?".
 
 - When creating/editing README.md → first 5 lines: project name, one-line description, problem it solves, target audience
-- After header block → add a nav line as blockquote with ALL sections except the first one (usually Demo). Use ` · ` as separator. Add explicit `<a name="...">` anchor to each emoji heading: `## ⚙️ How it works <a name="how-it-works"></a>`. Then nav links use the explicit anchor: `[⚙️ How it works](#how-it-works)`
+- After header block → add a nav line as blockquote with ALL sections **except the first one** (usually Demo — it's already visible above the fold; never include the first section in nav). Use ` · ` as separator. Add explicit `<a name="...">` anchor to each emoji heading: `## ⚙️ How it works <a name="how-it-works"></a>`. Then nav links use the explicit anchor: `[⚙️ How it works](#how-it-works)`
 - Use emoji in headings (🚀 📦 ⚡ ⚙️) unless user explicitly forbids it
 - For tools/CLIs/plugins → lead with a concrete demo (real input → real output), NOT a feature list
 - Installation: official method only — no workarounds; merge Quick Start + Installation into one section
@@ -21,7 +21,9 @@ MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "w
 - When user asks to create/improve README → start with audience interview: who reads this? what's their level?
 - When creating a Demo section for a new README → NEVER invent output; ask the user for real demo material first: propose 1–3 concrete actions they could perform (e.g. "run the command", "trigger the hook", "use the slash command") and request a screenshot, terminal output paste, or copy-paste of a real agent dialogue
 - NEVER leave outdated examples — if code changed, update or remove them
-- **ALWAYS invoke the `playbook-browse readme` skill BEFORE writing or modifying any README.md file** to load full guidelines. This is MANDATORY — do not skip even when executing a plan or implementing a task that produces a README.
+- **ALWAYS invoke the `playbook-browse readme` skill BEFORE writing, modifying, reviewing, or improving any README** (including when the user refers to it as "readme", "рідмі", "the landing page", or similar). This is MANDATORY — do not skip even when executing a plan or implementing a task that produces a README.
+- When shortening a README (removing sections, detail, or full component descriptions) → BEFORE deleting, verify each removed block has a destination (per-component README, `docs/`, `CONTRIBUTING.md`). If no destination exists — create it first, then remove from README. After completing the rewrite, produce a "what went where" summary for the user.
+- Do NOT add a standalone License section — a one-line "MIT — see LICENSE" adds no value; readers who care check the `LICENSE` file directly
 <!-- /RULES -->
 
 <!-- REFERENCE -->
@@ -224,6 +226,19 @@ When creating a README from scratch, ask:
 
 Use answers to decide: section order, technical depth, and how much to explain vs. link.
 
+## Multi-Component README
+
+For projects containing multiple independent components (plugin marketplace, monorepo, library collection):
+
+- Lead with an **index table**: Name (linked to component README) · Short outcome-oriented description
+- Do NOT duplicate component detail in the root README — link to per-component READMEs instead
+- Demo section is optional for the root README; each component should have its own demo in its own README
+- Descriptions in the index table should answer "what does this do for me", not "what hooks does this use"
+- Installation: show ONE example command, then "Repeat for each component you want"
+- The root README scales to any number of components without growing — detail lives per-component
+
+**Anti-pattern:** listing every hook, command, and skill for every component in a single root table — this creates a reference document, not a landing page.
+
 ## Anti-Patterns
 
 - **Wall of text** — no headings, no structure, paragraph after paragraph
@@ -237,4 +252,5 @@ Use answers to decide: section order, technical depth, and how much to explain v
 - **Placeholder commands** — `npm install <your-package>` without showing the actual package name
 - **Unlinked table items** — listing plugins, modules, or presets by name without linking to their source
 - **License section** — a one-line "MIT" section adds no value; readers who care will check the `LICENSE` file; omit it from README
+- **Removing without relocating** — deleting content from README without verifying a destination exists (per-component docs, CONTRIBUTING.md, etc.) — content is lost silently
 <!-- /REFERENCE -->
