@@ -3,9 +3,10 @@ name: playbook-browse
 description: >
   Browse and read playbook preset guidelines on demand.
   Invoked automatically when full reference is needed for documentation principles,
-  GitHub workflow, or other configured guidelines.
+  GitHub workflow, git safety, debugging, or other configured guidelines.
   Do NOT skip this when RULES zone references it.
-  Keywords: guidelines, documentation rules, commit checklist, ADR, PR workflow, playbook.
+  Keywords: guidelines, documentation rules, commit checklist, ADR, PR workflow, playbook,
+  debugging, git safety, planning, subagent verification.
 ---
 
 # Playbook Browse

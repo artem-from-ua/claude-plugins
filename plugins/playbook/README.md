@@ -31,11 +31,15 @@ Then in the next session, run `/playbook-setup` to choose which presets to enabl
 
 | Preset | What it enforces |
 |--------|-----------------|
+| [`action-over-planning`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/action-over-planning.md) | Bias toward implementation: max 1 planning round, then code |
+| [`debugging-discipline`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/debugging-discipline.md) | gather→diagnose→confirm→fix; never modify live state during debugging |
 | [`documentation-principles`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/documentation-principles.md) | Doc hierarchy, commit checklist, ADR policy, no TODO-in-code |
-| [`github-workflow`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/github-workflow.md) | Squash merge, PR description updates, issue linking |
+| [`git-safety`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/git-safety.md) | force-with-lease, confirm before destructive ops, no --no-verify bypass |
+| [`github-workflow`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/github-workflow.md) | Squash merge, post-merge cleanup, PR description updates, issue linking |
 | [`macos-python`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/macos-python.md) | Python 3.12 targeting, no system Python, CWD isolation |
 | [`macos-zsh-quirks`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/macos-zsh-quirks.md) | Zsh/Bash tool quirks: CWD, `echo` escapes, absolute paths |
 | [`readme`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/readme.md) | README as landing page: 5-second test, compact structure, cross-links |
+| [`verify-before-relay`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/verify-before-relay.md) | Verify subagent URLs before relaying to user |
 
 Use `/playbook-browse` to read the full reference for any preset.
 

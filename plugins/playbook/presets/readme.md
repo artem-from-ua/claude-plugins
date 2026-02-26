@@ -17,7 +17,7 @@ MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "w
 - Every install/usage instruction MUST include a copy-pasteable command block — no placeholder-only steps
 - When a README section exceeds 20 lines → extract to `docs/<topic>.md` and replace with a one-line summary + link
 - README.md MUST NOT exceed 300 lines — if approaching limit, extract detail sections to docs/
-- After adding/removing a public API, CLI command, or major feature → remind: "README may need updating"
+- After adding, removing, or renaming a plugin, preset, command, or other component that a README enumerates → update that README's table/list immediately; do NOT leave it out of sync
 - When user asks to create/improve README → start with audience interview: who reads this? what's their level?
 - When creating a Demo section for a new README → NEVER invent output; ask the user for real demo material first: propose 1–3 concrete actions they could perform (e.g. "run the command", "trigger the hook", "use the slash command") and request a screenshot, terminal output paste, or copy-paste of a real agent dialogue
 - NEVER leave outdated examples — if code changed, update or remove them
@@ -251,6 +251,7 @@ For projects containing multiple independent components (plugin marketplace, mon
 - **Stale examples** — code that no longer works after a refactor
 - **Placeholder commands** — `npm install <your-package>` without showing the actual package name
 - **Unlinked table items** — listing plugins, modules, or presets by name without linking to their source
+- **Stale enumeration** — README table or list that no longer matches the actual set of components; always update when adding/removing items
 - **License section** — a one-line "MIT" section adds no value; readers who care will check the `LICENSE` file; omit it from README
 - **Removing without relocating** — deleting content from README without verifying a destination exists (per-component docs, CONTRIBUTING.md, etc.) — content is lost silently
 <!-- /REFERENCE -->
