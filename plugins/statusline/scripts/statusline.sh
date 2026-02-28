@@ -3,9 +3,9 @@
 # Reads JSON from stdin (piped by Claude Code)
 #
 # Layout (three lines):
-#   Line 1: 5h/10m････[bar-30]･[ind]･[time-8]   🤖･[model<padded>]   📁･[dir]
-#   Line 2: 7d/6h･･････[bar-28]･[ind]･[time-8]   📚･[ctx%<padded>]    🌿･[branch]
-#   Line 3: 1M/1d･[icon]･[pad][bar-N]･[ind]･[money-8]   💵･$X.XX
+#   Line 1: 5h/10m････[bar-30]･[ind]･[time-8]   🤖･[model<padded>]   ✏️･[session]
+#   Line 2: 7d/6h･･････[bar-28]･[ind]･[time-8]   📚･[ctx%<padded>]    📁･[dir]
+#   Line 3: 1M/1d･[icon]･[pad][bar-N]･[ind]･[money-8]   💵･$X.XX        🌿･[branch]
 #
 # Col 2 is padded to model display width so col 3 aligns vertically.
 #
@@ -35,6 +35,8 @@ SEP="${very_dim}･${rst}"
 cwd=$(echo "$input" | jq -r '.workspace.project_dir // .workspace.current_dir')
 model=$(echo "$input" | jq -r '.model.display_name')
 used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
+session_id=$(echo "$input" | jq -r '.session_id // empty')
+transcript_path=$(echo "$input" | jq -r '.transcript_path // empty')
 
 # Git branch + dirty indicator
 branch=""
@@ -581,6 +583,84 @@ if [ -n "$branch" ]; then
   fi
 fi
 
+# ===== SESSION NAME WIDGET =====
+# Reverse file reader: tac (Linux) / tail -r (macOS)
+reverse_file() {
+  if command -v tac > /dev/null 2>&1; then
+    tac "$1"
+  else
+    tail -r "$1"
+  fi
+}
+
+# Extract session name with cache (TTL 300s)
+session_widget=""
+session_name=""
+session_style=""  # "custom" or "dimmed"
+if [ -n "$session_id" ]; then
+  session_cache="/tmp/claude-statusline-session-${UID}-${session_id}"
+  session_cache_valid=false
+
+  if [ -f "$session_cache" ]; then
+    if [ "$(uname)" = "Darwin" ]; then
+      scache_mtime=$(stat -f %m "$session_cache" 2>/dev/null || echo 0)
+    else
+      scache_mtime=$(stat -c %Y "$session_cache" 2>/dev/null || echo 0)
+    fi
+    scache_age=$(( $(date +%s) - scache_mtime ))
+    if [ "$scache_age" -lt 300 ]; then
+      session_cache_valid=true
+    fi
+  fi
+
+  if [ "$session_cache_valid" = true ]; then
+    cached_value=$(cat "$session_cache" 2>/dev/null)
+    session_style="${cached_value%%:*}"
+    session_name="${cached_value#*:}"
+  else
+    # Try extracting from transcript JSONL
+    if [ -n "$transcript_path" ] && [ -f "$transcript_path" ]; then
+      # Look for custom name (from /rename): last summary entry
+      summary_line=$(reverse_file "$transcript_path" 2>/dev/null | grep -m1 '"type":"summary"')
+      if [ -n "$summary_line" ]; then
+        session_name=$(echo "$summary_line" | jq -r '.summary // empty' 2>/dev/null)
+        if [ -n "$session_name" ]; then
+          session_style="custom"
+          echo "custom:${session_name}" > "$session_cache"
+        fi
+      fi
+
+      # Fallback: slug from JSONL
+      if [ -z "$session_name" ]; then
+        slug_line=$(reverse_file "$transcript_path" 2>/dev/null | grep -m1 '"slug"')
+        if [ -n "$slug_line" ]; then
+          session_name=$(echo "$slug_line" | jq -r '.slug // empty' 2>/dev/null)
+          if [ -n "$session_name" ]; then
+            session_style="dimmed"
+            echo "dimmed:${session_name}" > "$session_cache"
+          fi
+        fi
+      fi
+    fi
+
+    # Final fallback: first part of session_id
+    if [ -z "$session_name" ]; then
+      session_name="${session_id%%-*}"
+      session_style="dimmed"
+      echo "dimmed:${session_name}" > "$session_cache"
+    fi
+  fi
+
+  # Build widget
+  if [ "$session_style" = "custom" ]; then
+    session_display=$(echo "$session_name" | sed "s/ /${SEP}/g")
+    session_widget="✏️${SEP}${session_display}"
+  else
+    session_display=$(echo "$session_name" | sed "s/ /${SEP}/g")
+    session_widget="✏️${SEP}${dim}${session_display}${rst}"
+  fi
+fi
+
 # ===== COLUMN 2 ALIGNMENT =====
 # All widths are full terminal column widths of the col2 widget string
 col2_model_w=$model_visible_width
@@ -604,28 +684,29 @@ cost_pad=$(pad_to "$col2_cost_w" "$col2_max")
 
 # ===== ASSEMBLE LINES =====
 
-# Line 1: bar + "   🤖･model<pad>   📁･dir"
-line1="${five_block}${COL2_SEP}🤖${SEP}${model_display}${model_pad}${COL2_SEP}📁${SEP}${dir_display}"
+# Line 1: bar + "   🤖･model<pad>   ✏️･session"
+if [ -n "$session_widget" ]; then
+  line1="${five_block}${COL2_SEP}🤖${SEP}${model_display}${model_pad}${COL2_SEP}${session_widget}"
+else
+  line1="${five_block}${COL2_SEP}🤖${SEP}${model_display}"
+fi
 
-# Line 2: bar + "   📚･ctx%<pad>   🌿･branch"
-# When context info is missing, use space placeholder to keep col3 aligned
+# Line 2: bar + "   📚･ctx%<pad>   📁･dir"
 if [ -z "$context_widget" ]; then
   ctx_placeholder=$(printf "%${col2_max}s" "")
 else
   ctx_placeholder="${context_widget}${ctx_pad}"
 fi
+line2="${seven_block}${COL2_SEP}${ctx_placeholder}${COL2_SEP}📁${SEP}${dir_display}"
 
-if [ -n "$branch_widget" ]; then
-  line2="${seven_block}${COL2_SEP}${ctx_placeholder}${COL2_SEP}${branch_widget}"
-elif [ -n "$context_widget" ]; then
-  line2="${seven_block}${COL2_SEP}${context_widget}"
-else
-  line2="${seven_block}"
-fi
-
-# Line 3: extra bar + "   💵･$X.XX"
-if [ -n "$session_cost_widget" ]; then
+# Line 3: extra bar + "   💵･$X.XX<pad>   🌿･branch"
+if [ -n "$session_cost_widget" ] && [ -n "$branch_widget" ]; then
+  line3="${extra_block}${COL2_SEP}${session_cost_widget}${cost_pad}${COL2_SEP}${branch_widget}"
+elif [ -n "$session_cost_widget" ]; then
   line3="${extra_block}${COL2_SEP}${session_cost_widget}"
+elif [ -n "$branch_widget" ]; then
+  cost_placeholder=$(printf "%${col2_max}s" "")
+  line3="${extra_block}${COL2_SEP}${cost_placeholder}${COL2_SEP}${branch_widget}"
 else
   line3="${extra_block}"
 fi
