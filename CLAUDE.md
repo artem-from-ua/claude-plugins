@@ -40,6 +40,7 @@ A marketplace of reusable Claude Code plugins (`Tribe Coding`). Each plugin live
 - **statusline** — Three-line statusline: rate limits, context/branch, extra usage
 - **statusline-compact** — Single-line statusline with brightness-coded API usage
 - **git-branch-naming** — Enforces branch naming conventions (prefix/kebab-case)
+- **kb-grooming** — Documentation health analysis: structural checks, semantic compliance, GitHub issues
 - **playbook** — Injects curated coding guideline presets into sessions
 - **semver** — Enforces semantic versioning on commit/push/PR
 - **retroscope** — Generates retrospective reports summarizing sessions

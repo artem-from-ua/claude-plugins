@@ -24,6 +24,11 @@
       "description": "Git branch naming convention enforcement: validates names, warns on content mismatch"
     },
     {
+      "name": "kb-grooming",
+      "source": "./plugins/kb-grooming",
+      "description": "Documentation health analysis: structural checks, semantic compliance, and GitHub issue creation"
+    },
+    {
       "name": "retroscope",
       "source": "./plugins/retroscope",
       "description": "Retrospective session reports: summarize tasks, decisions, and open questions from Claude Code sessions"
