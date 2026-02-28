@@ -3,9 +3,9 @@
 ## Purpose
 
 The statusline plugin provides a custom three-line status display for Claude Code, showing:
-- **Line 1:** 5h rate limit progress bar (30 blocks/10min) + model + directory
-- **Line 2:** 7d rate limit progress bar (28 blocks/6h) + context window % + git branch
-- **Line 3:** Extra usage progress bar (N blocks/1day) + session cost
+- **Line 1:** 5h rate limit progress bar (30 blocks/10min) + model + session name
+- **Line 2:** 7d rate limit progress bar (28 blocks/6h) + context window % + directory
+- **Line 3:** Extra usage progress bar (N blocks/1day) + session cost + git branch
 
 Features:
 - Simplified time display: approximate (~Xh/~Xd) when far from reset, exact (XhYm) when close
@@ -30,7 +30,7 @@ Acceptance tests are critical to ensure:
 
 ## Automation Status
 
-- ✅ **Fully automated**: Tests 1-6
+- ✅ **Fully automated**: Tests 1-6 (including 6.5 session widget)
 - 🟡 **Partially automated**: Test 7 (requires fresh session for full verification)
 - ⚠️ **Manual only**: Test 8 (visual verification in Claude Code UI)
 
@@ -217,9 +217,9 @@ Line count: 3 (expected: 3)
 
 **Acceptance criteria:**
 - ✅ Output contains exactly 3 lines
-- ✅ Line 1: 5h bar (30 blocks/10min) + model + directory
-- ✅ Line 2: 7d bar (28 blocks/6h) + context % + branch
-- ✅ Line 3: extra usage bar (N blocks/1day) + session cost
+- ✅ Line 1: 5h bar (30 blocks/10min) + model + session name
+- ✅ Line 2: 7d bar (28 blocks/6h) + context % + directory
+- ✅ Line 3: extra usage bar (N blocks/1day) + session cost + branch
 
 ---
 
@@ -851,6 +851,175 @@ Dirty tree: 📁 tmp.XXXXXX   🌿 main ⚠️   🤖 Test   📚 50.0%
 
 ---
 
+### 6.5 Session Name Widget
+
+#### 6.5.1 Custom Session Name (from /rename)
+
+**Objective:** Verify ✏️ widget shows custom name from transcript summary
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+# Create temp transcript with summary entry
+test_transcript=$(mktemp)
+echo '{"type":"summary","summary":"My Custom Session"}' > "$test_transcript"
+
+# Clear session cache
+rm -f /tmp/claude-statusline-session-${UID}-test-custom-name
+
+output=$(printf '%s' "{\"workspace\":{\"current_dir\":\"/test\"},\"model\":{\"display_name\":\"Test\"},\"context_window\":{\"used_percentage\":50},\"session_id\":\"test-custom-name\",\"transcript_path\":\"$test_transcript\"}" | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
+
+if echo "$output" | grep -q "✏️.*My.*Custom.*Session"; then
+  echo "✅ PASS: Custom session name displayed"
+else
+  echo "❌ FAIL: Custom session name not found"
+fi
+
+# Verify not dimmed (no ANSI 242 around the name)
+cache_content=$(cat /tmp/claude-statusline-session-${UID}-test-custom-name)
+if echo "$cache_content" | grep -q "^custom:"; then
+  echo "✅ PASS: Cached as custom (normal brightness)"
+else
+  echo "❌ FAIL: Should be cached as custom"
+fi
+
+rm -f "$test_transcript"
+```
+
+**Acceptance criteria:**
+- ✅ Custom name from summary entry shown after ✏️
+- ✅ Name displayed at normal brightness (not dimmed)
+- ✅ Cache stores `custom:<name>` format
+
+---
+
+#### 6.5.2 Slug Session Name (auto-generated)
+
+**Objective:** Verify ✏️ widget shows slug name dimmed when no custom name
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+# Create temp transcript with slug but no summary
+test_transcript=$(mktemp)
+echo '{"slug":"clever-zooming-firefly","type":"start"}' > "$test_transcript"
+
+# Clear session cache
+rm -f /tmp/claude-statusline-session-${UID}-test-slug-name
+
+output=$(printf '%s' "{\"workspace\":{\"current_dir\":\"/test\"},\"model\":{\"display_name\":\"Test\"},\"context_window\":{\"used_percentage\":50},\"session_id\":\"test-slug-name\",\"transcript_path\":\"$test_transcript\"}" | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
+
+if echo "$output" | grep -q "✏️.*clever-zooming-firefly"; then
+  echo "✅ PASS: Slug name displayed"
+else
+  echo "❌ FAIL: Slug name not found"
+fi
+
+# Verify dimmed
+cache_content=$(cat /tmp/claude-statusline-session-${UID}-test-slug-name)
+if echo "$cache_content" | grep -q "^dimmed:"; then
+  echo "✅ PASS: Cached as dimmed"
+else
+  echo "❌ FAIL: Should be cached as dimmed"
+fi
+
+rm -f "$test_transcript"
+```
+
+**Acceptance criteria:**
+- ✅ Slug shown after ✏️ when no custom name exists
+- ✅ Slug displayed dimmed (ANSI color 242)
+- ✅ Cache stores `dimmed:<slug>` format
+
+---
+
+#### 6.5.3 Session ID Fallback
+
+**Objective:** Verify ✏️ widget falls back to session_id prefix
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+# Clear session cache
+rm -f /tmp/claude-statusline-session-${UID}-3de66ff0-fallback-test
+
+output=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50},"session_id":"3de66ff0-fallback-test","transcript_path":""}' | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | head -1)
+
+if echo "$output" | grep -q "✏️.*3de66ff0"; then
+  echo "✅ PASS: Session ID prefix displayed"
+else
+  echo "❌ FAIL: Session ID prefix not found"
+fi
+
+# Verify dimmed
+cache_content=$(cat /tmp/claude-statusline-session-${UID}-3de66ff0-fallback-test)
+if echo "$cache_content" | grep -q "^dimmed:3de66ff0$"; then
+  echo "✅ PASS: Cached as dimmed with ID prefix"
+else
+  echo "❌ FAIL: Should be cached as dimmed:3de66ff0"
+fi
+```
+
+**Acceptance criteria:**
+- ✅ First segment of session_id (before first `-`) shown after ✏️
+- ✅ Displayed dimmed
+- ✅ Works when transcript_path is empty or file missing
+
+---
+
+#### 6.5.4 Session Cache Behavior
+
+**Objective:** Verify session name cache TTL (300s) and per-session isolation
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+# Create transcript
+test_transcript=$(mktemp)
+echo '{"slug":"cache-test-slug","type":"start"}' > "$test_transcript"
+
+# Clear cache
+rm -f /tmp/claude-statusline-session-${UID}-cache-test-session
+
+# First call — should read transcript
+printf '%s' "{\"workspace\":{\"current_dir\":\"/test\"},\"model\":{\"display_name\":\"Test\"},\"context_window\":{\"used_percentage\":50},\"session_id\":\"cache-test-session\",\"transcript_path\":\"$test_transcript\"}" | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh > /dev/null
+
+test -f /tmp/claude-statusline-session-${UID}-cache-test-session && echo "✅ PASS: Cache file created" || echo "❌ FAIL"
+
+# Verify different session_id uses different cache
+rm -f /tmp/claude-statusline-session-${UID}-other-session
+printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50},"session_id":"other-session","transcript_path":""}' | \
+  bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh > /dev/null
+
+test -f /tmp/claude-statusline-session-${UID}-other-session && echo "✅ PASS: Separate cache per session" || echo "❌ FAIL"
+
+# Verify cache contents are different
+cache1=$(cat /tmp/claude-statusline-session-${UID}-cache-test-session)
+cache2=$(cat /tmp/claude-statusline-session-${UID}-other-session)
+if [ "$cache1" != "$cache2" ]; then
+  echo "✅ PASS: Cache contents differ between sessions"
+else
+  echo "❌ FAIL: Caches should have different content"
+fi
+
+rm -f "$test_transcript"
+```
+
+**Acceptance criteria:**
+- ✅ Cache file created at `/tmp/claude-statusline-session-${UID}-${session_id}`
+- ✅ Different sessions use separate cache files
+- ✅ Cache TTL is 300 seconds (5 minutes)
+
+---
+
 ### 7. Context Window Warnings
 
 #### 7.1 Context Window Color Coding
@@ -949,9 +1118,9 @@ Expected appearance in UI:
 
 Visual checklist:
 - ✅ Three lines visible
-- ✅ Line 1: 5h bar + model + directory
-- ✅ Line 2: 7d bar + context % + branch
-- ✅ Line 3: extra usage bar + session cost
+- ✅ Line 1: 5h bar + model + session name
+- ✅ Line 2: 7d bar + context % + directory
+- ✅ Line 3: extra usage bar + session cost + branch
 - ✅ Progress bars use ■ symbol (not ▉)
 - ✅ Colors are visible (gray, green/red, blue)
 - ✅ Icons render correctly (⏳, 📅, 💸, 📁, 🌿, 🤖, 📚)
@@ -1034,7 +1203,22 @@ jobs:
 
 ## Version History
 
-### 1.1.0 (Current)
+### 1.4.0 (Current)
+
+New features:
+- Session name widget (✏️) in Line 1 col 3
+- Layout restructure: session (L1) → directory (L2) → branch (L3)
+- Session name from /rename (custom), slug (auto), or session_id fallback
+- Per-session cache with 300s TTL
+- Cross-platform reverse file reading (tac/tail -r)
+
+Tests added:
+- Custom session name display (6.5.1)
+- Slug session name display (6.5.2)
+- Session ID fallback (6.5.3)
+- Session cache behavior (6.5.4)
+
+### 1.1.0
 
 New features:
 - Two-line layout (progress bars | info)

@@ -11,14 +11,14 @@ Three-line Claude Code statusline with real-time API usage, progress bars, and s
 ## 🎬 Demo
 
 ```
-5h/10m････■■■■■■■■■■■■■̿■■■■■■■■■■■■■■■■■■･･3h42m      🤖･Sonnet･4.6       📁･my-project
-7d/6h･････････■■■■■■■■■■■■■■■■■■■■■■■■■̿■■■･･~5d        📚･32%              🌿･main･⚠️
-1M/1d･⏸️･■■■■■■■■■■■■■■■■■■■■■■■■■■■■̿･･¤4.79       💵･$4.79
+5h/10m････■■■■■■■■■■■■■̿■■■■■■■■■■■■■■■■■■･･3h42m      🤖･Sonnet･4.6       ✏️･clever-zooming-firefly
+7d/6h･････････■■■■■■■■■■■■■■■■■■■■■■■■■̿■■■･･~5d        📚･32%              📁･my-project
+1M/1d･⏸️･■■■■■■■■■■■■■■■■■■■■■■■■■■■■̿･･¤4.79       💵･$4.79            🌿･main･⚠️
 ```
 
-**Line 1:** 5h limit (30 blocks/10min) · model · directory
-**Line 2:** 7d limit (28 blocks/6h) · context window % · git branch
-**Line 3:** extra usage (N blocks/1day) · session cost
+**Line 1:** 5h limit (30 blocks/10min) · model · session name
+**Line 2:** 7d limit (28 blocks/6h) · context window % · directory
+**Line 3:** extra usage (N blocks/1day) · session cost · git branch
 
 ## ⚙️ How it works <a name="how-it-works"></a>
 
