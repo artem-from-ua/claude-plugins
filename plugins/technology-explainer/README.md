@@ -59,9 +59,9 @@ Three proficiency levels control Claude's explanation depth:
 
 | Level | Behavior | Example |
 |-------|----------|---------|
-| **Expert** | Brief, no-theory answers | Just the command or fact |
-| **Intermediate** | Nuances and gotchas, skip basics | Why this approach, common pitfalls |
-| **Learning** | Detailed theory, examples, step-by-step | Full explanations with context |
+| [**Expert**](skills/proficiency-guide-expert/SKILL.md) | Brief, no-theory answers | Just the command or fact |
+| [**Intermediate**](skills/proficiency-guide-intermediate/SKILL.md) | Nuances and gotchas, skip basics | Why this approach, common pitfalls |
+| [**Learning**](skills/proficiency-guide-learning/SKILL.md) | Detailed theory, examples, step-by-step | Full explanations with context |
 
 | Trigger | What happens |
 |---------|-------------|
