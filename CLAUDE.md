@@ -43,6 +43,7 @@ A marketplace of reusable Claude Code plugins (`Tribe Coding`). Each plugin live
 - **playbook** — Injects curated coding guideline presets into sessions
 - **semver** — Enforces semantic versioning on commit/push/PR
 - **retroscope** — Generates retrospective reports summarizing sessions
+- **technology-explainer** — Adapts explanation depth based on user proficiency per technology
 - **context** — Inspects full session context in load order
 
 See [`docs/plugin-behavior.md`](docs/plugin-behavior.md) for how plugins use hooks, skills, and PostToolUse to work proactively.
@@ -84,6 +85,8 @@ For full authoring guidelines — SKILL.md hybrid design, preset RULES/REFERENCE
    - Store default config template in `templates/<name>.json`
    - Setup wizard writes to `{project}/.claude-plugin/<name>.json`
    - Scripts read from `.claude-plugin/<name>.json` first, fall back to `.claude/<name>.json`
+8. **Update root `README.md`** — add row to the Plugins table (alphabetical order)
+9. **Update the Plugins list above** — add bullet to the Plugins section in this file (alphabetical order)
 
 ## Dependencies
 

@@ -20,6 +20,7 @@ A curated collection of plugins for [Claude Code](https://docs.anthropic.com/en/
 | [**semver**](plugins/semver/README.md) | Validate that a version bump is staged before every commit, push, and PR — with configurable enforcement |
 | [**statusline**](plugins/statusline/README.md) | Two-line statusline showing API rate limits, context window usage, git branch, and model |
 | [**statusline-compact**](plugins/statusline-compact/README.md) | Single-line statusline with brightness-coded values — the minimal-footprint option |
+| [**technology-explainer**](plugins/technology-explainer/README.md) | Adapt explanation depth per technology — brief for experts, detailed for learners |
 
 ## 📦 Installation <a name="installation"></a>
 
