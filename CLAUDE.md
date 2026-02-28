@@ -88,6 +88,7 @@ For full authoring guidelines — SKILL.md hybrid design, preset RULES/REFERENCE
    - Scripts read from `.claude-plugin/<name>.json` first, fall back to `.claude/<name>.json`
 8. **Update root `README.md`** — add row to the Plugins table (alphabetical order)
 9. **Update the Plugins list above** — add bullet to the Plugins section in this file (alphabetical order)
+10. **README navbar** — nav line goes after the header block (motto + intro paragraph), lists ALL sections except the first one (usually Demo); see `readme` playbook preset for full rules
 
 ## Dependencies
 
