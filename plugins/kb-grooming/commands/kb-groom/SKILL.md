@@ -103,7 +103,7 @@ First verify: `gh auth status` — if not authenticated, skip with a message.
 #### Epic issue
 
 Create an epic issue that tracks the overall grooming session:
-- **Title**: `[EPIC] KB grooming report YYYY-MM-DD`
+- **Title**: `KB grooming report YYYY-MM-DD`
 - **Body**: the full status block from step 5 (document count, findings by type, non-standard recommendations) + a checklist of child issues to be created below
 - **Labels**: from `config.github.labels` (default: `["documentation", "kb-grooming"]`)
 - **Assignee**: from `config.github.assignee` (if non-empty)
