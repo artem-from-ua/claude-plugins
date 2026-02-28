@@ -62,7 +62,7 @@ Version bump for PR #XX: <description>
 Changes in 1.3.0:
 - <list changes>
 
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
+Co-Authored-By: Claude <model> <noreply@anthropic.com>"
 ```
 
 **Version bump rules:**
