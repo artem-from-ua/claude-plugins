@@ -2,9 +2,10 @@
 
 ## Purpose
 
-The statusline plugin provides a custom two-line status display for Claude Code, showing:
-- **Line 1:** Progress bars for rate limits (5h, 7d) and extra usage (monthly billing)
-- **Line 2:** Directory, git branch, model, and context window information
+The statusline plugin provides a custom three-line status display for Claude Code, showing:
+- **Line 1:** 5h rate limit progress bar (30 blocks/10min) + model + directory
+- **Line 2:** 7d rate limit progress bar (28 blocks/6h) + context window % + git branch
+- **Line 3:** Extra usage progress bar (N blocks/1day) + session cost
 
 Features:
 - Simplified time display: approximate (~Xh/~Xd) when far from reset, exact (XhYm) when close
@@ -13,7 +14,7 @@ Features:
 - Progress bar pacing visualization
 
 Acceptance tests are critical to ensure:
-- Correct layout rendering (two lines)
+- Correct layout rendering (three lines)
 - Accurate API data parsing and display
 - Cross-platform compatibility (macOS, Linux)
 - Progress bar pacing calculations
@@ -193,9 +194,9 @@ Actual blocks in extra usage bar: 28
 
 ---
 
-#### 2.3 Two-Line Output Format
+#### 2.3 Three-Line Output Format
 
-**Objective:** Verify output has exactly two lines
+**Objective:** Verify output has exactly three lines
 
 **Automation:** ✅
 
@@ -203,21 +204,22 @@ Actual blocks in extra usage bar: 28
 ```bash
 line_count=$(printf '%s' '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | \
   bash /Users/artem/devel/claude-plugins/plugins/statusline/scripts/statusline.sh | wc -l | tr -d ' ')
-echo "Line count: $line_count (expected: 2)"
+echo "Line count: $line_count (expected: 3)"
 
-test "$line_count" -eq 2 && echo "✅ Correct" || echo "❌ Incorrect"
+test "$line_count" -eq 3 && echo "✅ Correct" || echo "❌ Incorrect"
 ```
 
 **Expected result:**
 ```
-Line count: 2 (expected: 2)
+Line count: 3 (expected: 3)
 ✅ Correct
 ```
 
 **Acceptance criteria:**
-- ✅ Output contains exactly 2 lines
-- ✅ Line 1 contains progress bars (⏳, 📅, 💸)
-- ✅ Line 2 contains info (📁, 🌿, 🤖, 📚)
+- ✅ Output contains exactly 3 lines
+- ✅ Line 1: 5h bar (30 blocks/10min) + model + directory
+- ✅ Line 2: 7d bar (28 blocks/6h) + context % + branch
+- ✅ Line 3: extra usage bar (N blocks/1day) + session cost
 
 ---
 
@@ -946,9 +948,10 @@ Expected appearance in UI:
 ```
 
 Visual checklist:
-- ✅ Two lines visible
-- ✅ Line 1 shows progress bars with colored blocks
-- ✅ Line 2 shows directory, branch, model, context
+- ✅ Three lines visible
+- ✅ Line 1: 5h bar + model + directory
+- ✅ Line 2: 7d bar + context % + branch
+- ✅ Line 3: extra usage bar + session cost
 - ✅ Progress bars use ■ symbol (not ▉)
 - ✅ Colors are visible (gray, green/red, blue)
 - ✅ Icons render correctly (⏳, 📅, 💸, 📁, 🌿, 🤖, 📚)

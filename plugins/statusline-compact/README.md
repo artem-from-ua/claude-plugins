@@ -51,7 +51,7 @@ Select **statusline-compact** in `/plugin` → enable **auto-update**. Restart y
 
 | | statusline | statusline-compact |
 |-|------------|-------------------|
-| Layout | 2 lines | 1 line |
+| Layout | 3 lines | 1 line |
 | Progress bars | Yes (visual) | No (% only) |
 | Space usage | More | Less |
 | Choose when | You want visual progress bars | You want minimal terminal footprint |
