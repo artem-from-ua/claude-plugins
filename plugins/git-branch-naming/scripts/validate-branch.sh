@@ -47,6 +47,7 @@ WARN_ON_CONTENT_MISMATCH=true
 ENFORCEMENT_INVALID_NAME="ask"
 ENFORCEMENT_PROTECTED_BRANCH="ask"
 ENFORCEMENT_CONTENT_MISMATCH="ask"
+CHECK_OPEN_PR="ask"
 
 if [[ -f "$CONFIG_FILE" ]]; then
   _prefixes=$(jq -r '.prefixes // empty | join("|")' "$CONFIG_FILE" 2>/dev/null || true)
@@ -75,6 +76,9 @@ if [[ -f "$CONFIG_FILE" ]]; then
 
   _e_mis=$(jq -r '.enforcement.contentMismatch // empty' "$CONFIG_FILE" 2>/dev/null || true)
   [[ -n "$_e_mis" ]] && ENFORCEMENT_CONTENT_MISMATCH="$_e_mis"
+
+  _check_open_pr=$(jq -r '.checkOpenPR // empty' "$CONFIG_FILE" 2>/dev/null || true)
+  [[ -n "$_check_open_pr" ]] && CHECK_OPEN_PR="$_check_open_pr"
 fi
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
@@ -93,6 +97,40 @@ permission_response() {
       }
     }'
   exit 0
+}
+
+# Check if current branch has an open PR by a different author.
+# Calls permission_response if foreign PR found; returns silently otherwise.
+# Note: topic mismatch (same author, unrelated changes) is handled by the
+# behavioral rule in github-workflow preset — hooks can't judge semantics.
+check_open_pr() {
+  local branch="$1"
+  [[ "$CHECK_OPEN_PR" == "off" ]] && return
+  command -v gh >/dev/null 2>&1 || return
+  gh auth status >/dev/null 2>&1 || return
+
+  local pr_json
+  pr_json=$(gh pr list --head "$branch" --state open --json number,title,author --jq '.[0]' 2>/dev/null || true)
+  [[ -z "$pr_json" ]] && return
+
+  local pr_author pr_number pr_title
+  pr_author=$(echo "$pr_json" | jq -r '.author.login' 2>/dev/null || true)
+  pr_number=$(echo "$pr_json" | jq -r '.number' 2>/dev/null || true)
+  pr_title=$(echo "$pr_json" | jq -r '.title' 2>/dev/null || true)
+  [[ -z "$pr_author" ]] && return
+
+  local my_login
+  my_login=$(gh api user --jq '.login' 2>/dev/null || true)
+  [[ -z "$my_login" ]] && return
+  [[ "$pr_author" == "$my_login" ]] && return
+
+  permission_response "$CHECK_OPEN_PR" \
+    "Branch '$branch' has an open PR #${pr_number} (\"${pr_title}\") by @${pr_author}.
+
+Committing here will add changes to someone else's PR.
+If this is intentional (e.g. collaboration), proceed.
+Otherwise, create a new branch:
+  git checkout -b <prefix>/your-description"
 }
 
 # Validate branch name format
@@ -287,6 +325,9 @@ This bypasses code review. Use a feature branch and open a pull request instead:
   git push && gh pr create"
   fi
 
+  # Check for open PR by another author
+  check_open_pr "$CURRENT_BRANCH"
+
   # Content mismatch check (only for non-protected branches)
   if [[ "$WARN_ON_CONTENT_MISMATCH" != "true" ]]; then
     exit 0
@@ -315,6 +356,9 @@ if echo "$CMD" | grep -qE '^git\s+push(\s|$)'; then
 
 This is usually done via a pull request instead of a direct push. Are you sure?"
   fi
+
+  # Check for open PR by another author
+  check_open_pr "$CURRENT_BRANCH"
 
   # Content mismatch check on full branch diff
   if [[ "$WARN_ON_CONTENT_MISMATCH" == "true" ]]; then
