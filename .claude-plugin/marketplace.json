@@ -42,6 +42,11 @@
       "name": "context",
       "source": "./plugins/context",
       "description": "Inspect full Claude Code session context: CLAUDE.md files, auto-memory, and SessionStart hook output"
+    },
+    {
+      "name": "technology-explainer",
+      "source": "./plugins/technology-explainer",
+      "description": "Adapts explanation depth based on user proficiency per technology: expert, intermediate, or learning"
     }
   ]
 }
