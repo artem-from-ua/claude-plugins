@@ -14,9 +14,10 @@ The `git-branch-naming` plugin enforces git branch naming conventions via PreToo
 
 1. Static checks (automated)
 2. Unit tests — validate-branch.sh (automated)
-3. Unit tests — check-content-mismatch.sh (automated)
+3. Unit tests — validate-branch.sh commit & push (automated)
+3b. Unit tests — open PR check (automated, partial manual)
 4. Config loading tests (automated)
-5. PreToolUse hook I/O tests (automated)
+5. Unit tests — check-content-mismatch.sh (automated)
 6. Pre-push hook template tests (automated)
 7. Behavioral tests — SessionStart rules (manual, fresh session required)
 8. Behavioral tests — `/git-branch-naming:setup` command (manual)
@@ -25,7 +26,7 @@ The `git-branch-naming` plugin enforces git branch naming conventions via PreToo
 
 ## Automation Status
 
-- ✅ Fully automated: Tests 1–6
+- ✅ Fully automated: Tests 1–6 (3b partially — foreign PR tests require a real repo with another user's PR)
 - ⚠️ Manual only: Tests 7–10 (require fresh session or human interaction)
 
 ---
@@ -156,6 +157,80 @@ printf '%s' '{"tool_input":{"command":"git push origin main"}}' \
 - ✅ `git commit` on feature branch → silent passthrough (exit 0, no output)
 - ✅ `git push` to protected branch → `permissionDecision: "ask"` response
 - ✅ Scripts don't crash with missing git repo
+
+---
+
+## 3b. Unit Tests — Open PR Check
+
+**Objective:** Verify `check_open_pr()` detects foreign PRs and respects config.
+
+**Automation:** ✅ (requires `gh` CLI and authenticated GitHub session for full test; graceful skip otherwise)
+
+**Steps:**
+```bash
+SCRIPT="/path/to/plugins/git-branch-naming/scripts/validate-branch.sh"
+
+# Setup: repo on a feature branch
+rm -rf /tmp/test-open-pr && mkdir /tmp/test-open-pr
+git -C /tmp/test-open-pr init -q
+git -C /tmp/test-open-pr -c user.email=t@t.com -c user.name=T commit -q --allow-empty -m "init"
+git -C /tmp/test-open-pr checkout -q -b feature/no-pr-here
+
+# Test 1: Branch without open PR → passthrough (no output)
+printf '%s' '{"tool_input":{"command":"git commit -m \"test\""}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-open-pr bash "$SCRIPT"
+echo "Exit: $?"  # Expected: 0, no JSON output
+
+# Test 2: checkOpenPR: "off" → passthrough without calling gh
+mkdir -p /tmp/test-open-pr/.claude-plugin
+cat > /tmp/test-open-pr/.claude-plugin/git-branch-naming.json <<'CONF'
+{"checkOpenPR": "off", "protectedBranches": ["main"]}
+CONF
+printf '%s' '{"tool_input":{"command":"git commit -m \"test\""}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-open-pr bash "$SCRIPT"
+echo "Exit: $?"  # Expected: 0, no output (skipped immediately)
+rm /tmp/test-open-pr/.claude-plugin/git-branch-naming.json
+
+# Test 3: gh not installed → silent passthrough
+# (simulate by temporarily hiding gh from PATH)
+printf '%s' '{"tool_input":{"command":"git commit -m \"test\""}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-open-pr PATH=/usr/bin:/bin bash "$SCRIPT"
+echo "Exit: $?"  # Expected: 0, no output
+
+# Test 4: gh not authenticated → silent passthrough
+# (requires mock — skip in automated runs, verify manually)
+
+# Test 5: PR by same author → passthrough
+# (requires a repo with an open PR by the current gh user — verify manually)
+
+# Test 6: PR by different author + ask → JSON with permissionDecision: "ask"
+# (requires a repo with an open PR by another user)
+# On branch with foreign PR:
+# printf '%s' '{"tool_input":{"command":"git commit -m \"test\""}}' \
+#   | env CLAUDE_PROJECT_DIR=/path/to/repo bash "$SCRIPT"
+# Expected: JSON with permissionDecision: "ask", message mentions PR author
+
+# Test 7: PR by different author + deny → JSON with permissionDecision: "deny"
+# (same as Test 6 but with config checkOpenPR: "deny")
+# mkdir -p /path/to/repo/.claude-plugin
+# echo '{"checkOpenPR": "deny"}' > /path/to/repo/.claude-plugin/git-branch-naming.json
+# Expected: JSON with permissionDecision: "deny"
+
+# Test 8: git push also triggers the check
+# printf '%s' '{"tool_input":{"command":"git push"}}' \
+#   | env CLAUDE_PROJECT_DIR=/path/to/repo-with-foreign-pr bash "$SCRIPT"
+# Expected: same warning as git commit
+```
+
+**Acceptance criteria:**
+- ✅ Branch without open PR: exit 0, no JSON output
+- ✅ `checkOpenPR: "off"`: exit 0, no output, no `gh` calls
+- ✅ `gh` not installed (`command -v gh` fails): silent passthrough
+- ✅ `gh` not authenticated (`gh auth status` fails): silent passthrough
+- ✅ PR by same author (`pr_author == my_login`): silent passthrough
+- ✅ PR by different author + `ask`: JSON with `permissionDecision: "ask"`, message includes PR number, title, and author
+- ✅ PR by different author + `deny`: JSON with `permissionDecision: "deny"`
+- ✅ Check triggers on both `git commit` and `git push` code paths
 
 ---
 
