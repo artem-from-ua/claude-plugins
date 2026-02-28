@@ -3,7 +3,7 @@
 > [!TIP]
 > ✨ ***Know your API limits, context, and git state at a glance — without leaving Claude Code.***
 
-Two-line Claude Code statusline with real-time API usage, progress bars, and session info.
+Three-line Claude Code statusline with real-time API usage, progress bars, and session info.
 
 > [!NOTE]
 > [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)
@@ -11,12 +11,14 @@ Two-line Claude Code statusline with real-time API usage, progress bars, and ses
 ## 🎬 Demo
 
 ```
-⏳ [████████░░░░░░░░░░░░] 3h 42m   📅 [████░░░░░░░░░░░░░░░░░] ~5d 8h   💸 [██░░░░░░░░░░░░░] $4.79
-📁 my-project/   🌿 main*   🤖 claude-sonnet-4-6   📚 32%
+5h/10m････■■■■■■■■■■■■■̿■■■■■■■■■■■■■■■■■■･･3h42m      🤖･Sonnet･4.6       📁･my-project
+7d/6h･････････■■■■■■■■■■■■■■■■■■■■■■■■■̿■■■･･~5d        📚･32%              🌿･main･⚠️
+1M/1d･⏸️･■■■■■■■■■■■■■■■■■■■■■■■■■■■■̿･･¤4.79       💵･$4.79
 ```
 
-**Line 1:** 5-hour limit · 7-day limit · extra usage (monthly billing with $ spent)
-**Line 2:** directory · git branch (yellow when dirty) · model · context window %
+**Line 1:** 5h limit (30 blocks/10min) · model · directory
+**Line 2:** 7d limit (28 blocks/6h) · context window % · git branch
+**Line 3:** extra usage (N blocks/1day) · session cost
 
 ## ⚙️ How it works <a name="how-it-works"></a>
 
@@ -33,8 +35,8 @@ Warning icons: ⚠️ above 90%, ❌ at 100%.
 
 | Bar | Blocks | Resolution |
 |-----|--------|-----------|
-| 5h | 20 | 15 min/block |
-| 7d | 21 | 8 h/block |
+| 5h | 30 | 10 min/block |
+| 7d | 28 | 6 h/block |
 | Extra | days in month | 1 day/block |
 
 Cache refresh: 60s (all bars).

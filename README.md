@@ -19,7 +19,7 @@ A curated collection of plugins for [Claude Code](https://docs.anthropic.com/en/
 | [**playbook**](plugins/playbook/README.md) | Inject team coding conventions into every session — git workflow, documentation standards, platform quirks |
 | [**retroscope**](plugins/retroscope/README.md) | Capture what happened each session and generate structured daily retrospective reports |
 | [**semver**](plugins/semver/README.md) | Validate that a version bump is staged before every commit, push, and PR — with configurable enforcement |
-| [**statusline**](plugins/statusline/README.md) | Two-line statusline showing API rate limits, context window usage, git branch, and model |
+| [**statusline**](plugins/statusline/README.md) | Three-line statusline showing API rate limits, context window usage, git branch, and model |
 | [**statusline-compact**](plugins/statusline-compact/README.md) | Single-line statusline with brightness-coded values — the minimal-footprint option |
 | [**technology-explainer**](plugins/technology-explainer/README.md) | Adapt explanation depth per technology — brief for experts, detailed for learners |
 
