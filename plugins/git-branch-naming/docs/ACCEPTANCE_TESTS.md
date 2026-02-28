@@ -460,15 +460,18 @@ If rules are NOT enforced in your test session:
 3. When prompted for ticket pattern: select "No ticket required"
 4. When prompted for max length: select 60
 5. When prompted for enforcement: select "Ask (warn)"
-6. When prompted for pre-push hook: select "No"
-7. Verify file created: `cat .claude-plugin/git-branch-naming.json`
-8. Verify JSON is valid: `jq . .claude-plugin/git-branch-naming.json`
+6. When prompted for content mismatch: select "Enable"
+7. When prompted for open PR check: select "Ask (warn)"
+8. When prompted for pre-push hook: select "No"
+9. Verify file created: `cat .claude-plugin/git-branch-naming.json`
+10. Verify JSON is valid: `jq . .claude-plugin/git-branch-naming.json`
+11. Verify `checkOpenPR` field exists: `jq '.checkOpenPR' .claude-plugin/git-branch-naming.json`
 
 **Acceptance criteria:**
-- ✅ Wizard asks all 7 questions
+- ✅ Wizard asks all 8 questions
 - ✅ Config file created at `.claude-plugin/git-branch-naming.json`
 - ✅ File is valid JSON
-- ✅ All selected values appear in output
+- ✅ All selected values appear in output, including `checkOpenPR`
 - ✅ Summary with "next steps" shown after completion
 
 ---
