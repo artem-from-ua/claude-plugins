@@ -1,12 +1,12 @@
 # kb-grooming
 
 > [!TIP]
-> 🔍 ***Find doc rot before your users do.***
-
-> [!NOTE]
-> [🎬 Demo](#demo) · [📦 Installation](#installation) · [⚙️ Setup](#setup) · [📝 Config](#config)
+> ✨ ***Find doc rot before your users do.***
 
 Documentation health analysis for Claude Code projects. Scans all markdown files for structural problems and semantic compliance, then creates a GitHub epic with linked issues for each finding group.
+
+> [!NOTE]
+> [⚙️ How it works](#how-it-works) · [⚡ Commands](#commands) · [📦 Installation](#installation) · [⚙️ Setup](#setup) · [📝 Config](#config)
 
 ## 🎬 Demo <a name="demo"></a>
 
@@ -42,7 +42,7 @@ Created issues:
 
 If you decline issue creation, the full report is saved to `docs/audit/kb-grooming-report-2026-02-28.md`.
 
-## How it works
+## ⚙️ How it works <a name="how-it-works"></a>
 
 ```
 /kb-groom
@@ -67,7 +67,7 @@ If you decline issue creation, the full report is saved to `docs/audit/kb-groomi
         └─ Fallback: docs/audit/ report file if declined
 ```
 
-## Commands
+## ⚡ Commands <a name="commands"></a>
 
 | Command | What it does |
 |---------|-------------|

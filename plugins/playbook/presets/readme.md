@@ -10,7 +10,7 @@ tags: [docs, readme]
 MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "what is this?" and "why would I use it?".
 
 - When creating/editing README.md → first 5 lines: project name, one-line description, problem it solves, target audience
-- After header block → add a nav line as `> [!NOTE]` GitHub Alert with ALL sections **except the first one** (usually Demo — it's already visible above the fold; never include the first section in nav) and **except GitHub community files** (GitHub surfaces these automatically — see Navigation Line reference section). Use ` · ` as separator. No "Scroll to:" prefix. Add explicit `<a name="...">` anchor to each emoji heading: `## ⚙️ How it works <a name="how-it-works"></a>`. Then nav links use the explicit anchor: `[⚙️ How it works](#how-it-works)`
+- After header block (motto + intro paragraph) → add a nav line as `> [!NOTE]` GitHub Alert with ALL sections **except the first one** (usually Demo — it's already visible above the fold; never include the first section in nav) and **except GitHub community files** (GitHub surfaces these automatically — see Navigation Line reference section). Use ` · ` as separator. No "Scroll to:" prefix. Add explicit `<a name="...">` anchor to each emoji heading: `## ⚙️ How it works <a name="how-it-works"></a>`. Then nav links use the explicit anchor: `[⚙️ How it works](#how-it-works)`
 - Use emoji in headings (🚀 📦 ⚡ ⚙️) unless user explicitly forbids it
 - For tools/CLIs/plugins → lead with a concrete demo (real input → real output), NOT a feature list
 - Installation: official method only — no workarounds; merge Quick Start + Installation into one section
