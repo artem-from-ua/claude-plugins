@@ -6,8 +6,8 @@ Thank you for contributing to the Tribe Coding plugin marketplace! This guide wi
 
 - [CLAUDE.md](CLAUDE.md) — Complete project guidelines (read this first!)
 - [Plugin Structure Convention](CLAUDE.md#plugin-structure-convention)
-- [Version Bump Requirements](CLAUDE.md#version-bump-requirements) — **CRITICAL**
-- [Acceptance Test Standard](CLAUDE.md#acceptance-test-documentation-standard)
+- [Version Bump Requirements](docs/versioning.md) — **CRITICAL**
+- [Acceptance Test Standard](docs/acceptance-tests.md)
 
 ## Plugin Concepts
 
@@ -43,7 +43,7 @@ Follow conventions in [CLAUDE.md](CLAUDE.md):
 
 **REQUIRED** for new plugins or significant features:
 - Create `plugins/<name>/docs/ACCEPTANCE_TESTS.md`
-- See [Acceptance Test Standard](CLAUDE.md#acceptance-test-documentation-standard)
+- See [Acceptance Test Standard](docs/acceptance-tests.md)
 - Reference example: `plugins/plantuml/docs/ACCEPTANCE_TESTS.md`
 
 ### 4. Version Bump (CRITICAL!)
@@ -70,7 +70,7 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 - **MINOR** (x.Y.0): New features, backwards-compatible
 - **PATCH** (x.y.Z): Bug fixes, documentation corrections
 
-See [Version Bump Requirements](CLAUDE.md#version-bump-requirements) for detailed examples.
+See [Version Bump Requirements](docs/versioning.md) for detailed examples.
 
 **Why this matters:** Without a version bump, the plugin cache won't be updated and users won't see your changes.
 
@@ -149,7 +149,7 @@ Then restart Claude Code to pick up the updated plugin cache.
 - Use `#!/bin/bash` shebang
 - Use `${CLAUDE_PLUGIN_ROOT}` for plugin paths
 - Provide fallback: `${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}`
-- Support macOS and Linux (see [Cross-Platform Compatibility](CLAUDE.md#cross-platform-compatibility))
+- Support macOS and Linux (see [Cross-Platform Compatibility](docs/conventions.md#cross-platform-compatibility))
 - Keep hooks fast (timeout ≤30s)
 - Silent on success, informative on errors
 
