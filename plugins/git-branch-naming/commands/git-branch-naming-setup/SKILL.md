@@ -57,7 +57,12 @@ Use `AskUserQuestion` to collect:
 - Enable (warn when branch type doesn't match staged/pushed files) ← default
 - Disable
 
-**Question 7 — Install pre-push git hook?**:
+**Question 7 — Open PR check** (what happens when branch has an open PR by another author):
+- Ask (warn, let user decide) ← default
+- Deny (block the command)
+- Off (skip check entirely)
+
+**Question 8 — Install pre-push git hook?**:
 - Yes, install to `.githooks/pre-push` (requires `git config core.hooksPath .githooks`)
 - No
 
@@ -73,6 +78,7 @@ Create `.claude-plugin/` directory if needed, then write `.claude-plugin/git-bra
   "protectedBranches": ["main", "master", "develop"],
   "requireKebabCase": true,
   "warnOnContentMismatch": true,
+  "checkOpenPR": "ask",
   "enforcement": {
     "invalidName": "ask",
     "protectedBranch": "ask",
@@ -112,6 +118,7 @@ Branch naming enforcement is now active in this Claude Code session.
 | `protectedBranches` | string[] | `["main","master","develop"]` | Branches requiring confirmation to push |
 | `requireKebabCase` | boolean | `true` | Enforce kebab-case in description |
 | `warnOnContentMismatch` | boolean | `true` | Check files vs branch type on commit/push |
+| `checkOpenPR` | `"ask"\|"deny"\|"off"` | `"ask"` | What to do when branch has open PR by another author |
 | `enforcement.invalidName` | `"ask"\|"deny"` | `"ask"` | What to do when branch name is invalid |
 | `enforcement.protectedBranch` | `"ask"\|"deny"` | `"ask"` | What to do when pushing to protected branch |
 | `enforcement.contentMismatch` | `"ask"\|"deny"` | `"ask"` | What to do when content doesn't match branch type |
