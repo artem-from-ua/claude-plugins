@@ -12,6 +12,7 @@ MANDATORY: Follow these rules for all PR and branch operations.
 - ALWAYS use `--squash` for PR merge (unless repo explicitly uses merge/rebase)
 - Before using `gh pr merge --auto` → check `gh api repos/OWNER/REPO --jq '.allow_auto_merge'`
 - After merging a PR → delete the source branch (remote + local)
+- Before first commit on a branch → run `gh pr list --head <branch> --state open --json number,title,author`; if open PR exists → check: (a) different author, or (b) your changes don't match the PR topic — in either case, ask user whether to commit here or create a new branch
 - After committing on a PR branch → offer to update the PR description
 - When creating PR without linked issue → ask user to create one first
 - "Not mergeable" after another PR merged → `git fetch origin main && git rebase origin/main && git push --force-with-lease`
@@ -49,6 +50,26 @@ After creating a commit on a branch that has an open PR, **always offer to updat
    - Update summary to reflect the full scope of changes
    - Keep existing issue links (`Closes #N`)
    - Use `gh pr edit <NUMBER> --body "..."`
+
+## Checking for open PRs before committing
+
+Before first commit on any branch, check if an open PR already exists:
+
+1. Check current branch:
+   ```bash
+   BRANCH=$(git branch --show-current)
+   PR_DATA=$(gh pr list --head "$BRANCH" --state open --json number,title,author --jq '.[0]')
+   ```
+
+2. If PR exists, evaluate two conditions:
+   - **Different author?** Compare `PR_AUTHOR` vs your `gh api user --jq '.login'`
+   - **Topic mismatch?** Compare the PR title/description with the changes you're about to commit — if your changes are unrelated to the PR's scope, this is a red flag even if you're the author
+
+3. If either condition is true → ask the user with `AskUserQuestion`:
+   - **Commit here** — continue on this branch (e.g., collaborating, or expanding scope)
+   - **New branch** — auto-generate a suggested branch name based on your staged changes (e.g., `bugfix/fix-navbar-placement`), show it as the option label; the user can pick it or type their own via "Other"
+
+4. If `gh` unavailable or not authenticated → skip (the git-branch-naming hook provides a separate automated guard for the different-author case).
 
 ## Every PR should have a linked issue
 

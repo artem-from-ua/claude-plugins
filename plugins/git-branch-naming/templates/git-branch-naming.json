@@ -5,6 +5,7 @@
   "protectedBranches": ["main", "master", "develop"],
   "requireKebabCase": true,
   "warnOnContentMismatch": true,
+  "checkOpenPR": "ask",
   "enforcement": {
     "invalidName": "ask",
     "protectedBranch": "ask",
