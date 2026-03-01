@@ -6,7 +6,7 @@
 Single-line statusline with brightness-coded API usage values.
 
 > [!NOTE]
-> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [⚖️ Compared to statusline](#compared-to-statusline) · [📚 Reference](#reference)
+> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [🔧 Setup](#setup) · [⚖️ Compared to statusline](#compared-to-statusline) · [📚 Reference](#reference)
 
 ## 🎬 Demo <a name="demo"></a>
 
@@ -37,15 +37,22 @@ Values dim at low usage and brighten as they climb: yellow above 90%, red at 100
 /plugin install statusline-compact@tribe-coding
 ```
 
-Then run the setup command to configure `~/.claude/settings.json`:
+Select **statusline-compact** in `/plugin` → enable **auto-update**.
+
+**Requirements:** `jq`, `curl`, `python3`; macOS Keychain or `~/.claude/.credentials.json` (for Anthropic OAuth token)
+
+## 🔧 Setup <a name="setup"></a>
 
 ```bash
 /statusline-compact:statusline-setup
 ```
 
-Select **statusline-compact** in `/plugin` → enable **auto-update**. Restart your session — done.
+The wizard:
+- **Copies** the compact statusline script to `~/.claude/`
+- **Configures** the `statusLine` field in `~/.claude/settings.json`
+- **Verifies** `jq` and `curl` are available
 
-**Requirements:** `jq`, `curl`, `python3`; macOS Keychain or `~/.claude/.credentials.json` (for Anthropic OAuth token)
+Restart your session after setup.
 
 ## ⚖️ Compared to statusline <a name="compared-to-statusline"></a>
 

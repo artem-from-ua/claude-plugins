@@ -24,6 +24,7 @@ MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "w
 - **ALWAYS invoke the `playbook-browse readme` skill BEFORE writing, modifying, reviewing, or improving any README** (including when the user refers to it as "readme", "рідмі", "the landing page", or similar). This is MANDATORY — do not skip even when executing a plan or implementing a task that produces a README.
 - When shortening a README (removing sections, detail, or full component descriptions) → BEFORE deleting, verify each removed block has a destination (per-component README, `docs/`, `CONTRIBUTING.md`). If no destination exists — create it first, then remove from README. After completing the rewrite, produce a "what went where" summary for the user.
 - Do NOT add a standalone License section — a one-line "MIT — see LICENSE" adds no value; readers who care check the `LICENSE` file directly
+- If a plugin has a setup wizard command → the README MUST document the setup command and config file location(s). Either: (a) a dedicated `## 🔧 Setup` section after Installation with the command, what it configures, and config paths, or (b) the setup command in `## Installation` followed by a `## Configuration` section with full schema. Zero-setup plugins omit setup documentation entirely
 <!-- /RULES -->
 
 <!-- REFERENCE -->
@@ -157,6 +158,40 @@ Adapt to the project — not all sections are needed for every project:
 7. **Contributing** — link to `CONTRIBUTING.md` or brief guidelines
 
 Omit sections that don't apply. A 60-line focused README beats a 300-line comprehensive one.
+
+## Setup Section for Plugins
+
+When a plugin has a setup wizard command (`/<name>-setup`), the README must make it discoverable. Two acceptable patterns:
+
+**Pattern A — Dedicated section** (preferred when setup needs explanation):
+
+```markdown
+## 🔧 Setup <a name="setup"></a>
+
+⁣```bash
+/<plugin-name>-setup
+⁣```
+
+The wizard configures:
+- **Item 1** — what it does
+- **Item 2** — what it does
+
+Config: `~/.claude/<name>.json` (global) and `.claude-plugin/<name>.json` (project).
+```
+
+**Pattern B — Inline in Installation** (when setup is a one-liner):
+Show the setup command in Installation, then have a `## Configuration` section with config schema and examples.
+
+**Required information** (in either pattern):
+1. Setup command in a copy-pasteable code block
+2. What the wizard configures (1–3 bullet points)
+3. Config file location(s) with scope (global vs project)
+
+**Placement:** Setup section goes immediately after Installation, before Usage/Commands. Add `[🔧 Setup](#setup)` to the nav line.
+
+**Zero-setup plugins** (no setup command) do not need setup documentation.
+
+**Reference implementation:** `plugins/kb-grooming/README.md` (Pattern A).
 
 ## Platform-Aware Rendering
 

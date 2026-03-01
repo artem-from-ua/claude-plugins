@@ -17,7 +17,7 @@ Plugins that need project-level configuration store config files in `.claude-plu
 
 **Backwards compatibility:** Scripts also check `{project}/.claude/<name>.json` as fallback for configs created before this convention.
 
-**Setup wizards** (`/playbook-setup`, `/semver-setup`, `/git-branch-naming-setup`, `/retroscope-setup`) write to `.claude-plugin/<name>.json` by default.
+**Setup wizards** (e.g., `/playbook-setup`, `/semver-setup`, `/git-branch-naming-setup`, `/kb-grooming-setup`, `/retroscope-setup`, `/technology-explainer-setup`) write to `.claude-plugin/<name>.json` by default. The statusline plugins (`/statusline-setup`, `/statusline-compact:statusline-setup`) configure `~/.claude/settings.json` instead.
 
 ---
 
