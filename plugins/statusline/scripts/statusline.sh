@@ -657,7 +657,7 @@ if [ -n "$session_id" ]; then
     session_widget="✏️${SEP}${session_display}"
   else
     session_display=$(echo "$session_name" | sed "s/ /${SEP}/g")
-    session_widget="✏️${SEP}${dim}${session_display}${rst}"
+    session_widget="✏️${SEP}${yellow}${session_display}${rst}${SEP}⚠️"
   fi
 fi
 
