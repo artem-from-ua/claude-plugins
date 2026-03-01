@@ -332,7 +332,7 @@ bash scripts/inject-base-rules.sh
 
 #### 4.2 setup-project.sh
 
-**Objective:** Verify pre-commit hook installation
+**Objective:** Verify non-destructive pre-commit hook installation with marker-based injection
 
 **Test case 1:** Install in new git repo
 
@@ -340,8 +340,6 @@ bash scripts/inject-base-rules.sh
 ```bash
 rm -rf /tmp/plantuml-test-repo && mkdir /tmp/plantuml-test-repo
 git -C /tmp/plantuml-test-repo init -q
-git -C /tmp/plantuml-test-repo -c user.email=test@test.com -c user.name=Test commit -q --allow-empty -m "init"
-
 
 CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
 CLAUDE_PROJECT_DIR="/tmp/plantuml-test-repo" \
@@ -351,29 +349,37 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
 test -f /tmp/plantuml-test-repo/.githooks/pre-commit && echo "✓ Hook file created"
 test -x /tmp/plantuml-test-repo/.githooks/pre-commit && echo "✓ Hook is executable"
 test "$(git -C /tmp/plantuml-test-repo config core.hooksPath)" = ".githooks" && echo "✓ Git config set"
+head -1 /tmp/plantuml-test-repo/.githooks/pre-commit | grep -q '#!/bin/bash' && echo "✓ Has shebang"
+grep -q '# >>> tribe-coding/plantuml >>>' /tmp/plantuml-test-repo/.githooks/pre-commit && echo "✓ Has begin marker"
+grep -q '# <<< tribe-coding/plantuml <<<' /tmp/plantuml-test-repo/.githooks/pre-commit && echo "✓ Has end marker"
 ```
 
 **Expected result:**
-- ✅ `.githooks/pre-commit` file created
+- ✅ `.githooks/pre-commit` file created with `#!/bin/bash` shebang
 - ✅ File is executable (chmod +x)
 - ✅ Git config `core.hooksPath` set to `.githooks`
+- ✅ Plantuml section wrapped in `# >>> tribe-coding/plantuml >>>` / `# <<< tribe-coding/plantuml <<<` markers
 
-**Test case 2:** Idempotency
+**Test case 2:** Marker idempotency
 
 **Steps:**
 ```bash
-# Run setup-project.sh again in the same repo
+# Run setup-project.sh again in the same repo (from test case 1)
+BEFORE=$(cat /tmp/plantuml-test-repo/.githooks/pre-commit)
 CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
 CLAUDE_PROJECT_DIR="/tmp/plantuml-test-repo" \
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
+AFTER=$(cat /tmp/plantuml-test-repo/.githooks/pre-commit)
 
+[ "$BEFORE" = "$AFTER" ] && echo "✓ Content identical"
 echo "Exit code: $?"
+grep -c '# >>> tribe-coding/plantuml >>>' /tmp/plantuml-test-repo/.githooks/pre-commit
 ```
 
 **Expected result:**
 - ✅ Exit code 0 (success)
-- ✅ Hook file remains unchanged (no overwrite if identical)
-- ✅ Git config remains unchanged
+- ✅ Hook file content is byte-identical after second run
+- ✅ Exactly one begin marker (no duplication)
 
 **Test case 3:** Non-git directory
 
@@ -391,6 +397,207 @@ test -d /tmp/plantuml-non-git/.githooks && echo "ERROR: Hook installed in non-gi
 **Expected result:**
 - ✅ Exit code 0 (silent skip)
 - ✅ No `.githooks` directory created
+
+**Test case 4:** Existing pre-commit hook preserved
+
+**Steps:**
+```bash
+rm -rf /tmp/plantuml-test-existing && mkdir /tmp/plantuml-test-existing
+git -C /tmp/plantuml-test-existing init -q
+mkdir -p /tmp/plantuml-test-existing/.githooks
+cat > /tmp/plantuml-test-existing/.githooks/pre-commit << 'EXISTING'
+#!/bin/bash
+echo "My custom pre-commit hook"
+eslint --fix
+EXISTING
+chmod +x /tmp/plantuml-test-existing/.githooks/pre-commit
+git -C /tmp/plantuml-test-existing config core.hooksPath .githooks
+
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-existing" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
+
+grep -q 'My custom pre-commit hook' /tmp/plantuml-test-existing/.githooks/pre-commit && echo "✓ Original content preserved"
+grep -q 'eslint --fix' /tmp/plantuml-test-existing/.githooks/pre-commit && echo "✓ eslint line preserved"
+grep -q '# >>> tribe-coding/plantuml >>>' /tmp/plantuml-test-existing/.githooks/pre-commit && echo "✓ Plantuml section appended"
+```
+
+**Expected result:**
+- ✅ Original hook content (shebang, echo, eslint) remains intact
+- ✅ Plantuml marker-delimited section appended at the end
+- ✅ File remains executable
+
+**Test case 5:** Existing `core.hooksPath` respected
+
+**Steps:**
+```bash
+rm -rf /tmp/plantuml-test-hookspath && mkdir /tmp/plantuml-test-hookspath
+git -C /tmp/plantuml-test-hookspath init -q
+git -C /tmp/plantuml-test-hookspath config core.hooksPath ".git/hooks"
+
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-hookspath" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
+
+test "$(git -C /tmp/plantuml-test-hookspath config core.hooksPath)" = ".git/hooks" && echo "✓ core.hooksPath preserved"
+test -f /tmp/plantuml-test-hookspath/.git/hooks/pre-commit && echo "✓ Hook placed in .git/hooks"
+test ! -d /tmp/plantuml-test-hookspath/.githooks && echo "✓ No .githooks dir created"
+```
+
+**Expected result:**
+- ✅ `core.hooksPath` remains `.git/hooks` (not overwritten to `.githooks`)
+- ✅ Hook file created in `.git/hooks/pre-commit`
+- ✅ No `.githooks` directory created
+
+**Test case 6:** Old format migration
+
+**Steps:**
+```bash
+rm -rf /tmp/plantuml-test-migration && mkdir /tmp/plantuml-test-migration
+git -C /tmp/plantuml-test-migration init -q
+mkdir -p /tmp/plantuml-test-migration/.githooks
+# Simulate old-format hook (no markers, old variable names)
+cat > /tmp/plantuml-test-migration/.githooks/pre-commit << 'OLD'
+#!/bin/bash
+STAGED_MD=$(git diff --cached --name-only --diff-filter=ACM -- '*.md')
+if [ -n "$STAGED_MD" ]; then
+    echo "old plantuml check"
+fi
+OLD
+chmod +x /tmp/plantuml-test-migration/.githooks/pre-commit
+git -C /tmp/plantuml-test-migration config core.hooksPath .githooks
+
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-migration" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
+
+grep -q '# >>> tribe-coding/plantuml >>>' /tmp/plantuml-test-migration/.githooks/pre-commit && echo "✓ Markers added"
+grep -q 'PLANTUML_STAGED_MD' /tmp/plantuml-test-migration/.githooks/pre-commit && echo "✓ New namespaced variables"
+grep -q 'PLANTUML_ENCODER' /tmp/plantuml-test-migration/.githooks/pre-commit && echo "✓ New encoder lookup"
+```
+
+**Expected result:**
+- ✅ New marker-delimited section appended (old content preserved as-is)
+- ✅ New section uses `PLANTUML_`-prefixed variables
+- ✅ Both old and new sections present (manual cleanup of old section left to user)
+
+**Test case 7:** Marker section update
+
+**Steps:**
+```bash
+# Use repo from test case 4 (existing hook + plantuml markers)
+# Run setup again — markers already present, should replace section in-place
+BEFORE=$(cat /tmp/plantuml-test-existing/.githooks/pre-commit)
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-existing" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
+AFTER=$(cat /tmp/plantuml-test-existing/.githooks/pre-commit)
+
+[ "$BEFORE" = "$AFTER" ] && echo "✓ Content identical (idempotent)"
+grep -c '# >>> tribe-coding/plantuml >>>' /tmp/plantuml-test-existing/.githooks/pre-commit
+grep -q 'eslint --fix' /tmp/plantuml-test-existing/.githooks/pre-commit && echo "✓ Original content still preserved"
+```
+
+**Expected result:**
+- ✅ Marker-delimited section replaced in-place (not duplicated)
+- ✅ Content outside markers untouched
+- ✅ Exactly one begin marker in file
+
+#### 4.3 uninstall-hook.sh
+
+**Objective:** Verify pre-commit hook uninstallation removes only the plantuml section
+
+**Test case 1:** Uninstall from repo with only plantuml hook
+
+**Steps:**
+```bash
+rm -rf /tmp/plantuml-test-uninstall && mkdir /tmp/plantuml-test-uninstall
+git -C /tmp/plantuml-test-uninstall init -q
+
+# Install first
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-uninstall" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
+
+test -f /tmp/plantuml-test-uninstall/.githooks/pre-commit && echo "✓ Hook installed"
+
+# Uninstall
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-uninstall" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/uninstall-hook.sh"
+
+test ! -f /tmp/plantuml-test-uninstall/.githooks/pre-commit && echo "✓ Hook file removed"
+```
+
+**Expected result:**
+- ✅ Hook file deleted entirely (only plantuml content was present)
+- ✅ Exit code 0
+
+**Test case 2:** Uninstall preserves other hook sections
+
+**Steps:**
+```bash
+rm -rf /tmp/plantuml-test-uninstall2 && mkdir /tmp/plantuml-test-uninstall2
+git -C /tmp/plantuml-test-uninstall2 init -q
+mkdir -p /tmp/plantuml-test-uninstall2/.githooks
+cat > /tmp/plantuml-test-uninstall2/.githooks/pre-commit << 'EXISTING'
+#!/bin/bash
+echo "My custom hook"
+eslint --fix
+EXISTING
+git -C /tmp/plantuml-test-uninstall2 config core.hooksPath .githooks
+
+# Install plantuml section
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-uninstall2" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
+
+# Uninstall plantuml section
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-uninstall2" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/uninstall-hook.sh"
+
+grep -q 'My custom hook' /tmp/plantuml-test-uninstall2/.githooks/pre-commit && echo "✓ Custom hook preserved"
+grep -q '>>> tribe-coding/plantuml >>>' /tmp/plantuml-test-uninstall2/.githooks/pre-commit && echo "✗ Plantuml still present" || echo "✓ Plantuml removed"
+```
+
+**Expected result:**
+- ✅ Custom hook content preserved (shebang, echo, eslint)
+- ✅ Plantuml marker-delimited section removed
+- ✅ Hook file still executable
+
+**Test case 3:** Uninstall when no hook exists
+
+**Steps:**
+```bash
+rm -rf /tmp/plantuml-test-uninstall3 && mkdir /tmp/plantuml-test-uninstall3
+git -C /tmp/plantuml-test-uninstall3 init -q
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-uninstall3" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/uninstall-hook.sh"
+
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Exit code 0
+- ✅ Message: "No pre-commit hook found"
+
+**Test case 4:** Uninstall idempotency
+
+**Steps:**
+```bash
+# Run uninstall twice on the repo from test case 1 (hook already removed)
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-uninstall" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/uninstall-hook.sh"
+
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Exit code 0
+- ✅ Message: "No pre-commit hook found" or "No plantuml section found"
 
 ---
 
