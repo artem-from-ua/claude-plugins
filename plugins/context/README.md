@@ -8,9 +8,9 @@
 > [!NOTE]
 > [⚙️ How it works](#how-it-works) · [📋 Sources](#sources) · [📊 Summary Table Columns](#summary-table-columns) · [⚡ Commands](#commands) · [📦 Installation](#installation)
 
-## 🎬 Demo
+## 🎬 Demo <a name="demo"></a>
 
-```
+```markdown
 > /ctx-show
 
 ● Bash(bash ".../scripts/ctx-show.sh")

@@ -8,7 +8,7 @@ A curated collection of plugins for [Claude Code](https://docs.anthropic.com/en/
 > [!NOTE]
 > [📦 Installation](#installation)
 
-## 🧩 Plugins
+## 🧩 Plugins <a name="plugins"></a>
 
 | Plugin | What it does |
 |--------|-------------|

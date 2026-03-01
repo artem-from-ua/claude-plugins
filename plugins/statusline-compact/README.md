@@ -6,11 +6,11 @@
 Single-line statusline with brightness-coded API usage values.
 
 > [!NOTE]
-> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)
+> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [⚖️ Compared to statusline](#compared-to-statusline) · [📚 Reference](#reference)
 
-## 🎬 Demo
+## 🎬 Demo <a name="demo"></a>
 
-```
+```markdown
 5h 92% 50m !!   7d 22% ~5d   extra $4.79   Sonnet 4.6   context 30%   my-project/   main*
 ```
 
@@ -47,7 +47,7 @@ Select **statusline-compact** in `/plugin` → enable **auto-update**. Restart y
 
 **Requirements:** `jq`, `curl`, `python3`; macOS Keychain or `~/.claude/.credentials.json` (for Anthropic OAuth token)
 
-## Compared to statusline
+## ⚖️ Compared to statusline <a name="compared-to-statusline"></a>
 
 | | statusline | statusline-compact |
 |-|------------|-------------------|
@@ -56,6 +56,6 @@ Select **statusline-compact** in `/plugin` → enable **auto-update**. Restart y
 | Space usage | More | Less |
 | Choose when | You want visual progress bars | You want minimal terminal footprint |
 
-## Reference
+## 📚 Reference <a name="reference"></a>
 
 - [`docs/ACCEPTANCE_TESTS.md`](docs/ACCEPTANCE_TESTS.md) — test suite

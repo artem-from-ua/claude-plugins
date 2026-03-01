@@ -6,9 +6,9 @@
 Playbook lets you define **presets** — sets of coding rules, workflow conventions, and best practices — that Claude follows automatically. No more repeating "always use squash merge" or "update docs after every change" in every conversation.
 
 > [!NOTE]
-> [How it works](#how-it-works) · [Available Presets](#available-presets) · [Installation](#installation) · [Configuration](#configuration)
+> [📦 Installation](#installation) · [📋 Presets](#available-presets) · [⚡ Commands](#commands) · [🔧 Configuration](#configuration) · [✏️ Custom Presets](#custom-presets)
 
-## How it works <a name="how-it-works"></a>
+## ⚙️ How it works <a name="how-it-works"></a>
 
 Each preset is a markdown file with two zones:
 
@@ -17,7 +17,7 @@ Each preset is a markdown file with two zones:
 
 Claude sees the active rules in every session and follows them without being asked.
 
-## Installation <a name="installation"></a>
+## 📦 Installation <a name="installation"></a>
 
 ```bash
 /plugin marketplace add Tribe-Coding/claude-plugins
@@ -31,7 +31,7 @@ Then in the next session, run `/playbook-setup` to choose which presets to enabl
 
 > **Auto-update** keeps presets in sync with the latest fixes automatically on each Claude Code restart.
 
-## Available Presets <a name="available-presets"></a>
+## 📋 Available Presets <a name="available-presets"></a>
 
 | Preset | What it enforces |
 |--------|-----------------|
@@ -47,14 +47,14 @@ Then in the next session, run `/playbook-setup` to choose which presets to enabl
 
 Use `/playbook-browse` to read the full reference for any preset.
 
-## Commands
+## ⚡ Commands <a name="commands"></a>
 
 | Command | What it does |
 |---------|-------------|
 | `/playbook-setup` | Interactive wizard — enable/disable presets, global or per-project |
 | `/playbook-browse` | Read the full REFERENCE zone of any preset |
 
-## Configuration <a name="configuration"></a>
+## 🔧 Configuration <a name="configuration"></a>
 
 **Global** (`~/.claude/playbook.json`) — applies to all projects:
 
@@ -70,6 +70,6 @@ Use `/playbook-browse` to read the full reference for any preset.
 
 Project config takes priority. Use `"exclude"` to suppress global presets in a specific project.
 
-## Custom Presets
+## ✏️ Custom Presets <a name="custom-presets"></a>
 
 You can write your own presets for team-specific conventions. See [AUTHORING.md](../../docs/AUTHORING.md) for the format, rule patterns, token budget, and anti-patterns.

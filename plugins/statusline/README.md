@@ -6,11 +6,11 @@
 Three-line Claude Code statusline with real-time API usage, progress bars, and session info.
 
 > [!NOTE]
-> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)
+> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [📚 Reference](#reference)
 
-## 🎬 Demo
+## 🎬 Demo <a name="demo"></a>
 
-```
+```markdown
 5h/10m････■■■■■■■■■■■■■̿■■■■■■■■■■■■■■■■■■･･3h42m      🤖･Sonnet･4.6       ✏️･clever-zooming-firefly
 7d/6h･････････■■■■■■■■■■■■■■■■■■■■■■■■■̿■■■･･~5d        📚･32%              📁･my-project
 1M/1d･⏸️･■■■■■■■■■■■■■■■■■■■■■■■■■■■■̿･･¤4.79       💵･$4.79            🌿･main･⚠️
@@ -58,7 +58,7 @@ Select **statusline** in `/plugin` → enable **auto-update**. Restart your sess
 
 **Requirements:** `jq`, `curl`, `python3`; macOS Keychain or `~/.claude/.credentials.json` (for Anthropic OAuth token)
 
-## Reference
+## 📚 Reference <a name="reference"></a>
 
 - [`docs/ACCEPTANCE_TESTS.md`](docs/ACCEPTANCE_TESTS.md) — test suite
 - [`docs/STDIN_JSON.md`](docs/STDIN_JSON.md) — all JSON fields piped by Claude Code to `statusline.sh`

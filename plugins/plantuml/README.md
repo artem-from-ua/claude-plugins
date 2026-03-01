@@ -8,13 +8,13 @@ With this plugin, Claude proactively illustrates architecture, flows, and data s
 > [!NOTE]
 > [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)
 
-## 🎬 Demo
+## 🎬 Demo <a name="demo"></a>
 
 A developer asks Claude to document the login flow. Claude adds a diagram to the docs — then, during the conversation, renders the same diagram as ASCII art in the terminal.
 
 ### Step 1 — Claude writes `docs/auth.md` and adds a diagram proactively
 
-```
+```markdown
 > Document the login flow for the auth service.
 
 ✦ Using skill: plantuml-diagram-guide
@@ -55,7 +55,7 @@ I'll create docs/auth.md. The flow involves four actors — I'll use a sequence 
 
 ### Step 2 — Later in the conversation, Claude renders it as ASCII in the terminal
 
-```
+```markdown
 > Walk me through the login flow step by step.
 
 ✦ Using skill: plantuml-diagram-guide

@@ -90,6 +90,10 @@ For full authoring guidelines — SKILL.md hybrid design, preset RULES/REFERENCE
 9. **Update the Plugins list above** — add bullet to the Plugins section in this file (alphabetical order)
 10. **README navbar** — nav line goes after the header block (motto + intro paragraph), lists ALL sections except the first one (usually Demo); see `readme` playbook preset for full rules
 
+## README Demo Sections
+
+Claude Code console interaction examples (blocks showing `You: … Claude: …` dialogues, tool call output, or slash command output) in plugin README files MUST use `` ```markdown `` fenced code blocks — not bare `` ``` ``. This enables syntax highlighting on GitHub (tables, emoji, bold) and ensures consistent appearance across all plugins. Do NOT apply `` ```markdown `` to non-interaction blocks (plain text lists, file trees, format templates) — those stay as bare `` ``` ``.
+
 ## Dependencies
 
 - plantuml: Python 3.x, git

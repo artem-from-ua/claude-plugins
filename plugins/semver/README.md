@@ -6,11 +6,11 @@
 Semantic versioning enforcement for Claude Code. Validates that a version bump is staged before `git commit`, `git push`, and PR creation. Injects SemVer rules into every session so Claude knows when and how to increment versions automatically.
 
 > [!NOTE]
-> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [⚙️ Configuration](#configuration)
+> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [⚙️ Configuration](#configuration) · [🛠️ Skills](#skills) · [📚 Reference](#reference)
 
-## 🎬 Demo
+## 🎬 Demo <a name="demo"></a>
 
-```
+```markdown
 You: commit the auth service refactor
 
 Claude: ⚠️  No version bump detected.
@@ -84,10 +84,10 @@ Config lives at `.claude-plugin/semver.json` (project, committed to git) and `~/
 | `warn` | Log a warning, continue anyway |
 | `block` | Refuse to commit/push until version is bumped |
 
-## Skills (on-demand)
+## 🛠️ Skills (on-demand) <a name="skills"></a>
 
 `semver-guide` — loaded automatically when Claude needs to decide MAJOR/MINOR/PATCH. Covers SemVer 2.0.0 decision tree, conflict resolution when rebasing, and common mistakes.
 
-## Reference
+## 📚 Reference <a name="reference"></a>
 
 - [`docs/ACCEPTANCE_TESTS.md`](docs/ACCEPTANCE_TESTS.md) — test suite
