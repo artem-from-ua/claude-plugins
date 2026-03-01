@@ -855,15 +855,15 @@ Dirty tree: 📁 tmp.XXXXXX   🌿 main ⚠️   🤖 Test   📚 50.0%
 
 #### 6.5.1 Custom Session Name (from /rename)
 
-**Objective:** Verify ✏️ widget shows custom name from transcript summary
+**Objective:** Verify ✏️ widget shows custom name from /rename (custom-title entry)
 
 **Automation:** ✅
 
 **Steps:**
 ```bash
-# Create temp transcript with summary entry
+# Create temp transcript with custom-title entry (from /rename)
 test_transcript=$(mktemp)
-echo '{"type":"summary","summary":"My Custom Session"}' > "$test_transcript"
+echo '{"type":"custom-title","customTitle":"My Custom Session","sessionId":"test-custom-name"}' > "$test_transcript"
 
 # Clear session cache
 rm -f /tmp/claude-statusline-session-${UID}-test-custom-name
@@ -889,7 +889,7 @@ rm -f "$test_transcript"
 ```
 
 **Acceptance criteria:**
-- ✅ Custom name from summary entry shown after ✏️
+- ✅ Custom name from custom-title entry shown after ✏️
 - ✅ Name displayed at normal brightness (not dimmed)
 - ✅ Cache stores `custom:<name>` format
 
