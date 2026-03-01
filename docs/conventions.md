@@ -125,6 +125,38 @@ fi
 
 ---
 
+## Local Plugin Testing (before push)
+
+To test a plugin locally before pushing to remote and installing via marketplace:
+
+**1. Copy plugin into the marketplace clone:**
+```bash
+cp -r plugins/<name> ~/.claude/plugins/marketplaces/tribe-coding/plugins/<name>
+```
+
+**2. Register in the marketplace manifest (if not already):**
+```bash
+# Edit ~/.claude/plugins/marketplaces/tribe-coding/.claude-plugin/marketplace.json
+# Add the plugin entry to the "plugins" array
+```
+
+**3. Enable in settings:**
+```bash
+# Edit ~/.claude/settings.json — add to "enabledPlugins":
+"<name>@tribe-coding": true
+```
+
+**4. Restart Claude Code** — the plugin should appear in `/plugin` and its commands in the skill list.
+
+**After testing — clean up:**
+- Remove `~/.claude/plugins/marketplaces/tribe-coding/plugins/<name>` (will be re-created on next marketplace sync)
+- Remove `"<name>@tribe-coding": true` from `~/.claude/settings.json` (will be re-added on proper install)
+- The marketplace manifest cache will be overwritten on next sync, so no manual revert needed
+
+**Why this works:** Claude Code resolves plugin `"source"` paths relative to `~/.claude/plugins/marketplaces/<marketplace>/`. So `"source": "./plugins/ai-fortune"` resolves to `~/.claude/plugins/marketplaces/tribe-coding/plugins/ai-fortune`. Placing files there makes the plugin discoverable without pushing to remote.
+
+---
+
 ## Plugin Cache Sync
 
 Claude Code has a bug where the plugin cache is not invalidated on auto-update ([#14061](https://github.com/anthropics/claude-code/issues/14061), [#15621](https://github.com/anthropics/claude-code/issues/15621), [#15642](https://github.com/anthropics/claude-code/issues/15642)).

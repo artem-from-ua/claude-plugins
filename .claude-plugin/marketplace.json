@@ -44,6 +44,11 @@
       "description": "Semantic versioning enforcement: validates version bumps before commit/push/PR, supports multiple version files"
     },
     {
+      "name": "ai-fortune",
+      "source": "./plugins/ai-fortune",
+      "description": "Career direction analysis: interview + AI usage pattern mining to identify roles AI won't replace"
+    },
+    {
       "name": "context",
       "source": "./plugins/context",
       "description": "Inspect full Claude Code session context: CLAUDE.md files, auto-memory, and SessionStart hook output"
