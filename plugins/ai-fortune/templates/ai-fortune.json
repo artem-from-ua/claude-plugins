@@ -1,0 +1,10 @@
+{
+  "lastRun": null,
+  "lastReportPath": null,
+  "reportsDir": null,
+  "dataSources": {
+    "memoryFilePath": null,
+    "insightsReportPath": "~/.claude/usage-data/report.html"
+  },
+  "answers": {}
+}
