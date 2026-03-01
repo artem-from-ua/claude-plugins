@@ -6,7 +6,7 @@
 Three-line Claude Code statusline with real-time API usage, progress bars, and session info.
 
 > [!NOTE]
-> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [📚 Reference](#reference)
+> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [🔧 Setup](#setup) · [📚 Reference](#reference)
 
 ## 🎬 Demo <a name="demo"></a>
 
@@ -48,15 +48,22 @@ Cache refresh: 60s (all bars).
 /plugin install statusline@tribe-coding
 ```
 
-Then run the setup command to configure `~/.claude/settings.json`:
+Select **statusline** in `/plugin` → enable **auto-update**.
+
+**Requirements:** `jq`, `curl`, `python3`; macOS Keychain or `~/.claude/.credentials.json` (for Anthropic OAuth token)
+
+## 🔧 Setup <a name="setup"></a>
 
 ```bash
 /statusline:statusline-setup
 ```
 
-Select **statusline** in `/plugin` → enable **auto-update**. Restart your session — done.
+The wizard:
+- **Copies** `statusline.sh` to `~/.claude/`
+- **Configures** the `statusLine` field in `~/.claude/settings.json`
+- **Verifies** `jq` and `curl` are available
 
-**Requirements:** `jq`, `curl`, `python3`; macOS Keychain or `~/.claude/.credentials.json` (for Anthropic OAuth token)
+Restart your session after setup.
 
 ## 📚 Reference <a name="reference"></a>
 

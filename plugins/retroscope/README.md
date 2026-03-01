@@ -6,7 +6,7 @@
 A Claude Code plugin that generates retrospective summary reports from your Claude Code sessions. Review what you accomplished, track open questions, and get insights into your productivity and communication patterns.
 
 > [!NOTE]
-> [⚡ Quick Start](#quick-start) · [📄 Report Format](#report-format) · [📂 Storage](#storage-structure) · [⚙️ Configuration](#configuration) · [⚙️ How it works](#how-it-works) · [💲 Cost](#cost-estimates) · [🗺️ Roadmap](#future-roadmap) · [🔧 Troubleshooting](#troubleshooting)
+> [📦 Installation](#installation) · [🔧 Setup](#setup) · [📄 Report Format](#report-format) · [📂 Storage](#storage-structure) · [⚙️ Configuration](#configuration) · [⚙️ How it works](#how-it-works) · [💲 Cost](#cost-estimates) · [🗺️ Roadmap](#future-roadmap) · [🔧 Troubleshooting](#troubleshooting)
 
 ## ✅ What it does <a name="what-it-does"></a>
 
@@ -16,15 +16,29 @@ A Claude Code plugin that generates retrospective summary reports from your Clau
 
 Reports include: task outcomes, decisions made, open questions, GitHub/PR references, productivity metrics, and suggestions for improving your Claude Code workflow.
 
-## ⚡ Quick Start <a name="quick-start"></a>
+## 📦 Installation <a name="installation"></a>
 
-1. Install the plugin: `/plugin install retroscope@tribe-coding`
-2. Start a Claude Code session
-3. Run `/retro` — if no config is found, it will offer to run setup automatically
-4. Work normally in Claude Code
-5. Run `/retro today` at end of day
+```bash
+/plugin marketplace add Tribe-Coding/claude-plugins
+/plugin install retroscope@tribe-coding
+```
 
-> **Tip:** You can also run `/retroscope:setup` directly at any time to configure or update settings.
+Select **retroscope** in `/plugin` → enable **auto-update**.
+
+## 🔧 Setup <a name="setup"></a>
+
+```bash
+/retroscope:setup
+```
+
+The wizard configures:
+- **Storage directory** — where reports are saved (creates + git-inits if needed)
+- **Report model** — `haiku` (fast, ~$0.01/report), `sonnet` (detailed), or `inherit`
+- **Options** — language, timezone, extract mode, session source, auto-push
+
+Config: `~/.claude/retroscope.json` (global) and `.claude-plugin/retroscope.json` (project overrides).
+
+> **Tip:** If you run `/retro` without config, it will offer to run setup automatically.
 
 ## 📄 Report Format <a name="report-format"></a>
 

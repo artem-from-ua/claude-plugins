@@ -86,6 +86,7 @@ For full authoring guidelines — SKILL.md hybrid design, preset RULES/REFERENCE
    - Store default config template in `templates/<name>.json`
    - Setup wizard writes to `{project}/.claude-plugin/<name>.json`
    - Scripts read from `.claude-plugin/<name>.json` first, fall back to `.claude/<name>.json`
+   - README must document the setup command and config location (see `readme` playbook preset → Setup Section for Plugins)
 8. **If plugin installs git hooks** (pre-commit, pre-push, etc.) → use marker-based injection and provide an uninstall command (see [`docs/conventions.md`](docs/conventions.md) — Git Hook Installation)
 9. **Update root `README.md`** — add row to the Plugins table (alphabetical order)
 10. **Update the Plugins list above** — add bullet to the Plugins section in this file (alphabetical order)
