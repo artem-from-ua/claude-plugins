@@ -1,6 +1,6 @@
 {
   "name": "technology-explainer",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Adapts explanation depth based on user proficiency per technology: expert, intermediate, or learning",
   "author": { "name": "Tribe Coding" },
   "license": "MIT",

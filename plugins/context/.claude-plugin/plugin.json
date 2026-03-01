@@ -1,6 +1,6 @@
 {
   "name": "context",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Inspect full Claude Code session context: CLAUDE.md files, auto-memory, and SessionStart hook output",
   "author": {
     "name": "Tribe Coding"

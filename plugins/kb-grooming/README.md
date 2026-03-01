@@ -6,11 +6,11 @@
 Documentation health analysis for Claude Code projects. Scans all markdown files for structural problems and semantic compliance, then creates a GitHub epic with linked issues for each finding group.
 
 > [!NOTE]
-> [⚙️ How it works](#how-it-works) · [⚡ Commands](#commands) · [📦 Installation](#installation) · [⚙️ Setup](#setup) · [📝 Config](#config)
+> [⚙️ How it works](#how-it-works) · [⚡ Commands](#commands) · [📦 Installation](#installation) · [⚙️ Setup](#setup) · [📝 Config](#config) · [🔗 Dependencies](#dependencies)
 
 ## 🎬 Demo <a name="demo"></a>
 
-```
+```markdown
 > /kb-groom
 
 Loading config… built-in defaults.
@@ -32,12 +32,12 @@ Create GitHub issues?
 > yep
 
 Created issues:
-  * #210 — [EPIC] KB grooming report 2026-02-28
-  * #211 — Fix 5 broken documentation links
-  * #212 — Review 2 orphan documents
-  * #213 — Update stale API reference in setup.md
-  * #214 — Resolve TODO in CONTRIBUTING.md
-  * #215 — Add missing Installation section to README
+- #210 — [EPIC] KB grooming report 2026-02-28
+- #211 — Fix 5 broken documentation links
+- #212 — Review 2 orphan documents
+- #213 — Update stale API reference in setup.md
+- #214 — Resolve TODO in CONTRIBUTING.md
+- #215 — Add missing Installation section to README
 ```
 
 If you decline issue creation, the full report is saved to `docs/audit/kb-grooming-report-2026-02-28.md`.
@@ -125,7 +125,7 @@ The wizard walks through:
 }
 ```
 
-## Dependencies
+## 🔗 Dependencies <a name="dependencies"></a>
 
 - bash, python3 (structural scan)
 - `gh` CLI (optional, for GitHub issue creation)

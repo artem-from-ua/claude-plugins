@@ -8,9 +8,9 @@ Configure your proficiency level per technology and Claude automatically adjusts
 > [!NOTE]
 > [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [🎮 Commands](#commands) · [📝 Config](#config)
 
-## 🎬 Demo
+## 🎬 Demo <a name="demo"></a>
 
-```
+```markdown
 > /technology-explainer-update git expert
 
 Updated **git** → **expert**.
@@ -22,7 +22,7 @@ Updated **terraform** → **learning**.
 
 After restarting:
 
-```
+```markdown
 > How does git stash work?
 
 ✦ Using skill: proficiency-guide-expert

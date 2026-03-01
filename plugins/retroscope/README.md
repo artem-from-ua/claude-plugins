@@ -6,9 +6,9 @@
 A Claude Code plugin that generates retrospective summary reports from your Claude Code sessions. Review what you accomplished, track open questions, and get insights into your productivity and communication patterns.
 
 > [!NOTE]
-> [⚡ Quick Start](#quick-start) · [⚙️ How it works](#how-it-works) · [⚙️ Configuration](#configuration)
+> [⚡ Quick Start](#quick-start) · [📄 Report Format](#report-format) · [📂 Storage](#storage-structure) · [⚙️ Configuration](#configuration) · [⚙️ How it works](#how-it-works) · [💲 Cost](#cost-estimates) · [🗺️ Roadmap](#future-roadmap) · [🔧 Troubleshooting](#troubleshooting)
 
-## What it does
+## ✅ What it does <a name="what-it-does"></a>
 
 - **`/retro session`** — Summarize the current session from conversation context (display only)
 - **`/retro today`** — Aggregate report for all today's sessions, saved to your storage repo
@@ -26,7 +26,7 @@ Reports include: task outcomes, decisions made, open questions, GitHub/PR refere
 
 > **Tip:** You can also run `/retroscope:setup` directly at any time to configure or update settings.
 
-## Report Format
+## 📄 Report Format <a name="report-format"></a>
 
 ```markdown
 # 📋 Retroscope: my-project — 2026-02-23
@@ -67,7 +67,7 @@ Highly productive session focused on new plugin development...
 - Add streak tracking
 ```
 
-## Storage Structure
+## 📂 Storage Structure <a name="storage-structure"></a>
 
 Reports are saved as git-tracked markdown files:
 
@@ -107,7 +107,7 @@ Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude-plugin
 5. **Storage** — Saves to the configured storage repo and creates a git commit
 6. **Caching** — If a report already exists and is newer than all session files, displays cached version instantly
 
-## Cost Estimates
+## 💲 Cost Estimates <a name="cost-estimates"></a>
 
 | Config | Sessions | Est. Cost |
 |--------|----------|----------|
@@ -116,7 +116,7 @@ Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude-plugin
 | Sonnet + extract mode ON | 2 avg sessions | ~$0.05–0.15 |
 | Sonnet + extract mode OFF | 2 avg sessions | ~$0.20–0.60 |
 
-## Future Roadmap (v0.2.0+)
+## 🗺️ Future Roadmap (v0.2.0+) <a name="future-roadmap"></a>
 
 - `/retro this-week` — aggregate daily reports Mon–today
 - `/retro last-week` — Mon–Sun of previous week
@@ -131,7 +131,7 @@ Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude-plugin
 - Session tagging — auto-tag by activity type (debugging, feature dev, docs, review)
 - Burnout detection — flag long low-productivity sessions
 
-## Troubleshooting
+## 🔧 Troubleshooting <a name="troubleshooting"></a>
 
 **No sessions found for today:**
 - Check that `CLAUDE_PROJECT_DIR` matches your project path
