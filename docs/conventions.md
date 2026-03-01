@@ -70,6 +70,30 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 ---
 
+## Git Hook Installation
+
+Plugins that install git hooks (pre-commit, pre-push, etc.) **must not overwrite** existing hooks. Plugins are additive guests in the user's repository.
+
+**Marker-based injection:** Wrap the plugin's section in marker comments:
+```bash
+# >>> tribe-coding/<plugin-name> >>>
+# ... plugin hook logic ...
+# <<< tribe-coding/<plugin-name> <<<
+```
+
+**Rules:**
+
+- **Respect `core.hooksPath`** — read the existing value with `git config --local core.hooksPath`. Only set it when no value is configured.
+- **Variable namespacing** — prefix all variables with uppercase plugin name (e.g., `PLANTUML_STAGED_MD`, `PLANTUML_ENCODER`) to avoid clashes when multiple plugins share a hook file.
+- **Idempotency** — if markers are already present, replace the section between them. If absent, append the section. Never duplicate.
+- **Template format** — templates contain only the marker-delimited fragment (no `#!/bin/bash` shebang). The setup script adds a shebang when creating a new hook file.
+- **No `exit 0`** — shared hook files run sequentially. An `exit 0` inside a section would skip other plugins' sections. Only `exit 1` (to block the git operation) is allowed.
+- **`chmod +x`** — always set the executable bit after writing the hook file.
+
+**Reference implementation:** `plugins/plantuml/scripts/setup-project.sh` + `plugins/plantuml/templates/pre-commit`
+
+---
+
 ## Cross-Platform Compatibility
 
 All scripts must work on both macOS and Linux. Use these patterns:
