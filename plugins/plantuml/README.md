@@ -6,7 +6,7 @@
 With this plugin, Claude proactively illustrates architecture, flows, and data structures using [PlantUML](https://plantuml.com): in markdown documentation and directly in the terminal during conversations.
 
 > [!NOTE]
-> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation)
+> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [🗑️ Uninstall](#uninstall)
 
 ## 🎬 Demo <a name="demo"></a>
 
@@ -115,3 +115,13 @@ Every diagram has two parts: a `plantuml` source block and an image URL below it
 Select **plantuml** → enable **auto-update**. Restart your session — done.
 
 **Requirements:** Python 3.6+
+
+## 🗑️ Uninstall <a name="uninstall"></a>
+
+The plugin installs a pre-commit hook section that validates PlantUML URLs before each commit. To remove it from a project:
+
+```
+/plantuml-uninstall
+```
+
+This removes only the plantuml section from your pre-commit hook. If other hook sections exist (eslint, prettier, etc.), they are preserved. If the plantuml section was the only content, the hook file is deleted entirely.

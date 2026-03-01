@@ -86,7 +86,7 @@ For full authoring guidelines — SKILL.md hybrid design, preset RULES/REFERENCE
    - Store default config template in `templates/<name>.json`
    - Setup wizard writes to `{project}/.claude-plugin/<name>.json`
    - Scripts read from `.claude-plugin/<name>.json` first, fall back to `.claude/<name>.json`
-8. **If plugin installs git hooks** (pre-commit, pre-push, etc.) → use marker-based injection (see [`docs/conventions.md`](docs/conventions.md) — Git Hook Installation)
+8. **If plugin installs git hooks** (pre-commit, pre-push, etc.) → use marker-based injection and provide an uninstall command (see [`docs/conventions.md`](docs/conventions.md) — Git Hook Installation)
 9. **Update root `README.md`** — add row to the Plugins table (alphabetical order)
 10. **Update the Plugins list above** — add bullet to the Plugins section in this file (alphabetical order)
 11. **README navbar** — nav line goes after the header block (motto + intro paragraph), lists ALL sections except the first one (usually Demo); see `readme` playbook preset for full rules

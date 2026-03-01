@@ -503,6 +503,102 @@ grep -q 'eslint --fix' /tmp/plantuml-test-existing/.githooks/pre-commit && echo 
 - ✅ Content outside markers untouched
 - ✅ Exactly one begin marker in file
 
+#### 4.3 uninstall-hook.sh
+
+**Objective:** Verify pre-commit hook uninstallation removes only the plantuml section
+
+**Test case 1:** Uninstall from repo with only plantuml hook
+
+**Steps:**
+```bash
+rm -rf /tmp/plantuml-test-uninstall && mkdir /tmp/plantuml-test-uninstall
+git -C /tmp/plantuml-test-uninstall init -q
+
+# Install first
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-uninstall" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
+
+test -f /tmp/plantuml-test-uninstall/.githooks/pre-commit && echo "✓ Hook installed"
+
+# Uninstall
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-uninstall" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/uninstall-hook.sh"
+
+test ! -f /tmp/plantuml-test-uninstall/.githooks/pre-commit && echo "✓ Hook file removed"
+```
+
+**Expected result:**
+- ✅ Hook file deleted entirely (only plantuml content was present)
+- ✅ Exit code 0
+
+**Test case 2:** Uninstall preserves other hook sections
+
+**Steps:**
+```bash
+rm -rf /tmp/plantuml-test-uninstall2 && mkdir /tmp/plantuml-test-uninstall2
+git -C /tmp/plantuml-test-uninstall2 init -q
+mkdir -p /tmp/plantuml-test-uninstall2/.githooks
+cat > /tmp/plantuml-test-uninstall2/.githooks/pre-commit << 'EXISTING'
+#!/bin/bash
+echo "My custom hook"
+eslint --fix
+EXISTING
+git -C /tmp/plantuml-test-uninstall2 config core.hooksPath .githooks
+
+# Install plantuml section
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-uninstall2" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
+
+# Uninstall plantuml section
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-uninstall2" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/uninstall-hook.sh"
+
+grep -q 'My custom hook' /tmp/plantuml-test-uninstall2/.githooks/pre-commit && echo "✓ Custom hook preserved"
+grep -q '>>> tribe-coding/plantuml >>>' /tmp/plantuml-test-uninstall2/.githooks/pre-commit && echo "✗ Plantuml still present" || echo "✓ Plantuml removed"
+```
+
+**Expected result:**
+- ✅ Custom hook content preserved (shebang, echo, eslint)
+- ✅ Plantuml marker-delimited section removed
+- ✅ Hook file still executable
+
+**Test case 3:** Uninstall when no hook exists
+
+**Steps:**
+```bash
+rm -rf /tmp/plantuml-test-uninstall3 && mkdir /tmp/plantuml-test-uninstall3
+git -C /tmp/plantuml-test-uninstall3 init -q
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-uninstall3" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/uninstall-hook.sh"
+
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Exit code 0
+- ✅ Message: "No pre-commit hook found"
+
+**Test case 4:** Uninstall idempotency
+
+**Steps:**
+```bash
+# Run uninstall twice on the repo from test case 1 (hook already removed)
+CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
+CLAUDE_PROJECT_DIR="/tmp/plantuml-test-uninstall" \
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/uninstall-hook.sh"
+
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Exit code 0
+- ✅ Message: "No pre-commit hook found" or "No plantuml section found"
+
 ---
 
 ### 5. Pre-commit Hook Testing

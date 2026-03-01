@@ -89,8 +89,9 @@ Plugins that install git hooks (pre-commit, pre-push, etc.) **must not overwrite
 - **Template format** — templates contain only the marker-delimited fragment (no `#!/bin/bash` shebang). The setup script adds a shebang when creating a new hook file.
 - **No `exit 0`** — shared hook files run sequentially. An `exit 0` inside a section would skip other plugins' sections. Only `exit 1` (to block the git operation) is allowed.
 - **`chmod +x`** — always set the executable bit after writing the hook file.
+- **Provide an uninstall command** — every plugin that installs git hooks must also provide an uninstall script and a slash command (e.g., `/plantuml-uninstall`) that removes its marker-delimited section. If the section is the only content, delete the hook file. If other sections remain, preserve them.
 
-**Reference implementation:** `plugins/plantuml/scripts/setup-project.sh` + `plugins/plantuml/templates/pre-commit`
+**Reference implementation:** `plugins/plantuml/scripts/setup-project.sh` + `plugins/plantuml/scripts/uninstall-hook.sh` + `plugins/plantuml/templates/pre-commit`
 
 ---
 
