@@ -620,10 +620,10 @@ if [ -n "$session_id" ]; then
   else
     # Try extracting from transcript JSONL
     if [ -n "$transcript_path" ] && [ -f "$transcript_path" ]; then
-      # Look for custom name (from /rename): last summary entry
-      summary_line=$(reverse_file "$transcript_path" 2>/dev/null | grep -m1 '"type":"summary"')
-      if [ -n "$summary_line" ]; then
-        session_name=$(echo "$summary_line" | jq -r '.summary // empty' 2>/dev/null)
+      # Look for custom name (from /rename): last custom-title entry
+      title_line=$(reverse_file "$transcript_path" 2>/dev/null | grep -m1 '"type":"custom-title"')
+      if [ -n "$title_line" ]; then
+        session_name=$(echo "$title_line" | jq -r '.customTitle // empty' 2>/dev/null)
         if [ -n "$session_name" ]; then
           session_style="custom"
           echo "custom:${session_name}" > "$session_cache"
