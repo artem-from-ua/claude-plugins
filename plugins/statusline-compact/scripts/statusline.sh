@@ -3,7 +3,7 @@
 # Reads JSON from stdin (piped by Claude Code)
 #
 # Layout:
-#   5h 12% ~2h14m   7d 45% ~3d5h   extra $4.79   $0.42   Sonnet 4.5   context 52%   my-project/   main
+#   5h 12% ~2h14m   7d 45% ~3d5h   extra $4.79   $0.42   Sonnet 4.5   context 52%   my-project/   main   session my-project-name
 #
 # Brightness-coded values: dim at low usage, brighter as they climb,
 # yellow >90%, red at 100%. Text indicators: !! warning, XX exhausted.
@@ -137,6 +137,8 @@ dim_time_units() {
 cwd=$(echo "$input" | jq -r '.workspace.current_dir')
 model=$(echo "$input" | jq -r '.model.display_name')
 used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
+session_id=$(echo "$input" | jq -r '.session_id // empty')
+transcript_path=$(echo "$input" | jq -r '.transcript_path // empty')
 
 # Git branch + dirty indicator
 branch=""
@@ -195,6 +197,68 @@ else
       if [ -f "$cache_file" ]; then
         usage_json=$(cat "$cache_file" 2>/dev/null)
       fi
+    fi
+  fi
+fi
+
+# ===== SESSION NAME =====
+reverse_file() {
+  if command -v tac > /dev/null 2>&1; then
+    tac "$1"
+  else
+    tail -r "$1"
+  fi
+}
+
+session_name=""
+session_style=""
+if [ -n "$session_id" ]; then
+  session_cache="/tmp/claude-statusline-session-${UID}-${session_id}"
+  session_cache_valid=false
+
+  if [ -f "$session_cache" ]; then
+    if [ "$(uname)" = "Darwin" ]; then
+      scache_mtime=$(stat -f %m "$session_cache" 2>/dev/null || echo 0)
+    else
+      scache_mtime=$(stat -c %Y "$session_cache" 2>/dev/null || echo 0)
+    fi
+    scache_age=$(( $(date +%s) - scache_mtime ))
+    if [ "$scache_age" -lt 300 ]; then
+      session_cache_valid=true
+    fi
+  fi
+
+  if [ "$session_cache_valid" = true ]; then
+    cached_value=$(cat "$session_cache" 2>/dev/null)
+    session_style="${cached_value%%:*}"
+    session_name="${cached_value#*:}"
+  else
+    if [ -n "$transcript_path" ] && [ -f "$transcript_path" ]; then
+      title_line=$(reverse_file "$transcript_path" 2>/dev/null | grep -m1 '"type":"custom-title"')
+      if [ -n "$title_line" ]; then
+        session_name=$(echo "$title_line" | jq -r '.customTitle // empty' 2>/dev/null)
+        if [ -n "$session_name" ]; then
+          session_style="custom"
+          echo "custom:${session_name}" > "$session_cache"
+        fi
+      fi
+
+      if [ -z "$session_name" ]; then
+        slug_line=$(reverse_file "$transcript_path" 2>/dev/null | grep -m1 '"slug"')
+        if [ -n "$slug_line" ]; then
+          session_name=$(echo "$slug_line" | jq -r '.slug // empty' 2>/dev/null)
+          if [ -n "$session_name" ]; then
+            session_style="dimmed"
+            echo "dimmed:${session_name}" > "$session_cache"
+          fi
+        fi
+      fi
+    fi
+
+    if [ -z "$session_name" ]; then
+      session_name="${session_id%%-*}"
+      session_style="dimmed"
+      echo "dimmed:${session_name}" > "$session_cache"
     fi
   fi
 fi
@@ -317,9 +381,19 @@ if [ -n "$branch" ]; then
   fi
 fi
 
+# Session segment
+compact_session=""
+if [ -n "$session_name" ]; then
+  if [ "$session_style" = "custom" ]; then
+    compact_session="${dim}session${rst} ${session_name}"
+  else
+    compact_session="${dim}session${rst} ${dim}${session_name}${rst} ${yellow}!!${rst}"
+  fi
+fi
+
 # Assemble single line with 3-space gaps
 compact_line=""
-for seg in "$compact_5h" "$compact_7d" "$compact_mo" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch"; do
+for seg in "$compact_5h" "$compact_7d" "$compact_mo" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch" "$compact_session"; do
   if [ -n "$seg" ]; then
     if [ -n "$compact_line" ]; then
       compact_line="${compact_line}   ${seg}"
