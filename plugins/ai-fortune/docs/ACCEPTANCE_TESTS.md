@@ -22,6 +22,7 @@ Critical components to test:
 7. v0.3.0 feature criteria (manual)
 8. PDF resume integration (manual)
 9. v0.4.0 feature criteria (manual)
+10. v0.5.0 feature criteria (manual)
 
 ## Automation Status
 
@@ -63,7 +64,7 @@ import json, sys
 with open('$PLUGIN/.claude-plugin/plugin.json') as f:
     p = json.load(f)
 assert p['name'] == 'ai-fortune', f'wrong name: {p[\"name\"]}'
-assert p['version'] == '0.4.0', f'wrong version: {p[\"version\"]}'
+assert p['version'] == '0.5.0', f'wrong version: {p[\"version\"]}'
 assert 'commands' in p, 'missing commands field'
 print('plugin.json: OK')
 "
@@ -97,7 +98,7 @@ done
 
 **Expected:**
 - ✅ All checks pass
-- ✅ plugin.json has name `ai-fortune`, version `0.4.0`
+- ✅ plugin.json has name `ai-fortune`, version `0.5.0`
 - ✅ SKILL.md starts with `---` and has `name:` + `description:` in frontmatter
 - ✅ Both scripts compile without errors
 
@@ -369,6 +370,30 @@ else:
 | Resume vs Reality in report | Q3b response integrated into Career Trajectory | |
 | No resume = no crash | All resume sections gracefully absent | |
 | State persistence | resumePath saved in dataSources | |
+
+### 10. v0.5.0 Feature Acceptance Criteria
+
+**Objective:** Verify report language configuration feature.
+
+**Automation:** ⚠️ Manual
+
+**Criteria:**
+
+| Feature | Acceptance Criterion | Verified |
+|---------|---------------------|----------|
+| Language question before interview | Step 6.5 asks language preference before Phase 2 interview starts | |
+| Settings detection | If `~/.claude/settings.json` has non-English language, it appears as first option | |
+| English default | When no settings language detected, "English" is the default | |
+| Custom language | User can type any language (e.g., "Français", "日本語") via free text | |
+| Persistence | `reportLanguage` saved as top-level field in `~/.claude/ai-fortune.json` (not inside `answers`) | |
+| Source tracking | `source` field correctly set: `"settings"`, `"explicit"`, or `"custom"` | |
+| Skip if recent | Answer < 6 months old → skip, show "Report language: {value}" | |
+| Re-ask on settings change | If `source: "settings"` and settings.json language changed → re-ask regardless of age | |
+| Re-ask if stale | Answer >= 6 months old → re-ask with previous value as default | |
+| Report in language | Non-English language → entire report generated in chosen language | |
+| Preserved terms | Company names, tech names, URLs, book titles remain in original language in translated report | |
+| Backward compatible | Missing `reportLanguage` (null or absent) → defaults to English, no errors | |
+| Template updated | `templates/ai-fortune.json` has `"reportLanguage": null` field | |
 
 ---
 

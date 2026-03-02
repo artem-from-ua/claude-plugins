@@ -159,6 +159,8 @@ Reports are automatically saved to a user-chosen directory (default: `/tmp/ai-fo
 
 No setup wizard needed — just run `/ai-fortune`. The plugin discovers data sources automatically and asks about any it can't find.
 
+**Report language:** Before the interview, the plugin asks which language to generate the report in. If your `~/.claude/settings.json` has a non-English language preference, it appears as the first option. You can also type any language. The choice is saved and reused on future runs (re-asked if settings language changes or after 6 months).
+
 State file: `~/.claude/ai-fortune.json`
 
 ## 🔧 Troubleshooting <a name="troubleshooting"></a>
