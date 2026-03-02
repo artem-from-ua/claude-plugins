@@ -10,7 +10,7 @@ Display the report in the terminal, then save it to the user-chosen directory (s
 ```
 # Career Direction Report
 
-Generated: {date} | Sources: {N}/8 used
+Generated: {date} | Sources: {N}/9 used
 
 ---
 
@@ -20,6 +20,9 @@ Generated: {date} | Sources: {N}/8 used
 **Location:** {from Q18} | **Languages:** {from Q17}
 **AI Adoption at org:** {level} | **AI (work):** {Q5a} | **AI (personal):** {Q5b}
 **Current compensation:** {from Q16}
+**Career stage:** {early/mid/senior/executive — from resume} (conditional: only when resume provided)
+**Education:** {degree, institution — from resume} (conditional: only when resume provided)
+**Career span:** {N years, M companies — from resume} (conditional: only when resume provided)
 
 **Technology Proficiency Map** (from technology-explainer):
 - Expert: {list}
@@ -30,6 +33,39 @@ Generated: {date} | Sources: {N}/8 used
 - {data-derived strength 1}
 - {data-derived strength 2}
 - {interview-derived strength 3}
+
+---
+
+## Career Trajectory Analysis
+(conditional: only when PDF resume provided)
+
+**Career span:** {N} years across {M} companies
+
+**Career timeline:**
+| Period | Company | Title | Duration | Industry |
+|--------|---------|-------|----------|----------|
+| {dates} | {company} | {title} | {duration} | {industry} |
+
+**Career velocity:** {classification} — {evidence}
+**Average tenure:** {N} yrs/role | **Longest:** {company, N yrs} | **Shortest:** {company, N months}
+**Domain switches:** {N} across {M} industries
+**Company pattern:** {trajectory, e.g., "startup → enterprise" or "consistently mid-size"}
+**Career trajectory:** {direction, e.g., "IC deepening" or "Management track"}
+
+**Key career patterns:**
+- {observation 1 — e.g., "Progressive seniority with 3-year cycles"}
+- {observation 2 — e.g., "Consistent fintech domain with one lateral into healthtech"}
+- {observation 3 — e.g., "Recent shift from hands-on coding to architecture roles"}
+
+**Skill currency:**
+- **Current** (used in last 2 years): {list}
+- **Dormant** (listed but not recent): {list}
+- **Emerging** (recent only): {list}
+
+**Resume vs Reality:** (conditional: only when Q3b answered)
+{User's honest assessment of discrepancies between resume and reality.
+Frame constructively: "Your resume positions you as X, but you note that Y —
+this gap creates both risk (market mismatch) and opportunity (hidden strengths)."}
 
 ---
 
@@ -60,6 +96,9 @@ aggressive interruptor, meta-learning feedback loop builder"}
 | Physical Presence | {stars} | {evidence} |
 | Regulatory/Trust | {stars} | {evidence} |
 | Creative Synthesis | {stars} | {evidence} |
+
+**Career Stability Score: {1-5}** — {evidence} (conditional: resume-enhanced)
+**Adaptability Evidence: {1-5}** — {evidence} (conditional: resume-enhanced)
 
 **Timeline:** {when AI can handle core functions of this role}
 
@@ -141,9 +180,11 @@ Cite specific companies and tools, not vague generalities.}
 {2-3 sentences referencing AI-resistant properties.}
 
 **Skills bridge:**
-| Already Have | Need to Acquire | How to Get |
-|-------------|-----------------|------------|
-| {skill from data} | {skill gap} | {specific resource/course/path} |
+| Already Have (verified) | Years | Need to Acquire | How to Get |
+|------------------------|-------|-----------------|------------|
+| {skill from data} | {N} | {skill gap} | {specific resource/course/path} |
+| {dormant skill} ⚠️ | {N} | {refresh needed} | {specific resource} |
+(When resume not available, omit "Years" column and dormant flags — use standard 3-column format)
 
 **Salary range:** {range} | **vs current:** {delta} | **Minimum viable?** {yes/no}
 **Timeline:** {estimate with milestones}
@@ -168,9 +209,11 @@ Cite specific companies and tools, not vague generalities.}
 {2-3 sentences referencing AI-resistant properties.}
 
 **Skills bridge:**
-| Already Have | Need to Acquire | How to Get |
-|-------------|-----------------|------------|
-| {skill from data} | {skill gap} | {specific resource/course/path} |
+| Already Have (verified) | Years | Need to Acquire | How to Get |
+|------------------------|-------|-----------------|------------|
+| {skill from data} | {N} | {skill gap} | {specific resource/course/path} |
+| {dormant skill} ⚠️ | {N} | {refresh needed} | {specific resource} |
+(When resume not available, omit "Years" column and dormant flags — use standard 3-column format)
 
 **Salary range:** {range} | **vs current:** {delta} | **Minimum viable?** {yes/no}
 **Timeline:** {estimate with milestones}
@@ -195,9 +238,11 @@ Cite specific companies and tools, not vague generalities.}
 {2-3 sentences referencing AI-resistant properties.}
 
 **Skills bridge:**
-| Already Have | Need to Acquire | How to Get |
-|-------------|-----------------|------------|
-| {skill from data} | {skill gap} | {specific resource/course/path} |
+| Already Have (verified) | Years | Need to Acquire | How to Get |
+|------------------------|-------|-----------------|------------|
+| {skill from data} | {N} | {skill gap} | {specific resource/course/path} |
+| {dormant skill} ⚠️ | {N} | {refresh needed} | {specific resource} |
+(When resume not available, omit "Years" column and dormant flags — use standard 3-column format)
 
 **Salary range:** {range} | **vs current:** {delta} | **Minimum viable?** {yes/no}
 **Timeline:** {estimate with milestones}
@@ -261,6 +306,16 @@ itself a career differentiator.}
 - Skill gaps between current role and recommended directions
 - Contrastive analysis findings (self-reported vs observed discrepancies)}
 
+### Career Pattern Blind Spots
+(conditional: only when PDF resume provided)
+
+{Resume-derived observations the user may not see:
+- **Skill atrophy:** skills listed on resume but unused in last 2+ positions — market may expect proficiency the user no longer has
+- **Stagnation indicators:** same title for 5+ years without scope expansion — may signal plateau
+- **Education-career misalignment:** degree field vs actual career path — untapped potential or irrelevant credential
+- **Resume embellishment patterns** (from Q3b): where user admits resume doesn't match reality — reframe as actionable gaps
+- **Predicted next transition window:** based on avg tenure and current position duration — "Based on your pattern, you typically transition around {N} years. You're at {M} years now."}
+
 ### Sustainability Warning
 (conditional: only if 3+ burnout risk indicators flagged)
 
@@ -288,6 +343,7 @@ itself a career differentiator.}
 | Source | Status | Key Insight |
 |--------|--------|-------------|
 | Memory Chat File | {check/cross} | {one-line summary} |
+| PDF Resume | {check/cross} | {N years, M companies, career velocity} |
 | CC Insights Report | {check/cross} | {summary} |
 | Session Metadata ({N}d) | {check/cross} | {N sessions, M projects} |
 | Technology Explainer | {check/cross} | {expert/intermediate/learning counts} |

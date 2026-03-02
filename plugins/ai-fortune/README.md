@@ -13,7 +13,7 @@ A Claude Code plugin that analyzes your AI usage patterns, runs an adaptive care
 - **`/ai-fortune`** — Run a full career direction analysis: data collection → adaptive interview → web research → structured report
 
 One command that:
-1. Mines 7 data sources (insights report, session metadata, plugins, tech proficiency, stats)
+1. Mines up to 8 data sources (insights report, session metadata, plugins, tech proficiency, stats, PDF resume)
 2. Runs an adaptive 18-question interview with sub-questions (skips what it already knows)
 3. Researches your industry's AI landscape via 5-8 targeted web searches
 4. Generates a 5-level amplitude spectrum of career directions — from optimize-in-place to radical change
@@ -38,14 +38,15 @@ You: /ai-fortune
 Claude: 📂 Loading persistent state...
         ✅ Found previous answers from 2026-02-15 (14 days ago)
 
-        📊 Phase 1: Collecting data from 7 sources...
+        📊 Phase 1: Collecting data from 8 sources...
         ✅ Memory chat file — extracted industry: Tech, role context
+        ✅ PDF resume — 26 years, 8 companies, Steady Climber career velocity
         ✅ Insights report — 182 sessions, 5 project areas, plan-driven power user
         ✅ Session metadata (7d) — 23 sessions, 4 projects
         ✅ Technology explainer — 8 expert, 5 intermediate, 3 learning
         ✅ Installed plugins — 10 plugins (sophisticated AI augmentation)
         ✅ Stats cache — 299 total sessions over 39 days
-        Sources: 6/7 used
+        Sources: 7/8 used
 
         🎤 Phase 2: Adaptive interview...
         Using your previous answer from Feb 15: "Software Engineer, Tech"
@@ -72,7 +73,7 @@ You: I bridge the gap between infrastructure and product — no one else speaks 
 
 # Career Direction Report
 
-Generated: 2026-03-01 | Sources: 7/8 used
+Generated: 2026-03-01 | Sources: 8/9 used
 
 ## Your Profile
 **Role:** Software Engineer | **Industry:** Tech | **Experience:** 6-10 years
@@ -121,19 +122,21 @@ Generated: 2026-03-01 | Sources: 7/8 used
 | # | Source | What it reveals | Required? |
 |---|--------|----------------|-----------|
 | 1 | Memory chat file | Industry, interests, domain context | Optional |
-| 2 | CC Insights report | Usage patterns, strengths, friction | Optional |
-| 3 | Session metadata (7d) | Recent work diversity, tool usage | Optional |
-| 4 | Technology explainer | Skill proficiency map | Optional |
-| 5 | Installed plugins | AI augmentation sophistication | Optional |
-| 6 | Stats cache | Longitudinal usage trends | Optional |
-| 7 | Web research | Industry AI landscape, salary data | Optional |
-| 8 | Interview | Self-assessment, aspirations | **Required** |
+| 2 | PDF resume | Career history, tenure patterns, skill verification | Optional |
+| 3 | CC Insights report | Usage patterns, strengths, friction | Optional |
+| 4 | Session metadata (7d) | Recent work diversity, tool usage | Optional |
+| 5 | Technology explainer | Skill proficiency map | Optional |
+| 6 | Installed plugins | AI augmentation sophistication | Optional |
+| 7 | Stats cache | Longitudinal usage trends | Optional |
+| 8 | Web research | Industry AI landscape, salary data | Optional |
+| 9 | Interview | Self-assessment, aspirations | **Required** |
 
 The report can be generated with just the interview, but quality improves dramatically with more data sources. The plugin gracefully handles missing sources.
 
 ## 🎯 Report Sections <a name="report-sections"></a>
 
 - **Your Profile** — role, industry, location, languages, compensation, tech proficiency map
+- **Career Trajectory Analysis** — (when resume provided) career timeline, velocity classification, tenure stats, domain analysis, skill currency (current/dormant/emerging), and resume vs reality assessment
 - **AI Leverage Profile** — AI Leverage Score (0-10) and Delegation Maturity Model (Level 1-5), measuring how effectively you use AI as a force multiplier
 - **Risk Assessment** — 5-dimension risk matrix with evidence-backed scores
 - **Industry AI Landscape** — real-time web research on AI in your industry
@@ -148,7 +151,7 @@ Interview answers are saved to `~/.claude/ai-fortune.json` with timestamps. On r
 
 - **Recent answers (< 6 months):** Skipped, shown as "Using your previous answer from {date}"
 - **Stale answers (>= 6 months):** Re-asked with previous value as default option
-- **File paths:** Saved so you don't re-enter them each time
+- **File paths:** Saved (memory file, resume, insights report) so you don't re-enter them each time
 
 Reports are automatically saved to a user-chosen directory (default: `/tmp/ai-fortune-reports/`) with timestamped filenames (e.g., `2026-03-01_14-30-45.md`). The chosen directory is remembered for future runs. Browse past reports to track how recommendations evolve over time.
 

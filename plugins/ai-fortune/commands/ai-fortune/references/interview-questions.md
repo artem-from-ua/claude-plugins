@@ -43,6 +43,13 @@ Questions are organized by tier. Each question specifies:
   - "No one else wants to maintain the CI/CD pipeline, so I do it" (only willing worker)
   - "I translate between the backend team and the product team" (cross-team coordination)
 
+### Q3b: Resume vs Reality (conditional)
+- **key:** `resume_vs_reality`
+- **type:** `free_text`
+- **prompt:** "Looking at your resume, it highlights {skills_from_resume}. Is there anything that doesn't fully reflect your current reality? (e.g., skills you listed but rarely use now, titles that over/understate your role, descriptions that are more aspirational than factual). Be honest — this helps us identify where the market sees you vs where you actually are."
+- **skip_if_data:** skip if no resume provided
+- **tier:** 1 (always ask when resume available)
+
 ---
 
 ## Tier 2: AI Context (always ask)
@@ -209,6 +216,15 @@ Questions are organized by tier. Each question specifies:
 - If memory file mentions languages → Q17 can be pre-filled, confirm
 - If Q15 already covers geography or memory has location → Q18 can be pre-filled, confirm
 - Q18 should be asked before Q16 when both are unanswered (so currency can adapt)
+
+### Resume-based auto-skip rules:
+When a PDF resume is provided, pre-fill the following questions from extracted data. **Always confirm with the user — never silently skip** (resumes can be outdated):
+- Q1a (current role): pre-fill from most recent position title + company
+- Q7 (years experience): compute total years from first position start date
+- Q8 (management vs IC): infer from title patterns (Manager/Director → management; Engineer/Developer → IC)
+- Q10 (domain expertise): extract domain knowledge from experience descriptions
+- Q17 (languages): if resume mentions languages spoken
+- Q18 (local market): pre-fill from resume header location
 
 ### Re-ask rules (persistent state):
 - Answer < 6 months old → skip question, show "Using your previous answer from {date}: {value}"

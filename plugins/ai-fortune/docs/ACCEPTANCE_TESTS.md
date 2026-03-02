@@ -19,11 +19,14 @@ Critical components to test:
 4. Data access tests (automated)
 5. Full flow (manual)
 6. Graceful degradation (manual)
+7. v0.3.0 feature criteria (manual)
+8. PDF resume integration (manual)
+9. v0.4.0 feature criteria (manual)
 
 ## Automation Status
 
 - ✅ Fully automated: Tests 1, 2, 3, 4
-- ⚠️ Manual only: Tests 5, 6 (require interactive interview + report quality review)
+- ⚠️ Manual only: Tests 5, 6, 7, 8, 9 (require interactive interview + report quality review)
 
 ## Automated Test Results (Last Run)
 
@@ -60,7 +63,7 @@ import json, sys
 with open('$PLUGIN/.claude-plugin/plugin.json') as f:
     p = json.load(f)
 assert p['name'] == 'ai-fortune', f'wrong name: {p[\"name\"]}'
-assert p['version'] == '0.3.0', f'wrong version: {p[\"version\"]}'
+assert p['version'] == '0.4.0', f'wrong version: {p[\"version\"]}'
 assert 'commands' in p, 'missing commands field'
 print('plugin.json: OK')
 "
@@ -87,14 +90,14 @@ python3 -m py_compile $PLUGIN/scripts/aggregate-sessions.py && echo "aggregate-s
 python3 -c "import json; json.load(open('$PLUGIN/templates/ai-fortune.json'))" && echo "template: OK"
 
 # 1.5 Reference files exist
-for f in interview-questions.md analysis-framework.md report-template.md; do
+for f in interview-questions.md analysis-framework.md report-template.md resume-extraction.md; do
   test -f "$PLUGIN/commands/ai-fortune/references/$f" && echo "$f: OK" || echo "$f: MISSING"
 done
 ```
 
 **Expected:**
 - ✅ All checks pass
-- ✅ plugin.json has name `ai-fortune`, version `0.3.0`
+- ✅ plugin.json has name `ai-fortune`, version `0.4.0`
 - ✅ SKILL.md starts with `---` and has `name:` + `description:` in frontmatter
 - ✅ Both scripts compile without errors
 
@@ -297,6 +300,75 @@ else:
 | Anti-echo-chamber | At least one direction NOT about building/selling AI | |
 | New state keys | ai-fortune.json saves `career_direction_sentiment`, `ai_dependency_work`, `ai_dependency_personal`, `current_compensation`, `working_languages`, `local_market` | |
 | Backward compat | Old keys `ai_dependency`, `career_satisfaction` ignored but not deleted | |
+
+### 8. PDF Resume Integration (Manual)
+
+**Objective:** Verify PDF resume data extraction, auto-fill, Career Trajectory section, and Q3b.
+
+**Automation:** ⚠️ Manual
+
+**Procedure:**
+
+#### 8.1: Full flow with resume
+1. Run `/ai-fortune` with a PDF resume (LinkedIn export or custom)
+2. Verify:
+   - Resume is read and career data extracted (positions, dates, skills)
+   - Q3b ("Resume vs Reality") is asked with extracted skills listed
+   - Auto-fill works for Q1a (role), Q7 (years), Q8 (IC/management), Q18 (location)
+   - Career Trajectory Analysis section appears in report (after Your Profile)
+   - Resume vs Reality subsection appears in Career Trajectory (from Q3b answer)
+   - Skills Bridge tables use enhanced 4-column format with "Years" column and dormant flags (⚠️)
+   - Career Pattern Blind Spots subsection appears in Blind Spots
+   - Data Sources table shows 9 rows with PDF Resume row
+   - Header shows `Sources: {N}/9 used`
+
+#### 8.2: Skip flow (no resume)
+1. Run `/ai-fortune`, skip resume when asked
+2. Verify:
+   - No Career Trajectory Analysis section in report
+   - No Q3b question asked
+   - No Career Pattern Blind Spots subsection
+   - Skills Bridge tables use standard 3-column format
+   - Data Sources table shows PDF Resume as ❌
+   - Report still generates normally with all other sections
+
+#### 8.3: Re-use saved resume path
+1. Run `/ai-fortune` after a previous run that used a resume
+2. Verify:
+   - AskUserQuestion offers "Use saved path `{path}`?" with saved path
+   - Selecting "Use saved path" reads the same file
+   - Selecting "Enter different path" allows changing the file
+
+**Outcomes:**
+
+| Step | Expected | Actual |
+|------|----------|--------|
+| 8.1 Full flow | Resume extracted, Q3b asked, Career Trajectory in report | |
+| 8.2 Skip flow | No resume sections, report works normally | |
+| 8.3 Re-use path | Saved path offered and works | |
+
+### 9. v0.4.0 Feature Acceptance Criteria
+
+**Objective:** Verify all PDF resume integration features from v0.4.0.
+
+**Automation:** ⚠️ Manual
+
+**Criteria:**
+
+| Feature | Acceptance Criterion | Verified |
+|---------|---------------------|----------|
+| Resume as 9th source | Data Sources table has 9 rows, counter /9 | |
+| Any PDF format | Works with LinkedIn, Europass, custom resumes | |
+| Q3b resume vs reality | Asked when resume provided, skipped otherwise | |
+| Career Trajectory section | Appears after Your Profile when resume provided | |
+| Career velocity | Computed and classified (Rocket/Steady/Deep/Explorer/Settled) | |
+| Skill currency | Current/dormant/emerging listed | |
+| Auto-fill from resume | Q1a, Q7, Q8, Q10, Q17, Q18 pre-filled, confirmed | |
+| Enhanced Skills Bridge | "Years" column + dormant flags (⚠️) when resume available | |
+| Career Pattern Blind Spots | Subsection with resume-derived observations | |
+| Resume vs Reality in report | Q3b response integrated into Career Trajectory | |
+| No resume = no crash | All resume sections gracefully absent | |
+| State persistence | resumePath saved in dataSources | |
 
 ---
 
