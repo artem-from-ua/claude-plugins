@@ -1,6 +1,6 @@
 ---
 name: documentation-principles
-description: "Documentation hierarchy, commit checklist, ADR policy, forbidden patterns"
+description: "Documentation hierarchy, commit checklist, ADR policy, forbidden patterns, diagram guidelines"
 tags: [docs, commits]
 ---
 
@@ -66,6 +66,31 @@ Create an ADR when:
 - making a decision that would confuse a future contributor without context
 
 ADR format: **Context → Decision → Consequences**. Keep it short. Link to relevant code.
+
+## Diagrams
+
+Visual diagrams help readers understand architecture, data flows, and component relationships at a glance — faster than prose alone.
+
+**When to add diagrams:**
+- Architecture docs — system structure, component boundaries, service topology
+- API and data flow docs — request lifecycle, event sequences, transformation pipelines
+- State machines — lifecycle of resources (e.g., order states, job statuses)
+- Decision trees — complex branching logic that is hard to follow as prose
+- Component boundaries — what owns what, dependency directions
+
+**When NOT to add diagrams:**
+- Trivial docs (changelogs, simple lists, one-sentence explanations)
+- When the diagram would just repeat what the adjacent text already says clearly
+- When you cannot keep the diagram up to date — a stale diagram misleads more than no diagram
+
+**Tool guidance:**
+- If the PlantUML plugin is active in the session, use it (sequence, activity, component, state, class, ER, and more)
+- This guideline is tool-agnostic — any diagramming tool that produces a maintained artifact is acceptable
+
+**Placement and maintenance rules:**
+- Place the diagram immediately next to the text it illustrates, not in a separate "diagrams" folder
+- Treat diagrams as first-class code artifacts — update them in the same commit that changes the thing they depict
+- A stale diagram is worse than no diagram: it actively misleads readers
 
 ## Forbidden patterns
 
