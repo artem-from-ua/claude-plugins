@@ -9,6 +9,37 @@ Questions are organized by tier. Each question specifies:
 
 ---
 
+## Tier 0: Report Settings (before interview)
+
+### Q0: Report Language
+- **key:** `reportLanguage`
+- **type:** `multiple_choice`
+- **prompt:** "What language should the report be generated in?"
+- **storage:** Top-level field in `~/.claude/ai-fortune.json` (NOT inside `answers`):
+  ```json
+  {
+    "reportLanguage": {
+      "value": "English",
+      "answeredAt": "2026-03-02T...",
+      "source": "explicit"
+    }
+  }
+  ```
+- **source values:** `"settings"` (detected from settings.json), `"explicit"` (English or picked from options), `"custom"` (user typed a language)
+- **options:** Dynamic — built at runtime:
+  1. If `~/.claude/settings.json` contains a non-English language preference → show `"{settingsLanguage} (from settings)"` as first option
+  2. `"English"`
+  3. Free text for any other language
+- **re-ask logic:**
+  - If `reportLanguage` exists and is < 6 months old:
+    - If `source == "settings"` AND settings.json language has changed since `answeredAt` → RE-ASK (settings changed)
+    - Otherwise → SKIP: display "Report language: {value}"
+  - If `reportLanguage` exists and is >= 6 months old → RE-ASK with previous value as default
+  - If `reportLanguage` is null → ASK
+- **default:** English (when no settings language detected and user doesn't specify)
+
+---
+
 ## Tier 1: Role & Industry (always ask)
 
 ### Q1a: Current Role & Industry (factual)

@@ -17,8 +17,8 @@ Run all phases in order. Each step specifies the exact tools to use.
 ### Step 0: Load State
 
 1. Read `~/.claude/ai-fortune.json`
-   - If exists → load `dataSources` (saved file paths), `answers` (interview answers with timestamps), `reportsDir` (saved report directory)
-   - If not found → start with empty state: `dataSources = {}`, `answers = {}`, `reportsDir = null`
+   - If exists → load `reportLanguage` (language preference), `dataSources` (saved file paths), `answers` (interview answers with timestamps), `reportsDir` (saved report directory)
+   - If not found → start with empty state: `reportLanguage = null`, `dataSources = {}`, `answers = {}`, `reportsDir = null`
 2. Set `sources_used = 0` counter to track how many of the 9 data sources produce data
 
 ---
@@ -103,6 +103,42 @@ Collect data from up to 8 sources. Each source is optional — if unavailable, n
 2. If exists → extract: total sessions, messages/day, model distribution, date range
 3. If not found → note as unavailable, continue
 4. Increment `sources_used` if found
+
+### Step 6.5: Report Language Preference
+
+**Purpose:** Determine the language for the generated report before starting the interview.
+
+1. Check `reportLanguage` in loaded state (top-level field, not inside `answers`)
+2. Apply re-ask logic per `interview-questions.md` § Tier 0 / Q0:
+
+   **Decision tree:**
+   ```
+   reportLanguage exists in state?
+   ├── YES → How old is the value?
+   │   ├── < 6 months AND source == "settings" AND settings.json language changed → RE-ASK
+   │   ├── < 6 months (otherwise) → SKIP: Display "Report language: {value}"
+   │   └── >= 6 months → RE-ASK with previous value as default
+   └── NO → ASK
+   ```
+
+3. When asking, build options dynamically:
+   - Read `~/.claude/settings.json` for language preference
+   - If non-English language detected → first option: `"{language} (from settings)"`
+   - Always include: `"English"`
+   - User can type any language via free text
+4. Store chosen language in state as:
+   ```json
+   {
+     "reportLanguage": {
+       "value": "{chosen language}",
+       "answeredAt": "{ISO 8601}",
+       "source": "settings|explicit|custom"
+     }
+   }
+   ```
+   - `source: "settings"` — picked the option detected from settings.json
+   - `source: "explicit"` — picked "English"
+   - `source: "custom"` — typed a custom language
 
 ---
 
@@ -228,6 +264,7 @@ Increment `sources_used`.
 9. (if resume provided) **Career Trajectory section**: Generate per report-template.md — career timeline table, velocity classification, tenure stats, domain analysis, skill currency, and Resume vs Reality subsection (if Q3b answered)
 10. (if resume provided) **Career Pattern Blind Spots**: Add to Blind Spots section — skill atrophy, stagnation indicators, education-career misalignment, resume embellishment patterns, predicted next transition window
 11. Generate the complete report following `report-template.md` structure
+12. **Report language**: If `reportLanguage` value is not "English", generate the entire report in the configured language. Translate all narrative text, section headers, analysis, action items, and table headers. Keep company names, technology names, product names, URLs, and book titles in their original language.
 9. **Display the report** in the terminal
 10. **Save the report to disk:**
     - If `reportsDir` exists in loaded state → use it as default option
@@ -244,6 +281,11 @@ Increment `sources_used`.
 1. Build state object:
    ```json
    {
+     "reportLanguage": {
+       "value": "{chosen language from Step 6.5}",
+       "answeredAt": "{ISO 8601 timestamp}",
+       "source": "settings|explicit|custom"
+     },
      "lastRun": "{ISO 8601 timestamp}",
      "lastReportPath": "{full path to saved report from Step 10}",
      "reportsDir": "{chosen directory from Step 10}",
