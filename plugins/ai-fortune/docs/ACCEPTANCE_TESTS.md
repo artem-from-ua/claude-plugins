@@ -23,11 +23,12 @@ Critical components to test:
 8. PDF resume integration (manual)
 9. v0.4.0 feature criteria (manual)
 10. v0.5.0 feature criteria (manual)
+11. v0.6.0 feature criteria (manual)
 
 ## Automation Status
 
 - ✅ Fully automated: Tests 1, 2, 3, 4
-- ⚠️ Manual only: Tests 5, 6, 7, 8, 9 (require interactive interview + report quality review)
+- ⚠️ Manual only: Tests 5, 6, 7, 8, 9, 10, 11 (require interactive interview + report quality review)
 
 ## Automated Test Results (Last Run)
 
@@ -64,7 +65,7 @@ import json, sys
 with open('$PLUGIN/.claude-plugin/plugin.json') as f:
     p = json.load(f)
 assert p['name'] == 'ai-fortune', f'wrong name: {p[\"name\"]}'
-assert p['version'] == '0.5.0', f'wrong version: {p[\"version\"]}'
+assert p['version'] == '0.6.0', f'wrong version: {p[\"version\"]}'
 assert 'commands' in p, 'missing commands field'
 print('plugin.json: OK')
 "
@@ -98,7 +99,7 @@ done
 
 **Expected:**
 - ✅ All checks pass
-- ✅ plugin.json has name `ai-fortune`, version `0.5.0`
+- ✅ plugin.json has name `ai-fortune`, version `0.6.0`
 - ✅ SKILL.md starts with `---` and has `name:` + `description:` in frontmatter
 - ✅ Both scripts compile without errors
 
@@ -394,6 +395,43 @@ else:
 | Preserved terms | Company names, tech names, URLs, book titles remain in original language in translated report | |
 | Backward compatible | Missing `reportLanguage` (null or absent) → defaults to English, no errors | |
 | Template updated | `templates/ai-fortune.json` has `"reportLanguage": null` field | |
+
+### 11. v0.6.0 Feature Acceptance Criteria
+
+**Objective:** Verify 3 new interview questions, Satisfaction Alignment Score, and expanded AI Monetization section.
+
+**Automation:** ⚠️ Manual
+
+**Criteria:**
+
+| Feature | Acceptance Criterion | Verified |
+|---------|---------------------|----------|
+| Q1c satisfaction sources | Asked after Q1b, free text, covers work + non-work activities | |
+| Q2b work description | Asked after Q2, free text, describes work substance | |
+| Q19 AI monetization | Asked after Q18 (end of Tier 5), free text about monetizable skills | |
+| Q1c no auto-skip | Q1c is always asked — deeply subjective, no data source can answer | |
+| Q2b pre-fill | If memory/resume has work descriptions → pre-fill, confirm | |
+| Q19 context mention | If tech-explainer expert entries or Q10 answered → referenced as context, still asked | |
+| Satisfaction Alignment Score | Displayed in Your Profile: `Satisfaction Alignment: {X}/5 — {label}` | |
+| Score computation | Score 1-5 based on Q1c vs Q2b comparison per analysis-framework.md | |
+| Satisfaction Gap blind spot | Score ≤ 2 → Satisfaction Gap subsection in Blind Spots | |
+| Contrastive: satisfaction gap | Q1c vs Q2b discrepancy noted when energy is outside day job | |
+| Contrastive: satisfaction vs sentiment | Q1c vs Q1b — "Love it" but energy from pet projects flagged | |
+| Contrastive: work substance | Q2b vs project_areas from insights noted | |
+| Contrastive: AI monetization | Q19 vs AI leverage score — inflated/overlooked flagged | |
+| AI Monetization Opportunities section | Appears after Comparison Table when Q19 substantive | |
+| Path A: AI Employee | Table with roles, company types, salary ranges, gaps | |
+| Path B: AI Founder/Freelancer | Table with ideas, business models, markets, feasibility | |
+| Market validation | Web research query for Q19 domain AI service market | |
+| AI monetization reality check | Blind Spots subsection: validated vs unvalidated vs overlooked | |
+| Work summary in Profile | `Work summary:` line from Q2b in Your Profile section | |
+| Energized by in Profile | `Energized by:` line from Q1c in Your Profile section | |
+| Web research query 9 | `"{Q19 skill/domain} AI service market demand {current year}"` executed | |
+| New state keys | `satisfaction_sources`, `work_description`, `ai_monetization_skills` saved in ai-fortune.json | |
+| 21-question count | README says "21-question", interview has Q0-Q19 (with gaps) | |
+| Dynamic year in search | Web search queries use `{current year}` not hardcoded year | |
+| Pacing impact | Q1c+Q2b can pair (both Tier 1), Q19+Q18 can pair (both Tier 5) | |
+| Backward compatible | Missing new keys in state → questions asked normally, no errors | |
 
 ---
 
