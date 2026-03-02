@@ -1,36 +1,30 @@
 #!/bin/bash
-# Block commits if PlantUML URLs are out of sync with source blocks.
-# Installed by the plantuml Claude Code plugin.
 
-STAGED_MD=$(git diff --cached --name-only --diff-filter=ACM -- '*.md')
+# >>> tribe-coding/plantuml >>>
+# PlantUML URL sync check — installed by plantuml Claude Code plugin.
+# Do not edit between markers; managed automatically by setup-project.sh.
+PLANTUML_STAGED_MD=$(git diff --cached --name-only --diff-filter=ACM -- '*.md')
 
-if [ -n "$STAGED_MD" ]; then
-    # Find the encoder script: check plugin cache locations, then project fallback
-    ENCODER=""
+if [ -n "$PLANTUML_STAGED_MD" ]; then
+    PLANTUML_ENCODER=""
     for candidate in \
+        "$HOME/.claude/plugins/cache/tribe-coding/plantuml/scripts/plantuml-encode.py" \
         "$HOME/.claude/plugins/marketplaces/tribe-coding/plugins/plantuml/scripts/plantuml-encode.py" \
         "$(git rev-parse --show-toplevel 2>/dev/null)/scripts/plantuml-encode.py"; do
         if [ -f "$candidate" ]; then
-            ENCODER="$candidate"
+            PLANTUML_ENCODER="$candidate"
             break
         fi
     done
 
-    if [ -z "$ENCODER" ]; then
-        echo "Warning: plantuml-encode.py not found. Skipping PlantUML check."
-        echo "Install the plantuml plugin or add scripts/plantuml-encode.py to your project."
-        exit 0
-    fi
-
-    echo "Checking PlantUML diagrams in: $STAGED_MD"
-    if ! python3 "$ENCODER" --check $STAGED_MD; then
-        echo ""
-        echo "Commit blocked. Fix with:"
-        echo "  python3 $ENCODER --sync <file.md>"
-        echo "  git add <file.md>"
-        echo ""
-        echo "Hint: if you edited PlantUML source manually, the image URL"
-        echo "must be updated to match. The --sync command does this automatically."
-        exit 1
+    if [ -n "$PLANTUML_ENCODER" ]; then
+        echo "Checking PlantUML diagrams in: $PLANTUML_STAGED_MD"
+        if ! python3 "$PLANTUML_ENCODER" --check $PLANTUML_STAGED_MD; then
+            echo ""
+            echo "Commit blocked: PlantUML URLs out of sync."
+            echo "  Fix: python3 $PLANTUML_ENCODER --sync <file.md>"
+            exit 1
+        fi
     fi
 fi
+# <<< tribe-coding/plantuml <<<
