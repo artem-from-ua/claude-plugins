@@ -20,6 +20,9 @@ Generated: {date} | Sources: {N}/9 used
 **Location:** {from Q18} | **Languages:** {from Q17}
 **AI Adoption at org:** {level} | **AI (work):** {Q5a} | **AI (personal):** {Q5b}
 **Current compensation:** {from Q16}
+**Work summary:** {from Q2b — what problems they solve, what they produce}
+**Energized by:** {from Q1c — may include non-work activities like pet projects, hobbies, volunteering}
+**Satisfaction Alignment: {X}/5** — {label: Misaligned / Mostly outside / Split / Mostly work / Fully aligned}
 **Career stage:** {early/mid/senior/executive — from resume} (conditional: only when resume provided)
 **Education:** {degree, institution — from resume} (conditional: only when resume provided)
 **Career span:** {N years, M companies — from resume} (conditional: only when resume provided)
@@ -261,6 +264,35 @@ Cite specific companies and tools, not vague generalities.}
 
 ---
 
+## AI Monetization Opportunities
+(conditional: only when Q19 has substantive answer)
+
+**Your AI-monetizable assets:**
+- {asset 1 from Q19 + Q10 + tech-explainer — e.g., "Deep healthcare domain expertise (8 yrs)"}
+- {asset 2}
+- {asset 3}
+
+### Path A: AI Employee
+{Best-fit roles at AI companies based on Q19 self-assessment + Q10 domain + tech proficiency}
+
+| Role | Company Type | Why You Fit | Salary Range | Gap to Close |
+|------|-------------|-------------|-------------|--------------|
+| {role} | {AI-native/AI-adopting} | {specific match to Q19/Q10} | {from web research} | {skill gap if any} |
+
+### Path B: AI Founder / Freelancer
+{Concrete product/service ideas synthesized from Q19 + market research}
+
+| Idea | Business Model | Target Market | Competition | Feasibility |
+|------|---------------|---------------|-------------|-------------|
+| {product/service} | {SaaS/Consulting/Marketplace/API} | {niche from Q19 + Q18 market} | {from web research} | {Low/Medium/High based on skills gap} |
+
+**Market validation:** {web research findings for Q19-related AI services/products}
+**Revenue potential:** {realistic range based on business model + market}
+**Time to first revenue:** {estimate}
+**Recommended first step:** {specific action}
+
+---
+
 ## Your Unique Edge: The AI Orchestrator Advantage
 (conditional: only for users with AI Leverage Score >= 7)
 
@@ -305,6 +337,26 @@ itself a career differentiator.}
   what happens if AI tools become unavailable or change?)
 - Skill gaps between current role and recommended directions
 - Contrastive analysis findings (self-reported vs observed discrepancies)}
+
+### Satisfaction Gap
+(conditional: only if Satisfaction Alignment Score ≤ 2)
+
+{Your energy comes from {pet projects/hobbies/volunteering}, not from your day job.
+This misalignment suggests your current role may not be sustainable long-term,
+even if Q1b says "Love it". Evidence:
+- Q1c satisfaction sources: {list — mostly outside work}
+- Q2b work description: {what they do at work}
+- Gap: {specific discrepancy — e.g., "You describe your work as pipeline maintenance,
+  but all your energy comes from mentoring and building Telegram bots"}
+Implication for directions: L3-L5 should prioritize aligning with energy sources, not just current skills.}
+
+### AI Monetization Reality Check
+(conditional: only when Q19 answered)
+
+{Compare Q19 self-assessed monetizable skills against web research evidence:
+- **Validated:** {skills/ideas with market evidence from web research}
+- **Unvalidated:** {skills/ideas without supporting market evidence — flag as requiring more research}
+- **Overlooked:** {monetizable assets from Q10/tech-explainer NOT mentioned in Q19}}
 
 ### Career Pattern Blind Spots
 (conditional: only when PDF resume provided)

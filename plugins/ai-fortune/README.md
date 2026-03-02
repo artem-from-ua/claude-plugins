@@ -14,7 +14,7 @@ A Claude Code plugin that analyzes your AI usage patterns, runs an adaptive care
 
 One command that:
 1. Mines up to 8 data sources (insights report, session metadata, plugins, tech proficiency, stats, PDF resume)
-2. Runs an adaptive 18-question interview with sub-questions (skips what it already knows)
+2. Runs an adaptive 21-question interview with sub-questions (skips what it already knows)
 3. Researches your industry's AI landscape via 5-8 targeted web searches
 4. Generates a 5-level amplitude spectrum of career directions — from optimize-in-place to radical change
 5. Detects burnout risk from session patterns and flags sustainability warnings

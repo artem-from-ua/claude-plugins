@@ -58,11 +58,23 @@ Questions are organized by tier. Each question specifies:
   - "Want to pivot — actively exploring other paths"
   - "Need change — current path feels unsustainable"
 
+### Q1c: Satisfaction & Energy Sources
+- **key:** `satisfaction_sources`
+- **type:** `free_text`
+- **prompt:** "What activities bring you the most satisfaction or energy — at work, in side projects, or anywhere else? Think about moments when you lose track of time, or things you'd do even for free. Include everything: your day job, pet projects, hobbies with a technical angle, volunteering, community work. (e.g., 'At work — debugging complex production incidents, the detective work energizes me' or 'Side project — built a Telegram bot for my neighborhood, loved seeing people actually use it' or 'I mentor bootcamp grads on weekends and it never feels like work')"
+- **skip_if_data:** none (deeply subjective, no data source can answer this)
+
 ### Q2: Typical Workday Breakdown
 - **key:** `daily_tasks`
 - **type:** `free_text`
 - **prompt:** "How does your typical workday break down by activity? (e.g., '40% coding, 20% architecture, 20% meetings, 10% debugging, 10% docs')"
 - **skip_if_data:** none (subjective)
+
+### Q2b: Work Description
+- **key:** `work_description`
+- **type:** `free_text`
+- **prompt:** "Describe what you actually do at work — not your title (Q1a covers that) or time breakdown (Q2 covers that), but the substance: What problems do you solve? What do you produce? Who benefits from your output? (e.g., 'I design data pipelines that ingest financial feeds for risk calculations — the trading desk relies on my systems being fast and correct')"
+- **skip_if_data:** memory file or resume may contain detailed work descriptions → pre-fill, confirm
 
 ### Q3: Core Value to Team
 - **key:** `core_value`
@@ -235,6 +247,12 @@ Questions are organized by tier. Each question specifies:
 - **prompt:** "Where are you based and what job market do you primarily target? (e.g., 'Kyiv, Ukraine — open to EU remote')"
 - **skip_if_data:** Q15 may cover geography; memory file may mention location
 
+### Q19: AI Monetization Potential
+- **key:** `ai_monetization_skills`
+- **type:** `free_text`
+- **prompt:** "What skills or knowledge do you have that could be monetized in the AI economy — either as an employee at an AI company, or by creating your own AI-powered service/product? Think broadly: domain expertise that AI needs humans for, ability to fine-tune/evaluate models, understanding of a niche market, or technical skills for building AI products. (e.g., 'I understand medical billing rules deeply — could build an AI coding assistant for healthcare' or 'I can evaluate LLM output quality for code — useful for AI dev tools companies' or 'I know the Ukrainian SMB market — could build localized AI tools for small businesses')"
+- **skip_if_data:** if technology-explainer has expert entries or Q10 already answered → mention as context but still ask
+
 ---
 
 ## Adaptive Logic
@@ -247,6 +265,8 @@ Questions are organized by tier. Each question specifies:
 - If memory file mentions languages → Q17 can be pre-filled, confirm
 - If Q15 already covers geography or memory has location → Q18 can be pre-filled, confirm
 - Q18 should be asked before Q16 when both are unanswered (so currency can adapt)
+- Q2b (work description): if memory file or resume contains detailed work descriptions → pre-fill, confirm
+- Q19 (AI monetization): if technology-explainer has expert entries or Q10 already answered → reference as context, still ask (subjective forward-looking question)
 
 ### Resume-based auto-skip rules:
 When a PDF resume is provided, pre-fill the following questions from extracted data. **Always confirm with the user — never silently skip** (resumes can be outdated):
