@@ -14,7 +14,7 @@ The technology-explainer plugin adapts Claude's explanation depth based on user 
 ## Automation Status
 
 - ✅ Fully automated: Tests 1-2
-- ⚠️ Manual only: Tests 3-4 (require fresh Claude Code session)
+- ⚠️ Manual only: Tests 3-5 (require fresh Claude Code session)
 
 ---
 
@@ -88,7 +88,8 @@ echo "$output" | grep -q '## Technology Explainer' && echo "✅ 2.1: Header pres
 echo "$output" | grep -q 'Expert.*linux, git' && echo "✅ 2.1: Expert list" || echo "❌ 2.1: Expert list missing"
 echo "$output" | grep -q 'Intermediate.*docker, k8s' && echo "✅ 2.1: Intermediate list" || echo "❌ 2.1: Intermediate list missing"
 echo "$output" | grep -q 'Learning.*terraform, aws' && echo "✅ 2.1: Learning list" || echo "❌ 2.1: Learning list missing"
-echo "$output" | grep -q 'Default for unlisted.*learning' && echo "✅ 2.1: Default level" || echo "❌ 2.1: Default level missing"
+echo "$output" | grep -q 'Unlisted technology rule' && echo "✅ 2.1: Unlisted rule header" || echo "❌ 2.1: Unlisted rule header missing"
+echo "$output" | grep -q 'AskUserQuestion' && echo "✅ 2.1: AskUserQuestion reference" || echo "❌ 2.1: AskUserQuestion reference missing"
 echo "$output" | grep -q 'Sources.*terraform' && echo "✅ 2.1: Sources present" || echo "❌ 2.1: Sources missing"
 echo "$output" | grep -q 'proficiency-guide-expert' && echo "✅ 2.1: Expert skill pointer" || echo "❌ 2.1: Expert skill pointer missing"
 echo "$output" | grep -q 'proficiency-guide-intermediate' && echo "✅ 2.1: Intermediate skill pointer" || echo "❌ 2.1: Intermediate skill pointer missing"
@@ -133,7 +134,7 @@ output=$(env HOME="$FAKE_HOME3" CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT")
 echo "$output" | grep -q 'Expert.*linux' && echo "✅ 2.4: Expert only" || echo "❌ 2.4: Expert missing"
 echo "$output" | grep -qv 'Intermediate' && echo "✅ 2.4: No intermediate line" || echo "❌ 2.4: Unexpected intermediate line"
 echo "$output" | grep -qv 'Learning' && echo "✅ 2.4: No learning line" || echo "❌ 2.4: Unexpected learning line"
-echo "$output" | grep -q 'Default for unlisted.*intermediate' && echo "✅ 2.4: Custom default" || echo "❌ 2.4: Custom default missing"
+echo "$output" | grep -q 'Unlisted technology rule' && echo "✅ 2.4: Unlisted rule present" || echo "❌ 2.4: Unlisted rule missing"
 
 # Test 2.5: Config with no sources key
 FAKE_HOME4="/tmp/te-test-5"
@@ -155,17 +156,25 @@ echo "$output" | grep -qv 'Sources' && echo "✅ 2.5: No sources line" || echo "
 output=$(env HOME="$FAKE_HOME" CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT")
 echo "$output" | grep -q 'ONLY.*terminal dialogue' && echo "✅ 2.6: Scope restriction" || echo "❌ 2.6: Scope restriction missing"
 
+# Test 2.7: Unlisted technology rule format
+output=$(env HOME="$FAKE_HOME" CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT")
+echo "$output" | grep -q 'Unlisted technology rule' && echo "✅ 2.7: Unlisted rule header" || echo "❌ 2.7: Unlisted rule header missing"
+echo "$output" | grep -q 'AskUserQuestion' && echo "✅ 2.7: AskUserQuestion instruction" || echo "❌ 2.7: AskUserQuestion instruction missing"
+echo "$output" | grep -q 'technology-explainer.json' && echo "✅ 2.7: Config path mentioned" || echo "❌ 2.7: Config path missing"
+echo "$output" | grep -q 'NEVER silently fall back' && echo "✅ 2.7: No-fallback rule" || echo "❌ 2.7: No-fallback rule missing"
+
 # Cleanup
 rm -rf /tmp/te-test-1 /tmp/te-test-3 /tmp/te-test-4 /tmp/te-test-5
 ```
 
 **Expected result:**
-- ✅ 2.1: Full output with all sections, skill pointers, source marker
+- ✅ 2.1: Full output with all sections, unlisted rule with AskUserQuestion, skill pointers, source marker
 - ✅ 2.2: Zero output when no config exists
 - ✅ 2.3: Zero output when all tech arrays are empty
-- ✅ 2.4: Only populated levels shown, custom default level
+- ✅ 2.4: Only populated levels shown, unlisted rule present
 - ✅ 2.5: No sources line when sources key is missing
 - ✅ 2.6: Scope restriction present in output
+- ✅ 2.7: Unlisted rule contains AskUserQuestion, config path, and no-fallback text
 
 ---
 
@@ -263,6 +272,57 @@ rm ~/.claude/technology-explainer.json
 **Expected:**
 - Source added for python
 - Confirmation message shown
+
+---
+
+## 5. Unlisted Technology Interactive Prompt
+
+**Objective:** Verify that asking about an unlisted technology triggers an interactive proficiency prompt, saves the choice, and explains at the chosen depth.
+
+**Automation:** ⚠️ Manual only (requires fresh session)
+
+### Manual Test Procedure
+
+**Step 1:** Create a config without "rust":
+```bash
+mkdir -p ~/.claude
+cat > ~/.claude/technology-explainer.json <<'JSON'
+{
+  "technologies": {
+    "expert": ["linux", "git"],
+    "intermediate": ["docker"],
+    "learning": ["terraform"]
+  },
+  "defaultLevel": "learning",
+  "sources": {}
+}
+JSON
+```
+
+**Step 2:** Start a fresh Claude Code session.
+
+**Step 3:** Ask Claude: "Explain Rust ownership."
+
+**Expected:**
+- Claude uses `AskUserQuestion` to ask: "Which proficiency level should I use for **Rust**?" with options Expert, Intermediate, Learning
+- After user selects a level (e.g., Learning), Claude saves "rust" to the chosen level in `~/.claude/technology-explainer.json`
+- Claude invokes the appropriate `proficiency-guide-<level>` skill and explains Rust ownership at that depth
+
+**Step 4:** Verify the config was updated:
+```bash
+cat ~/.claude/technology-explainer.json | jq '.technologies'
+```
+
+**Expected:** "rust" appears in the selected level array.
+
+**Step 5:** In the same session, ask about Rust again (e.g., "Explain Rust lifetimes.")
+
+**Expected:** Claude does NOT ask for proficiency level again — Rust is now a known technology.
+
+**Step 6:** Clean up:
+```bash
+rm ~/.claude/technology-explainer.json
+```
 
 ---
 

@@ -51,7 +51,14 @@ if [[ -n "$learning" ]]; then
   printf '**Learning** (detailed): %s\n' "$learning"
 fi
 
-printf '**Default for unlisted:** %s\n' "$default_level"
+cat <<'RULE'
+
+**Unlisted technology rule:** When the user asks about a technology NOT listed in any level above:
+1. NEVER silently fall back to any default level
+2. Use `AskUserQuestion` to ask: "Which proficiency level should I use for **<technology>**?" with options: Expert, Intermediate, Learning
+3. Read `~/.claude/technology-explainer.json` (create from template if missing), remove the technology from all level arrays, add it to the chosen level array, and write the file back
+4. Invoke the appropriate `proficiency-guide-<level>` skill and answer at that depth
+RULE
 
 if [[ -n "$sources" ]]; then
   printf '\n**Sources:** %s\n' "$sources"
