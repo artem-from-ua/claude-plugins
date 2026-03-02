@@ -51,6 +51,28 @@ Terraform Registry address. Variables go in `variables.tf`, outputs in `outputs.
 Terraform needs to download the module source before it can plan.
 
 See: HashiCorp docs on modules → https://developer.hashicorp.com/terraform/docs
+
+> How do Claude Code hooks work?
+
+? Which proficiency level should I use for **Claude Code**?
+    Learning
+  ❯ Intermediate
+    Expert
+
+✦ Saved **claude code** → **intermediate** in ~/.claude/technology-explainer.json
+✦ Using skill: proficiency-guide-intermediate
+
+Hooks are shell commands that fire on tool-call events — defined in
+`hooks.json` under `PreToolUse`, `PostToolUse`, or `SessionStart`. Each hook
+gets a JSON blob on stdin with `tool_name`, `tool_input`, and session context.
+
+Key gotcha: hook output goes to the model context, not the terminal. If your
+script prints to stdout, Claude sees it as injected instructions. Use stderr
+for debug logging.
+
+`SessionStart` hooks run once per session and are the main way plugins inject
+persistent rules. `PostToolUse` hooks can match specific tools via the
+`matcher` field (e.g., `Edit`, `Write`) — leave it empty to match all tools.
 ```
 
 ## ⚙️ How it works <a name="how-it-works"></a>
@@ -69,6 +91,7 @@ Three proficiency levels control Claude's explanation depth:
 | Explaining expert tech | `proficiency-guide-expert` skill invoked — brief response rules |
 | Explaining intermediate tech | `proficiency-guide-intermediate` skill invoked — nuance-focused rules |
 | Explaining learning tech | `proficiency-guide-learning` skill invoked — detailed teaching rules |
+| Unlisted technology | Asks for proficiency level, saves choice, then explains |
 
 **Scope:** Rules apply ONLY to conversational explanations in the terminal. Code comments, docstrings, and project documentation follow project conventions.
 
@@ -95,7 +118,7 @@ Restart your session for changes to take effect.
 | `/technology-explainer-setup` | Interactive wizard — configure all levels, default, and sources |
 | `/technology-explainer-show` | Display current proficiency configuration |
 | `/technology-explainer-update <tech> <level>` | Change a technology's level |
-| `/technology-explainer-update default <level>` | Change the default level for unlisted technologies |
+| `/technology-explainer-update default <level>` | Change the setup wizard default (unlisted techs prompt interactively) |
 | `/technology-explainer-update source <tech> <url>` | Add a custom documentation source |
 
 ## 📝 Config <a name="config"></a>
@@ -122,5 +145,5 @@ Global config: `~/.claude/technology-explainer.json`
 | `technologies.expert` | Brief, no-theory answers | `[]` |
 | `technologies.intermediate` | Nuances and gotchas | `[]` |
 | `technologies.learning` | Detailed theory + examples | `[]` |
-| `defaultLevel` | Level for unlisted technologies | `"learning"` |
+| `defaultLevel` | Initial level preset for setup wizard (unlisted techs prompt interactively) | `"learning"` |
 | `sources` | Preferred docs/style guides per technology | `{}` |
