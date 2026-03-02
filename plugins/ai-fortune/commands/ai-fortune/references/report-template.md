@@ -17,7 +17,9 @@ Generated: {date} | Sources: {N}/8 used
 ## Your Profile
 
 **Role:** {title} | **Industry:** {industry} | **Experience:** {years}
-**AI Adoption at org:** {level} | **Personal AI dependency:** {level}
+**Location:** {from Q18} | **Languages:** {from Q17}
+**AI Adoption at org:** {level} | **AI (work):** {Q5a} | **AI (personal):** {Q5b}
+**Current compensation:** {from Q16}
 
 **Technology Proficiency Map** (from technology-explainer):
 - Expert: {list}
@@ -77,31 +79,140 @@ Cite specific companies and tools, not vague generalities.}
 
 ---
 
-## Recommended Directions (3-4 options)
+## Recommended Directions (5-Level Amplitude Spectrum)
 
-### Direction 1: {Title}
+### L1 — Optimize Current: {Title}
 
 **One-liner:** {value proposition}
-**Fit score:** {X}/10
 
-**Why this fits YOU specifically:**
-{2-3 sentences linking to user's profile data — not generic advice.
-Reference specific skills, experience, and AI leverage patterns.}
+**What to do:**
+- {concrete action 1}
+- {concrete action 2}
+- {concrete action 3}
 
-**Why AI won't replace this (long-term):**
-{2-3 sentences referencing specific AI-resistant properties from the framework.
-Explain which of the 7 properties apply and why.}
+**Target business types:**
+- {company name} ({AI-native/AI-adopting/AI-consulting/Non-AI}, {size}) — {why it fits}
+- {company name} ({type}, {size}) — {why it fits}
+- *{Q18 city}-specific:* {local company} ({type}, {size})
+
+**Why AI won't replace this:**
+{2-3 sentences referencing specific AI-resistant properties from the framework.}
+
+**Salary range:** {range from web search} | **vs current:** {delta: +X%, same, -X%} | **Minimum viable?** {yes/no}
+**Timeline:** {realistic estimate}
+
+---
+
+### L2 — Lateral Move: {Title}
+
+**One-liner:** {value proposition}
+
+**What to do:**
+- {concrete action 1}
+- {concrete action 2}
+
+**Target business types:**
+- {company name} ({type}, {size}) — {why it fits}
+- {company name} ({type}, {size}) — {why it fits}
+- *{Q18 city}-specific:* {local company} ({type}, {size})
+
+**Why AI won't replace this:**
+{2-3 sentences referencing AI-resistant properties.}
+
+**Salary range:** {range} | **vs current:** {delta} | **Minimum viable?** {yes/no}
+**Timeline:** {estimate}
+
+---
+
+### L3 — New Company: {Title}
+
+**One-liner:** {value proposition}
+
+**What to do:**
+- {concrete action 1}
+- {concrete action 2}
+
+**Target business types:**
+- {company name} ({type}, {size}) — {why it fits}
+- {company name} ({type}, {size}) — {why it fits}
+- *{Q18 city}-specific:* {local company} ({type}, {size})
+
+**Why AI won't replace this:**
+{2-3 sentences referencing AI-resistant properties.}
 
 **Skills bridge:**
 | Already Have | Need to Acquire | How to Get |
 |-------------|-----------------|------------|
 | {skill from data} | {skill gap} | {specific resource/course/path} |
 
-**Transition timeline:** {realistic estimate with milestones}
-**Industry evidence:** {web search findings supporting this direction}
-**Salary range:** {from web search, with geographic context}
+**Salary range:** {range} | **vs current:** {delta} | **Minimum viable?** {yes/no}
+**Timeline:** {estimate with milestones}
 
-### Direction 2-4: {same structure}
+---
+
+### L4 — Career Pivot: {Title}
+
+**One-liner:** {value proposition}
+
+**What to do:**
+- {concrete action 1}
+- {concrete action 2}
+- {concrete action 3}
+
+**Target business types:**
+- {company name} ({type}, {size}) — {why it fits}
+- {company name} ({type}, {size}) — {why it fits}
+- *{Q18 city}-specific:* {local company} ({type}, {size})
+
+**Why AI won't replace this:**
+{2-3 sentences referencing AI-resistant properties.}
+
+**Skills bridge:**
+| Already Have | Need to Acquire | How to Get |
+|-------------|-----------------|------------|
+| {skill from data} | {skill gap} | {specific resource/course/path} |
+
+**Salary range:** {range} | **vs current:** {delta} | **Minimum viable?** {yes/no}
+**Timeline:** {estimate with milestones}
+
+---
+
+### L5 — Radical Change: {Title}
+
+**One-liner:** {value proposition}
+
+**What to do:**
+- {concrete action 1}
+- {concrete action 2}
+- {concrete action 3}
+
+**Target business types:**
+- {company name} ({type}, {size}) — {why it fits}
+- {company name} ({type}, {size}) — {why it fits}
+- *{Q18 city}-specific:* {local company} ({type}, {size})
+
+**Why AI won't replace this:**
+{2-3 sentences referencing AI-resistant properties.}
+
+**Skills bridge:**
+| Already Have | Need to Acquire | How to Get |
+|-------------|-----------------|------------|
+| {skill from data} | {skill gap} | {specific resource/course/path} |
+
+**Salary range:** {range} | **vs current:** {delta} | **Minimum viable?** {yes/no}
+**Timeline:** {estimate with milestones}
+
+---
+
+### Comparison Table
+
+| Level | Direction | Risk | Current → Target | Salary Delta | Timeline | AI-Resistant Properties |
+|-------|-----------|------|-------------------|-------------|----------|------------------------|
+| L1 | {title} | {low/med/high} | {current role → target} | {+X% / same / -X%} | {time} | {which of the 7 apply} |
+| L2 | {title} | {risk} | {transition} | {delta} | {time} | {properties} |
+| L3 | {title} | {risk} | {transition} | {delta} | {time} | {properties} |
+| L4 | {title} | {risk} | {transition} | {delta} | {time} | {properties} |
+| L5 | {title} | {risk} | {transition} | {delta} | {time} | {properties} |
 
 ---
 
@@ -150,6 +261,26 @@ itself a career differentiator.}
 - Skill gaps between current role and recommended directions
 - Contrastive analysis findings (self-reported vs observed discrepancies)}
 
+### Sustainability Warning
+(conditional: only if 3+ burnout risk indicators flagged)
+
+{Specific indicators detected and evidence:
+- Which indicators were flagged (e.g., "Night work: 45% of sessions after 22:00")
+- Impact on recommended timelines (all extended by 3-6 months)
+- Concrete recommendations for sustainability
+- If 5/5 flags: "URGENT — consider stabilization before any career moves"}
+
+### Financial Risk Assessment
+(conditional: only if Q16 answered)
+
+{Comparison of current bracket against each direction:
+- Current bracket: {Q16 answer}
+- Which levels meet minimum viable compensation: {list}
+- Which levels need financial runway (savings, side income): {list}
+- Safest path (highest certainty of maintaining income): {L1/L2}
+- Highest upside path: {L4/L5}
+- Risk/reward recommendation based on Q14 risk tolerance}
+
 ---
 
 ## Data Sources Used
@@ -172,9 +303,11 @@ itself a career differentiator.}
 
 - Use stars (e.g., `⭐⭐⭐`) for risk dimension scores
 - Use checkmarks (✅) and crosses (❌) for data source status
-- Keep each direction's analysis to ~150-200 words
+- Target ~100-150 words per amplitude level (shorter per level is fine — 5 total levels replace the old 3-4 at 150-200 words each)
 - Bold key findings and scores
 - Use tables for structured comparisons
 - Keep action items specific and actionable (not vague "learn more about X")
 - Salary ranges should include currency and geography
 - All evidence claims should reference which data source they come from
+- Target business types: name real companies, include at least one local (from Q18) per direction
+- The Comparison Table at the end of Recommended Directions is MANDATORY — never omit it

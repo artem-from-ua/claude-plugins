@@ -60,7 +60,7 @@ import json, sys
 with open('$PLUGIN/.claude-plugin/plugin.json') as f:
     p = json.load(f)
 assert p['name'] == 'ai-fortune', f'wrong name: {p[\"name\"]}'
-assert p['version'] == '0.1.0', f'wrong version: {p[\"version\"]}'
+assert p['version'] == '0.3.0', f'wrong version: {p[\"version\"]}'
 assert 'commands' in p, 'missing commands field'
 print('plugin.json: OK')
 "
@@ -94,7 +94,7 @@ done
 
 **Expected:**
 - ✅ All checks pass
-- ✅ plugin.json has name `ai-fortune`, version `0.1.0`
+- ✅ plugin.json has name `ai-fortune`, version `0.3.0`
 - ✅ SKILL.md starts with `---` and has `name:` + `description:` in frontmatter
 - ✅ Both scripts compile without errors
 
@@ -246,8 +246,8 @@ else:
 | Step | Expected | Actual |
 |------|----------|--------|
 | Data collection | All available sources read | |
-| Interview | 10-15 questions, adaptive logic works | |
-| Web research | 3-5 searches executed | |
+| Interview | 12-18 questions (max 2 per prompt), adaptive logic works | |
+| Web research | 5-8 searches executed | |
 | Report | Full structure, evidence-based | |
 | State save | File written with answers + paths | |
 
@@ -267,6 +267,36 @@ else:
    - Report generates with available data
    - Data Sources table shows ❌ for missing sources
 5. Restore renamed files
+
+### 7. v0.3.0 Feature Acceptance Criteria
+
+**Objective:** Verify all post-launch improvements from epic #194 are working.
+
+**Automation:** ⚠️ Manual
+
+**Criteria:**
+
+| Feature | Acceptance Criterion | Verified |
+|---------|---------------------|----------|
+| Question split Q1→Q1a/Q1b | Interview asks role (free text) and career sentiment (MC) separately | |
+| Question split Q5→Q5a/Q5b | Work AI dependency and personal AI dependency asked separately | |
+| Q3 priming examples | Q3 shows 3 honesty-normalizing examples before asking | |
+| Q13 removed | No career satisfaction question (absorbed into Q1b) | |
+| Q16-Q18 added | Compensation, languages, and local market questions present | |
+| Q18 before Q16 | When both unanswered, market asked first (for currency) | |
+| Pacing (max 2 per call) | No AskUserQuestion call contains more than 2 questions | |
+| Tier 4 one-at-a-time | Q10, Q11, Q12 each asked individually | |
+| 5 amplitude levels | Report contains L1-L5 directions (Optimize→Radical) | |
+| Target business types | Each direction lists real companies with type/size | |
+| Named companies | At least one local company (from Q18) per direction | |
+| Comparison table | Mandatory table at end of directions with all 5 levels | |
+| Salary delta vs current | Each direction shows salary range + delta vs Q16 bracket | |
+| Financial Risk Assessment | Blind Spots includes financial analysis when Q16 answered | |
+| Burnout detection | 3+ session-pattern indicators trigger Sustainability Warning | |
+| Diversity validation | Directions span 3+ skill domains, 2+ industries | |
+| Anti-echo-chamber | At least one direction NOT about building/selling AI | |
+| New state keys | ai-fortune.json saves `career_direction_sentiment`, `ai_dependency_work`, `ai_dependency_personal`, `current_compensation`, `working_languages`, `local_market` | |
+| Backward compat | Old keys `ai_dependency`, `career_satisfaction` ignored but not deleted | |
 
 ---
 
