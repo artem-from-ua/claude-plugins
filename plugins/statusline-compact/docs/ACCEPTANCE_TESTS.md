@@ -6,6 +6,7 @@ The statusline-compact plugin provides a single-line compact status display for 
 - 5h/7d rate limits with brightness-coded percentages
 - Extra usage (monthly billing) with dollar amount
 - Model name, context window usage, directory, git branch
+- Session name (custom via `/rename`, slug fallback, or session ID prefix)
 
 Features:
 - Single-line output - most space-efficient option
@@ -13,6 +14,7 @@ Features:
 - Text indicators: `!!` at >90%, `XX` at 100%
 - Branch shown yellow with `*` when dirty
 - `>>` suffix on extra label when extra usage actively consumed
+- Session name: normal text when custom, dimmed with `!!` when using auto-generated name
 
 ## Test execution order
 
@@ -108,6 +110,7 @@ fi
 echo "$clean" | grep -q 'Sonnet' && echo "✅ Model present" || echo "❌ Missing model"
 echo "$clean" | grep -q 'context' && echo "✅ context label present" || echo "❌ Missing context label"
 echo "$clean" | grep -q 'my-project' && echo "✅ Directory present" || echo "❌ Missing directory"
+echo "$clean" | grep -q 'session' && echo "✅ session label present" || echo "❌ Missing session label"
 ```
 
 **Acceptance criteria:**
@@ -115,6 +118,7 @@ echo "$clean" | grep -q 'my-project' && echo "✅ Directory present" || echo "�
 - ✅ No emoji characters
 - ✅ No progress bar characters
 - ✅ Model name, context label, and directory present
+- ✅ Session label present
 
 ---
 
@@ -247,6 +251,40 @@ echo "$output" | grep -q "Test" && echo "✅ Shows basic info despite API failur
 
 ---
 
+#### 3.5 Session name display
+
+**Objective:** Verify session name appears with correct style based on name source
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+cd plugins/statusline-compact
+
+# Test: session ID fallback (no transcript) - should show dimmed name + !!
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50},"session_id":"abc123-def456"}' | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g')
+echo "$output" | grep -q 'session' && echo "✅ Session label present" || echo "❌ Missing session label"
+echo "$output" | grep -q 'abc123' && echo "✅ Session ID prefix shown" || echo "❌ Missing session ID"
+echo "$output" | grep -q '!!' && echo "✅ !! indicator for auto-generated name" || echo "❌ Missing !! indicator"
+
+# Test: custom name - should show name without !!
+session_id="test-session-$(date +%s)"
+cache_file="/tmp/claude-statusline-session-${UID}-${session_id}"
+echo "custom:My Custom Project" > "$cache_file"
+output=$(echo "{\"workspace\":{\"current_dir\":\"/test\"},\"model\":{\"display_name\":\"Test\"},\"context_window\":{\"used_percentage\":50},\"session_id\":\"${session_id}\"}" | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g')
+echo "$output" | grep -q 'My Custom Project' && echo "✅ Custom name shown" || echo "❌ Missing custom name"
+echo "$output" | grep -qv '!!' && echo "✅ No !! for custom name" || echo "❌ Should not have !!"
+rm -f "$cache_file"
+```
+
+**Acceptance criteria:**
+- ✅ Session label present in output
+- ✅ Auto-generated names (slug/ID) show `!!` indicator
+- ✅ Custom names (set via `/rename`) show without `!!`
+- ✅ Cache file written to `/tmp/claude-statusline-session-${UID}-<session_id>`
+
+---
+
 ### 4. Visual verification (manual)
 
 #### 4.1 Live Claude Code integration
@@ -272,16 +310,19 @@ claude
 
 Expected appearance:
 ```
-5h 12% ~2h14m   7d 45% ~3d5h   extra $4.79   Sonnet 4.5   context 52%   claude-plugins/   main
+5h 12% ~2h14m   7d 45% ~3d5h   extra $4.79   Sonnet 4.5   context 52%   claude-plugins/   main   session my-slug !!
 ```
 
 Visual checklist:
 - ✅ Single line visible
-- ✅ Dim labels (5h, 7d, extra, context)
+- ✅ Dim labels (5h, 7d, extra, context, session)
 - ✅ Brightness-coded percentages
 - ✅ Model name with brightness = capability tier
 - ✅ Directory with trailing /
 - ✅ Branch (yellow with * when dirty)
+- ✅ Session name at end of line
+- ✅ `!!` after session name when using auto-generated name
+- ✅ No `!!` after session name when custom name set via `/rename`
 
 ---
 
@@ -314,7 +355,12 @@ echo '{"model":{"display_name":"Claude Sonnet 4.5"},"workspace":{"current_dir":"
 
 ## Version history
 
-### 0.1.0 (Current)
+### 0.3.0
+
+- Session name display: custom name (via `/rename`) shown as normal text; slug/ID fallback shown dimmed with `!!`
+- Cached at `/tmp/claude-statusline-session-${UID}-<session_id>` with 300s TTL
+
+### 0.1.0
 
 Initial release - extracted from statusline plugin compact preset:
 - Single-line layout with brightness-coded values
