@@ -159,6 +159,11 @@ Compare self-reported data (interview) vs observed data (sessions/insights):
 | Compensation vs market | Q16 bracket | web search salary data for Q18 market | Under/over-compensated for role |
 | Work/life balance | Q2 daily tasks | time_distribution, session timestamps | Night/weekend work patterns |
 | Transition capacity | Q14 risk tolerance | burnout indicators, session intensity | Stated risk tolerance vs actual bandwidth |
+| Resume title vs self-report | Q1a current role | Resume most recent title | Title inflation/deflation — does resume overstate or understate? |
+| Career stability vs sentiment | Q1b career direction | Resume tenure patterns | Says "Love it" but switches yearly? Says "Need change" but 10yr tenure? |
+| Skills claimed vs verified | Q10 domain expertise | Resume skills + technology-explainer | Over/under-claiming — listed skills not backed by experience descriptions |
+| Experience vs self-report | Q7 years experience | Resume career span computation | Inaccurate self-assessment of career stage |
+| Resume vs reality | Q3b honest disclosure | Resume content | User's own identification of where resume doesn't match reality |
 
 ### How to present:
 - If data confirms self-report → reinforce with evidence
@@ -183,6 +188,48 @@ Screen for burnout risk using session metadata and interview answers. These indi
 - **0-2 flags**: Normal — no burnout mention in report
 - **3-4 flags**: **Sustainability Warning** — dedicated subsection in Blind Spots; extend all direction timelines by 3-6 months to account for recovery
 - **5 flags**: **URGENT** — prominent warning at top of Blind Spots; strongly recommend L1 (Optimize Current) as primary path; extend all timelines by 6-12 months
+
+---
+
+## Career Trajectory Analysis
+(conditional: only when PDF resume provided)
+
+### Career Stability Score (1-5)
+
+| Score | Label | Avg Tenure | Evidence Pattern |
+|-------|-------|------------|------------------|
+| 1 | Stable | >4 years | Long tenures, few transitions |
+| 2 | Steady | 3-4 years | Regular but not frequent moves |
+| 3 | Moderate | 2-3 years | Industry-normal transitions |
+| 4 | Mobile | 1-2 years | Frequent moves, short stints |
+| 5 | Volatile | ≤1 year | Very short tenures, pattern of exits |
+
+### Adaptability Evidence Score (1-5)
+
+| Score | Label | Evidence Pattern |
+|-------|-------|------------------|
+| 1 | Single-track | Same domain, same role type throughout career |
+| 2 | Minor variation | Same domain, 1-2 role type changes |
+| 3 | Moderate | 2-3 domain or role type changes |
+| 4 | Versatile | Multiple domains, successful transitions |
+| 5 | Radical adapter | Radical successful pivots across unrelated fields |
+
+### How trajectory affects risk dimensions:
+- **High domain diversity** → lowers Task Repeatability risk (proven ability to handle novel contexts)
+- **Cross-domain experience** → increases Creative Synthesis score (cross-pollination potential)
+- **Long single-domain tenure** → may increase Task Repeatability risk but lowers Regulation/Trust risk (deep expertise)
+
+### How trajectory affects directions:
+- **Long avg tenure** → predicts comfort with L1 (Optimize Current); L2/L3 may feel risky
+- **History of lateral moves** → predicts L2 success; user has done this before
+- **Past domain switches** → predicts L4 feasibility; demonstrated pivot capability
+- **Short avg tenure** → may indicate difficulty with L1 long-term; consider L3-L5
+
+### Skills Bridge Enhancement:
+When resume is available, enhance the "Already Have" column in Skills Bridge tables:
+- Add **years of experience** for each skill (computed from positions where it appeared)
+- Flag **dormant skills** — listed in resume but not used in last 2 positions (mark with ⚠️)
+- Distinguish **current skills** (last 2 positions) from **historical skills** (earlier only)
 
 ---
 

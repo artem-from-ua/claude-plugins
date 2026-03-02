@@ -4,6 +4,7 @@
   "reportsDir": null,
   "dataSources": {
     "memoryFilePath": null,
+    "resumePath": null,
     "insightsReportPath": "~/.claude/usage-data/report.html"
   },
   "answers": {}
