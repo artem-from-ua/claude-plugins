@@ -70,6 +70,22 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 ---
 
+## Cache Determinism
+
+SessionStart hooks inject text into Claude's system prompt. The Anthropic API caches prompt prefixes — if the prefix is identical across sessions, it hits the cache (lower latency, lower cost). Non-deterministic hook output invalidates the cache on every session start.
+
+**Plugin classification by determinism:**
+
+| Category | Plugins | Why |
+|----------|---------|-----|
+| **Deterministic** | `plantuml`, `git-branch-naming`, `retroscope`, `statusline`, `statusline-compact` | Static output — same input always produces identical text. Safe for prefix caching. |
+| **Config-dependent** | `playbook`, `semver`, `technology-explainer` | Output depends on user config files (`.claude-plugin/*.json`). Config rarely changes between sessions, so practically stable. |
+| **No SessionStart hooks** | `context`, `kb-grooming`, `ai-fortune` | These plugins use only commands/skills, no hook output injected at session start. |
+
+**Rule for new plugins:** SessionStart hooks MUST NOT use `date`, `git log`, `$RANDOM`, network calls, or any other non-deterministic data source in their output. Config-dependent output is acceptable — it changes rarely and the caching benefit is preserved across the majority of sessions.
+
+---
+
 ## Git Hook Installation
 
 Plugins that install git hooks (pre-commit, pre-push, etc.) **must not overwrite** existing hooks. Plugins are additive guests in the user's repository.
