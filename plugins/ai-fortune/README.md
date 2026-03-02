@@ -14,9 +14,12 @@ A Claude Code plugin that analyzes your AI usage patterns, runs an adaptive care
 
 One command that:
 1. Mines 7 data sources (insights report, session metadata, plugins, tech proficiency, stats)
-2. Runs an adaptive 15-question interview (skips what it already knows)
-3. Researches your industry's AI landscape via web search
-4. Generates a career risk assessment with 3-4 recommended directions
+2. Runs an adaptive 18-question interview with sub-questions (skips what it already knows)
+3. Researches your industry's AI landscape via 5-8 targeted web searches
+4. Generates a 5-level amplitude spectrum of career directions — from optimize-in-place to radical change
+5. Detects burnout risk from session patterns and flags sustainability warnings
+6. Prevents echo chamber bias with diversity validation across domains and industries
+7. Anchors salary comparisons against your current compensation bracket
 
 ## 📦 Installation <a name="installation"></a>
 
@@ -49,20 +52,21 @@ Claude: 📂 Loading persistent state...
         Using your previous answer from Feb 15: "40% code, 20% architecture..."
 
 Claude: ❓ What is the single most important thing you bring to your team?
-        ┌─────────────────────────────────────┐
-        │ 1. Systems thinking and tooling     │
-        │ 2. Cross-domain problem solving     │
-        │ 3. Other (free text)                │
-        └─────────────────────────────────────┘
+        (Be honest — there's no wrong answer. Examples:
+         "I'm the only one who understands the legacy billing system"
+         "No one else wants to maintain the CI/CD pipeline"
+         "I translate between backend and product teams")
 
-You: 1
+You: I bridge the gap between infrastructure and product — no one else speaks both languages.
 
-        ... (10-15 adaptive questions) ...
+        ... (12-18 adaptive questions, max 2 per prompt) ...
 
         🔍 Phase 3: Web research & report generation...
         Searching: "AI automation software engineering 2026 trends"
         Searching: "Software Engineer AI replacement risk 2026"
         Searching: "AI-resistant careers technology"
+        Searching: "Software Engineer salary Kyiv 2026"
+        Searching: "DevRel job market Europe remote 2026"
 
         📋 Generating Career Direction Report...
 
@@ -89,11 +93,23 @@ Generated: 2026-03-01 | Sources: 7/8 used
 | Regulatory/Trust | ⭐⭐ | No licensing requirements |
 | Creative Synthesis | ⭐⭐⭐⭐ | Plugin ecosystem design, cross-domain |
 
-## Recommended Directions
-### Direction 1: AI Platform Engineering Lead
-**Fit score: 9/10** ...
+## Recommended Directions (5-Level Amplitude Spectrum)
 
-        ... (full report with 3-4 directions, action plan, blind spots) ...
+### L1 — Optimize Current: Senior AI Platform Engineer
+### L2 — Lateral Move: Developer Relations Lead
+### L3 — New Company: Staff Engineer at AI-Adopting Enterprise
+### L4 — Career Pivot: Technical Product Manager
+### L5 — Radical Change: Independent AI Tooling Consultant
+
+| Level | Direction | Risk | Salary Delta | Timeline |
+|-------|-----------|------|-------------|----------|
+| L1 | Sr AI Platform Engineer | Low | +15% | 3-6mo |
+| L2 | DevRel Lead | Low | +5% | 6-12mo |
+| L3 | Staff Eng (Enterprise) | Med | +25% | 3-6mo |
+| L4 | Technical PM | Med | +10% | 12-18mo |
+| L5 | Independent Consultant | High | +40%/-20% | 18-24mo |
+
+        ... (full report with action plan, blind spots, burnout check) ...
 
         💾 State saved to ~/.claude/ai-fortune.json
         📄 Report saved to /tmp/ai-fortune-reports/2026-03-01_14-30-45.md
@@ -117,14 +133,14 @@ The report can be generated with just the interview, but quality improves dramat
 
 ## 🎯 Report Sections <a name="report-sections"></a>
 
-- **Your Profile** — role, industry, tech proficiency map from data
+- **Your Profile** — role, industry, location, languages, compensation, tech proficiency map
 - **AI Leverage Profile** — AI Leverage Score (0-10) and Delegation Maturity Model (Level 1-5), measuring how effectively you use AI as a force multiplier
 - **Risk Assessment** — 5-dimension risk matrix with evidence-backed scores
 - **Industry AI Landscape** — real-time web research on AI in your industry
-- **Recommended Directions** — 3-4 career paths with fit scores, skills bridge tables, salary ranges
+- **Recommended Directions** — 5-level amplitude spectrum (Optimize Current → Lateral Move → New Company → Career Pivot → Radical Change) with target business types (named companies), salary ranges with delta vs current, and a comparison table
 - **AI Orchestrator Advantage** — (for advanced users) why your AI orchestration skill is a competitive moat
 - **Action Plan** — concrete 30-day, 6-month, and 1-2 year milestones
-- **Blind Spots** — honest assessment of tech gaps, friction patterns, over-reliance risks
+- **Blind Spots** — honest assessment of tech gaps, friction patterns, over-reliance risks, burnout risk detection (session-pattern-based), and financial risk assessment (salary anchoring vs current bracket)
 
 ## 💾 Persistent State <a name="persistent-state"></a>
 

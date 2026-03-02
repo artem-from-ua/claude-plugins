@@ -11,11 +11,21 @@ Questions are organized by tier. Each question specifies:
 
 ## Tier 1: Role & Industry (always ask)
 
-### Q1: Current Role & Industry
+### Q1a: Current Role & Industry (factual)
 - **key:** `current_role`
 - **type:** `free_text`
 - **prompt:** "What is your current job title and industry? (e.g., 'Software Engineer, FinTech')"
 - **skip_if_data:** memory file may contain role/industry context
+
+### Q1b: Career Direction Sentiment
+- **key:** `career_direction_sentiment`
+- **type:** `multiple_choice`
+- **prompt:** "How do you feel about this career direction?"
+- **options:**
+  - "Love it — wouldn't change a thing"
+  - "Open to change — happy but curious about alternatives"
+  - "Want to pivot — actively exploring other paths"
+  - "Need change — current path feels unsustainable"
 
 ### Q2: Typical Workday Breakdown
 - **key:** `daily_tasks`
@@ -26,8 +36,12 @@ Questions are organized by tier. Each question specifies:
 ### Q3: Core Value to Team
 - **key:** `core_value`
 - **type:** `free_text`
-- **prompt:** "What is the single most important thing you bring to your team that would be hardest to replace?"
+- **prompt:** "What is the single most important thing you bring to your team that would be hardest to replace? Be honest — there's no wrong answer. If your position is retained by circumstance rather than unique skill, say that."
 - **skip_if_data:** none (subjective)
+- **examples_for_priming:**
+  - "I'm the only one who understands the legacy billing system" (legacy knowledge)
+  - "No one else wants to maintain the CI/CD pipeline, so I do it" (only willing worker)
+  - "I translate between the backend team and the product team" (cross-team coordination)
 
 ---
 
@@ -44,16 +58,27 @@ Questions are organized by tier. Each question specifies:
   - "Not adopted — no formal AI initiatives"
   - "Actively resisted — organizational pushback"
 
-### Q5: Personal AI Dependency
-- **key:** `ai_dependency`
+### Q5a: AI Dependency — Work
+- **key:** `ai_dependency_work`
 - **type:** `multiple_choice`
-- **prompt:** "How dependent is your daily work on AI tools?"
+- **prompt:** "How dependent is your WORK (day job) on AI tools?"
 - **options:**
   - "Essential — can't imagine working without AI"
   - "Significant — AI handles 30%+ of my work"
   - "Occasional — use AI for specific tasks"
   - "Rarely — tried but not integrated"
   - "Never — don't use AI tools"
+
+### Q5b: AI Dependency — Personal/Side Projects
+- **key:** `ai_dependency_personal`
+- **type:** `multiple_choice`
+- **prompt:** "How dependent are your PERSONAL/side projects on AI tools?"
+- **options:**
+  - "Essential — AI is central to my side work"
+  - "Significant — AI handles 30%+ of side project work"
+  - "Occasional — use AI for specific personal tasks"
+  - "Rarely — tried but not integrated"
+  - "N/A — no side projects"
 
 ### Q6: AI Replacement Predictions
 - **key:** `ai_replacement_2yr`
@@ -129,17 +154,7 @@ Questions are organized by tier. Each question specifies:
 
 ---
 
-## Tier 5: Aspirations (always ask)
-
-### Q13: Career Satisfaction & Direction
-- **key:** `career_satisfaction`
-- **type:** `multiple_choice`
-- **prompt:** "How do you feel about your current career trajectory?"
-- **options:**
-  - "Want to deepen — love what I do, want to go deeper"
-  - "Open to change — happy but curious about alternatives"
-  - "Considering pivot — actively exploring other paths"
-  - "Need change — current path feels unsustainable"
+## Tier 5: Aspirations & Context (always ask)
 
 ### Q14: Risk Tolerance
 - **key:** `risk_tolerance`
@@ -156,19 +171,63 @@ Questions are organized by tier. Each question specifies:
 - **prompt:** "What constraints would limit a career pivot? (e.g., geographic, financial, family, language, visa, industry certifications)"
 - **skip_if_data:** none
 
+### Q16: Current Compensation
+- **key:** `current_compensation`
+- **type:** `multiple_choice`
+- **prompt:** "What is your current annual compensation range? (in {currency})"
+- **options:**
+  - "Under {currency}30k"
+  - "{currency}30k–60k"
+  - "{currency}60k–100k"
+  - "{currency}100k–150k"
+  - "{currency}150k–250k"
+  - "Over {currency}250k"
+- **skip_if_data:** never auto-skip (sensitive, always confirm)
+- **note:** `{currency}` placeholder is resolved from Q18 answer or defaults to `$`
+
+### Q17: Working Languages
+- **key:** `working_languages`
+- **type:** `free_text`
+- **prompt:** "What languages do you work in professionally? (e.g., 'English (native), Ukrainian (native), German (B2)')"
+- **skip_if_data:** memory file may mention languages
+
+### Q18: Local Market
+- **key:** `local_market`
+- **type:** `free_text`
+- **prompt:** "Where are you based and what job market do you primarily target? (e.g., 'Kyiv, Ukraine — open to EU remote')"
+- **skip_if_data:** Q15 may cover geography; memory file may mention location
+
 ---
 
 ## Adaptive Logic
 
 ### Auto-skip rules:
-- If memory file reveals industry → mark Q1 as partially answered, confirm rather than ask fresh
-- If session data shows heavy task-agent usage → Q5 can be pre-filled as "Essential/Significant"
+- If memory file reveals industry → mark Q1a as partially answered, confirm rather than ask fresh
+- If session data shows heavy task-agent usage → Q5a can be pre-filled as "Essential/Significant"
+- If session data shows per-project AI usage patterns → Q5b can use project diversity as signal
 - If technology-explainer config exists → skip tech-related parts of Q10
+- If memory file mentions languages → Q17 can be pre-filled, confirm
+- If Q15 already covers geography or memory has location → Q18 can be pre-filled, confirm
+- Q18 should be asked before Q16 when both are unanswered (so currency can adapt)
 
 ### Re-ask rules (persistent state):
 - Answer < 6 months old → skip question, show "Using your previous answer from {date}: {value}"
 - Answer >= 6 months old → re-ask with previous value as default option (first option + "(previous answer)" suffix)
 - No previous answer → ask normally
+
+### Legacy answer migration:
+When a question is split, removed, or substantially reworded across versions, old answers in state can seed defaults for new questions:
+
+| Old Key | Old Question | New Key(s) | Migration |
+|---------|-------------|------------|-----------|
+| `ai_dependency` | Q5 "How dependent is your daily work on AI tools?" | `ai_dependency_work` (Q5a) | Use old value as default for Q5a; ask Q5b fresh |
+| `career_satisfaction` | Q13 "How do you feel about your current career trajectory?" | `career_direction_sentiment` (Q1b) | Use old value as default for Q1b (options map 1:1) |
+
+Rules:
+- If old key has a value and new key does not → pre-fill new question with old value as first option "(from previous session)" and ask for confirmation
+- If both old and new keys have values → ignore old key, use new key
+- Never auto-skip based on a migrated value — always confirm with the user
+- Old keys are never deleted from state; they age out naturally after 6 months
 
 ### Tier 3 collapse:
 - If user shows impatience (quick "skip" or "Other" answers) → collapse remaining Tier 3 questions
