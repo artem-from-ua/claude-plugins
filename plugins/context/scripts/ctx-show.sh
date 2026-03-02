@@ -17,6 +17,8 @@ MODE="${1:---file}"
 CLAUDE_DIR="${HOME}/.claude"
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 OUTPUT=""
+CTX_CONTEXT_WINDOW="${CTX_CONTEXT_WINDOW:-200000}"
+CTX_WARN_THRESHOLD="${CTX_WARN_THRESHOLD:-$(( CTX_CONTEXT_WINDOW * 5 / 100 ))}"
 
 # ── metadata arrays ───────────────────────────────────────────────────────────
 # Parallel arrays (bash 3.2 compatible — no associative arrays)
@@ -247,6 +249,13 @@ print_table() {
 
   printf '| | **TOTAL** | | **%d** | **%d** | **100%%** |\n' \
     "$total_lines" "$total_tokens"
+
+  if [ "$total_tokens" -gt "$CTX_WARN_THRESHOLD" ]; then
+    printf '\n⚠️  Context load (%d tokens) exceeds threshold (%d tokens = %d%% of %dk context window)\n' \
+      "$total_tokens" "$CTX_WARN_THRESHOLD" \
+      "$(( 100 * CTX_WARN_THRESHOLD / CTX_CONTEXT_WINDOW ))" \
+      "$(( CTX_CONTEXT_WINDOW / 1000 ))"
+  fi
 
   if [ "$has_presets" -eq 1 ]; then
     local legend_id="${PLAYBOOK_PLUGIN_ID:-playbook@tribe-coding}"

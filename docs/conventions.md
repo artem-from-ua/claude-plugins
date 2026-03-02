@@ -86,6 +86,29 @@ SessionStart hooks inject text into Claude's system prompt. The Anthropic API ca
 
 ---
 
+## Token Budget
+
+Every source injected at session start costs context tokens. The `context` plugin (`/ctx-show`) warns when total context load exceeds a configurable threshold.
+
+**Per-component budgets:**
+
+| Component | Budget | Notes |
+|-----------|--------|-------|
+| SessionStart hook output | ≤300 tokens | Per plugin. Rules only — no catalogs. |
+| Playbook preset RULES zone | ≤150 tokens | Per preset. Standard ~100-120, critical up to ~200. |
+| Skill description (plugin.json) | ≤50 tokens | Per skill. Lead with trigger signal. |
+
+**Aggregate cap:** ~10,000 tokens (5% of 200K context window).
+
+**Environment variables** (override defaults in `ctx-show.sh`):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CTX_CONTEXT_WINDOW` | `200000` | Total context window size in tokens |
+| `CTX_WARN_THRESHOLD` | `CTX_CONTEXT_WINDOW * 5 / 100` | Warning fires when total tokens exceed this |
+
+---
+
 ## Git Hook Installation
 
 Plugins that install git hooks (pre-commit, pre-push, etc.) **must not overwrite** existing hooks. Plugins are additive guests in the user's repository.

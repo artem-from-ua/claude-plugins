@@ -31,6 +31,8 @@
 | Project | Plugin hook     | retroscope@tribe-coding (v0.2.3) · inject-rules    |     8 |     115 |       1% |
 |         | **TOTAL**       |                                                    |   929 |  11,414 |     100% |
 
+⚠️  Context load (11414 tokens) exceeds threshold (10000 tokens = 5% of 200k context window)
+
 Playbook Presets injected by playbook@tribe-coding (v0.5.5)
 
 Summary:
@@ -78,6 +80,8 @@ Collected in load order:
 | Context% | Each source's share of total context |
 
 Playbook presets appear as individual rows when using playbook plugin v0.3.1+.
+
+**Threshold Warning:** When total tokens exceed 5% of the context window (default 10,000 of 200K), a ⚠️ warning is printed after the TOTAL row. Override with `CTX_CONTEXT_WINDOW` and `CTX_WARN_THRESHOLD` env vars.
 
 ## ⚡ Commands <a name="commands"></a>
 
