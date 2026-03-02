@@ -17,7 +17,7 @@ The plugin also prints a summary table to stderr showing scope, type, source, st
 
 ## Automation Status
 
-- ✅ Fully automated: Tests 1–5
+- ✅ Fully automated: Tests 1–5, 7
 - 🟡 Partially automated: Test 6 (Claude invocation requires a fresh session or `/clear`)
 - ⚠️ Manual only: None
 
@@ -25,7 +25,7 @@ The plugin also prints a summary table to stderr showing scope, type, source, st
 
 | Test | Status | Notes |
 |------|--------|-------|
-| 1.1 Static: plugin.json valid | ✅ Pass | version 0.2.0 |
+| 1.1 Static: plugin.json valid | ✅ Pass | version 0.4.0 |
 | 1.2 Static: hooks.json valid | ✅ Pass | |
 | 1.3 Static: SKILL.md frontmatter | ✅ Pass | |
 | 1.4 Static: script is executable | ✅ Pass | |
@@ -42,6 +42,8 @@ The plugin also prints a summary table to stderr showing scope, type, source, st
 | 5.5 Memory hash fix (leading dash) | ✅ Pass | |
 | 6.1 Playbook preset splitting | ✅ Pass | requires playbook v0.3.1 in cache |
 | 6.2 Legend shown when presets present | ✅ Pass | |
+| 7.3 Threshold warning fires when exceeded | ✅ Pass | CTX_WARN_THRESHOLD=1 |
+| 7.4 No warning when under threshold | ✅ Pass | CTX_WARN_THRESHOLD=999999 |
 
 ---
 
@@ -64,7 +66,7 @@ jq '.' "${PLUGIN_DIR}/.claude-plugin/plugin.json"
 **Expected result:**
 - ✅ Valid JSON (no parse error)
 - ✅ Has `name`, `version`, `commands`, `skills` fields
-- ✅ `version` is `0.2.0`
+- ✅ `version` is `0.4.0`
 - ✅ `skills` is `[]` (no auto-invocable skills)
 
 ---
@@ -548,6 +550,52 @@ rm -rf "$FAKE_CACHE" "$FAKE_HOME" "$FAKE_PROJ"
 
 ---
 
+### 7. Threshold Warning Tests
+
+#### 7.3 Warning Fires When Exceeded
+
+**Objective:** Verify ⚠️ warning appears when total tokens exceed `CTX_WARN_THRESHOLD`.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
+TABLE_FILE=$(env CTX_WARN_THRESHOLD=1 \
+  bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+
+echo "Warning present (should be 1):"
+grep -c "exceeds threshold" "$TABLE_FILE" || echo "0"
+```
+
+**Expected result:**
+- ✅ Output contains `⚠️  Context load` warning line
+- ✅ Warning mentions threshold value and context window percentage
+
+---
+
+#### 7.4 No Warning When Under Threshold
+
+**Objective:** Verify no warning when total tokens are below `CTX_WARN_THRESHOLD`.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
+TABLE_FILE=$(env CTX_WARN_THRESHOLD=999999 \
+  bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+
+echo "Warning absent (should be 0):"
+grep -c "exceeds threshold" "$TABLE_FILE" || echo "0"
+```
+
+**Expected result:**
+- ✅ No `⚠️` warning line in output
+- ✅ Table still has TOTAL row
+
+---
+
 ## Regression Testing Guide
 
 ### When to run
@@ -564,7 +612,7 @@ Run all automated tests in sequence:
 PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
 
 echo "=== 1.1 plugin.json ==="
-jq -e '.name == "context" and .version == "0.2.0" and .commands and (.skills | length == 0)' \
+jq -e '.name == "context" and .version == "0.4.0" and .commands and (.skills | length == 0)' \
   "${PLUGIN_DIR}/.claude-plugin/plugin.json" && echo "✅ PASS" || echo "❌ FAIL"
 
 echo "=== 1.2 hooks.json ==="
@@ -605,6 +653,16 @@ echo "$TABLE" | grep "TOTAL" | grep -q "100%" && echo "✅ PASS" || echo "❌ FA
 
 echo "=== 5.5 memory hash leading dash ==="
 echo "$TABLE" | grep "Memory" | grep -q '\-Users' && echo "✅ PASS" || echo "⚠️  Memory not found in this env"
+
+echo "=== 7.3 threshold warning fires ==="
+TABLE_WARN=$(env CTX_WARN_THRESHOLD=1 \
+  bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+grep -q "exceeds threshold" "$TABLE_WARN" && echo "✅ PASS" || echo "❌ FAIL"
+
+echo "=== 7.4 no warning under threshold ==="
+TABLE_NOWARN=$(env CTX_WARN_THRESHOLD=999999 \
+  bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+grep -q "exceeds threshold" "$TABLE_NOWARN" && echo "❌ FAIL" || echo "✅ PASS"
 ```
 
 ### CI integration

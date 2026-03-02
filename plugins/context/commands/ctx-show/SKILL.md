@@ -81,3 +81,4 @@ Playbook presets (from `playbook@tribe-coding`) appear as individual rows when u
 - SessionStart hook commands are executed in isolation — their output may differ slightly from a real session start (e.g., different working directory).
 - For plugin hooks, the script uses `${CLAUDE_PLUGIN_ROOT}` substitution with the actual cache path.
 - Playbook preset splitting requires playbook plugin v0.3.1+ in cache (emits `<!-- Source: Plugin playbook@... Preset NAME -->` markers).
+- **Threshold warning:** When total tokens exceed `CTX_WARN_THRESHOLD` (default 5% of `CTX_CONTEXT_WINDOW`), a ⚠️ warning is printed after the TOTAL row. Override defaults: `CTX_CONTEXT_WINDOW=200000` (context window size), `CTX_WARN_THRESHOLD=10000` (warning threshold in tokens).
