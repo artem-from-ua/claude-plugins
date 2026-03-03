@@ -40,7 +40,7 @@ After the file is written (or content printed), a summary table is printed to **
 | Type | CLAUDE.md · Memory · Plugin hook · User hook · Project hook · Playbook Preset |
 | Source/ID | Shortened path (`~/`, `./`) or plugin identifier `name@marketplace (vX.Y.Z)` |
 | Status | has content · missing/empty · command failed (shown as "script error" in Lines column) |
-| Lines / ~Tokens | Content metrics; tokens ≈ chars/4 |
+| Lines / Tokens | Content metrics; exact via Anthropic `count_tokens` API when `ANTHROPIC_API_KEY` is set, otherwise estimated as `~Tokens` (chars/4) |
 | Context% | Each source's share of total context |
 
 Playbook presets (from `playbook@tribe-coding`) appear as individual rows when using playbook v0.3.1+.
@@ -82,3 +82,4 @@ Playbook presets (from `playbook@tribe-coding`) appear as individual rows when u
 - For plugin hooks, the script uses `${CLAUDE_PLUGIN_ROOT}` substitution with the actual cache path.
 - Playbook preset splitting requires playbook plugin v0.3.1+ in cache (emits `<!-- Source: Plugin playbook@... Preset NAME -->` markers).
 - **Threshold warning:** When total tokens exceed `CTX_WARN_THRESHOLD` (default 5% of `CTX_CONTEXT_WINDOW`), a ⚠️ warning is printed after the TOTAL row. Override defaults: `CTX_CONTEXT_WINDOW=200000` (context window size), `CTX_WARN_THRESHOLD=10000` (warning threshold in tokens).
+- **Exact token counting:** Set `ANTHROPIC_API_KEY` to enable exact token counts via the Anthropic `count_tokens` API (free endpoint). The column header changes from `~Tokens` to `Tokens` and a footer line indicates the counting method. If the API call fails, the script falls back to the chars/4 heuristic. Override the model used for counting with `CTX_TOKEN_MODEL` (default: `claude-sonnet-4-6`).

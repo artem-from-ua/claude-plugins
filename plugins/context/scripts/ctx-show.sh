@@ -20,6 +20,13 @@ OUTPUT=""
 CTX_CONTEXT_WINDOW="${CTX_CONTEXT_WINDOW:-200000}"
 CTX_WARN_THRESHOLD="${CTX_WARN_THRESHOLD:-$(( CTX_CONTEXT_WINDOW * 5 / 100 ))}"
 
+# ── API token counting ──────────────────────────────────────────────────────
+USE_API=0
+CTX_TOKEN_MODEL="${CTX_TOKEN_MODEL:-claude-sonnet-4-6}"
+if [ -n "${ANTHROPIC_API_KEY:-}" ] && command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+  USE_API=1
+fi
+
 # ── metadata arrays ───────────────────────────────────────────────────────────
 # Parallel arrays (bash 3.2 compatible — no associative arrays)
 TBL_SCOPE=()    # "User" or "Project"
@@ -28,6 +35,7 @@ TBL_SOURCE=()   # display identifier (full shortened path or plugin id)
 TBL_STATUS=()   # "ok", "missing", "empty", "failed"
 TBL_LINES=()    # integer
 TBL_CHARS=()    # integer
+TBL_CONTENT=()  # raw text for API token counting
 PLAYBOOK_PLUGIN_ID=""  # captured from first playbook preset marker
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -56,6 +64,21 @@ count_lines() {
   fi
 }
 
+count_tokens_api() {
+  local content="$1"
+  local json response token_count
+  json=$(jq -n --arg text "$content" --arg model "$CTX_TOKEN_MODEL" \
+    '{model: $model, messages: [{role: "user", content: $text}]}') || return 1
+  response=$(curl -s --connect-timeout 2 --max-time 5 \
+    -H "x-api-key: ${ANTHROPIC_API_KEY}" \
+    -H "content-type: application/json" \
+    -H "anthropic-version: 2023-06-01" \
+    -d "$json" \
+    "https://api.anthropic.com/v1/messages/count_tokens" 2>/dev/null) || return 1
+  token_count=$(echo "$response" | jq -r '.input_tokens // empty' 2>/dev/null) || return 1
+  [ -n "$token_count" ] && echo "$token_count" || return 1
+}
+
 record_meta() {
   local scope="$1"
   local type="$2"
@@ -71,6 +94,7 @@ record_meta() {
   TBL_STATUS+=("$status")
   TBL_LINES+=("$lines")
   TBL_CHARS+=("$chars")
+  TBL_CONTENT+=("$content")
 }
 
 append_source() {
@@ -170,15 +194,38 @@ print_table() {
   local total_lines=0
   local -a tokens=()
   local i
+  local api_failed=0
+  local token_mode="heuristic"
+
+  if [ "$USE_API" -eq 1 ]; then
+    token_mode="api"
+  fi
 
   for i in "${!TBL_CHARS[@]}"; do
-    local t=$(( TBL_CHARS[i] / 4 ))
-    tokens+=("$t")
+    local t
+    if [ "$token_mode" = "api" ] && [ "$api_failed" -eq 0 ] && [ "${TBL_STATUS[i]}" = "ok" ] && [ "${TBL_CHARS[i]}" -gt 0 ]; then
+      if t=$(count_tokens_api "${TBL_CONTENT[i]}"); then
+        tokens+=("$t")
+      else
+        api_failed=1
+        token_mode="api_failed"
+        t=$(( TBL_CHARS[i] / 4 ))
+        tokens+=("$t")
+      fi
+    else
+      t=$(( TBL_CHARS[i] / 4 ))
+      tokens+=("$t")
+    fi
     total_tokens=$(( total_tokens + t ))
     total_lines=$(( total_lines + TBL_LINES[i] ))
   done
 
-  printf '| Scope | Type | Source/ID | Lines | ~Tokens | Context%% |\n'
+  local token_header="~Tokens"
+  if [ "$token_mode" = "api" ]; then
+    token_header="Tokens"
+  fi
+
+  printf '| Scope | Type | Source/ID | Lines | %s | Context%% |\n' "$token_header"
   printf '|-------|------|-----------|------:|--------:|---------:|\n'
 
   local has_presets=0
@@ -261,6 +308,18 @@ print_table() {
     local legend_id="${PLAYBOOK_PLUGIN_ID:-playbook@tribe-coding}"
     printf '\nPlaybook Presets injected by %s\n' "$legend_id"
   fi
+
+  case "$token_mode" in
+    api)
+      printf '\nToken counts: exact (Anthropic count_tokens API)\n'
+      ;;
+    api_failed)
+      printf '\nToken counts: estimated (API error, fell back to chars/4)\n'
+      ;;
+    heuristic)
+      printf '\nToken counts: estimated (chars/4; set ANTHROPIC_API_KEY for exact)\n'
+      ;;
+  esac
 }
 
 # ── 1. Global CLAUDE.md ───────────────────────────────────────────────────────
