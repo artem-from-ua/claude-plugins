@@ -23,7 +23,7 @@ Interactive wizard to create or update `.claude-plugin/git-branch-naming.json` f
 ### Step 1: Check existing config
 
 Read `.claude-plugin/git-branch-naming.json` if it exists (show current values as defaults).
-Otherwise use defaults from `${SKILL_DIR}/../../templates/git-branch-naming.json`.
+Otherwise use defaults from `${CLAUDE_PLUGIN_ROOT}/templates/git-branch-naming.json`.
 
 ### Step 2: Ask configuration questions
 
@@ -89,7 +89,7 @@ Create `.claude-plugin/` directory if needed, then write `.claude-plugin/git-bra
 
 ### Step 4: Install pre-push hook (if requested)
 
-Copy `${SKILL_DIR}/../../templates/pre-push` to `.githooks/pre-push`, then:
+Copy `${CLAUDE_PLUGIN_ROOT}/templates/pre-push` to `.githooks/pre-push`, then:
 ```bash
 chmod +x .githooks/pre-push
 git config core.hooksPath .githooks

@@ -19,11 +19,11 @@ Display the full reference content of a playbook preset.
 
 If the user or a RULES zone specified a preset name — use it directly.
 
-Otherwise, list all available presets by reading `${SKILL_DIR}/../../presets/*.md` and extracting YAML frontmatter (`name`, `description`). Ask the user which one to view.
+Otherwise, list all available presets by reading `${CLAUDE_PLUGIN_ROOT}/presets/*.md` and extracting YAML frontmatter (`name`, `description`). Ask the user which one to view.
 
 ### 2. Read the preset file
 
-Read `${SKILL_DIR}/../../presets/<name>.md`.
+Read `${CLAUDE_PLUGIN_ROOT}/presets/<name>.md`.
 
 ### 3. Extract and display REFERENCE zone
 

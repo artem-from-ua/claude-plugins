@@ -48,23 +48,21 @@ Playbook presets (from `playbook@tribe-coding`) appear as individual rows when u
 
 ## Steps
 
-1. Resolve `PLUGIN_DIR` from `${SKILL_DIR}` — it is `${SKILL_DIR}/../../scripts`.
-
-2. Run the script via Bash. It prints two paths on stdout: the context file path and the table file path.
+1. Run the script via Bash. `${CLAUDE_PLUGIN_ROOT}` is a runtime env var pointing to the plugin root — use it to locate scripts. The script prints two paths on stdout: the context file path and the table file path.
 
    **Default (write to file):**
    ```bash
-   bash "${SKILL_DIR}/../../scripts/ctx-show.sh"
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ctx-show.sh"
    ```
 
    **With --stdout flag:**
    ```bash
-   bash "${SKILL_DIR}/../../scripts/ctx-show.sh" --stdout
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ctx-show.sh" --stdout
    ```
 
    **With --file flag (explicit):**
    ```bash
-   bash "${SKILL_DIR}/../../scripts/ctx-show.sh" --file
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ctx-show.sh" --file
    ```
 
 3. After running the script, **always** read the table file (second line of output) using the Read tool and display its contents verbatim in the response. Example — if the script output is:

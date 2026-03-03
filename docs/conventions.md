@@ -68,6 +68,21 @@ Inside scripts, use a fallback so they work both as hooks and when run directly:
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 ```
 
+### SKILL.md files
+
+SKILL.md files also reference plugin files (scripts, templates, presets). Use `${CLAUDE_PLUGIN_ROOT}` for anything outside the skill directory:
+
+```bash
+# CORRECT — runtime variable, resolves to plugin root
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/ctx-show.sh"
+cat "${CLAUDE_PLUGIN_ROOT}/templates/default.json"
+
+# WRONG — SKILL_DIR parent-traversal is fragile (LLM may mis-infer the directory)
+bash "${SKILL_DIR}/../../scripts/ctx-show.sh"
+```
+
+`${SKILL_DIR}` is safe only for co-located references (e.g., `${SKILL_DIR}/references/catalog.md`). See [`docs/AUTHORING.md`](AUTHORING.md) — §5 "Path references in SKILL.md" for the full convention.
+
 ---
 
 ## Cache Determinism

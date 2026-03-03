@@ -63,7 +63,7 @@ Collect data from up to 8 sources. Each source is optional — if unavailable, n
 
 1. Check `dataSources.insightsReportPath` in state; default fallback: `~/.claude/usage-data/report.html`
 2. `AskUserQuestion` with saved/default path, same pattern as Step 1
-3. If not skipped → `Bash`: `python3 ${SKILL_DIR}/../../scripts/parse-insights.py "{path}"`
+3. If not skipped → `Bash`: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/parse-insights.py "{path}"`
 4. Parse JSON output — key fields: `project_areas`, `top_tools`, `languages`, `session_types`, `usage_narrative`, `whats_working`, `whats_hindering`, `friction_categories`, `impressive_things`, `horizon_cards`, `satisfaction_distribution`, `multi_clauding`, `stats`
 5. Save path to `dataSources.insightsReportPath`
 6. Increment `sources_used`
@@ -72,7 +72,7 @@ Collect data from up to 8 sources. Each source is optional — if unavailable, n
 
 **Purpose:** Get recent work patterns — project diversity, tool usage, complexity indicators.
 
-1. `Bash`: `python3 ${SKILL_DIR}/../../scripts/aggregate-sessions.py --days 7`
+1. `Bash`: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/aggregate-sessions.py --days 7`
 2. Parse JSON output — key fields: `sessions_total`, `projects`, `tool_distribution`, `language_distribution`, `complexity_indicators` (task_agent_pct, mcp_pct, web_search_pct), `averages`, `session_types`, `first_prompts`
 3. If `sessions_total == 0` → note as unavailable, continue
 4. Increment `sources_used`

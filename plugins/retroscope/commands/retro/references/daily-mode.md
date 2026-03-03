@@ -10,7 +10,7 @@ PYTHONPATH="" python3 {SCRIPT_DIR}/find-sessions.py {today|yesterday} \
   --tz "{config.timezone}"
 ```
 
-Where `{SCRIPT_DIR}` = `${SKILL_DIR}/../../scripts`.
+Where `{SCRIPT_DIR}` = `${CLAUDE_PLUGIN_ROOT}/scripts`.
 
 If no sessions found: inform user and stop.
 

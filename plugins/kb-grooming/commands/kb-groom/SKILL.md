@@ -20,7 +20,7 @@ Resolve config using this priority (first found wins):
 1. Project: `.claude-plugin/kb-grooming.json` in the project root
 2. Legacy project: `.claude/kb-grooming.json` in the project root
 3. Global: `~/.claude/kb-grooming.json`
-4. Defaults: use built-in defaults from `${SKILL_DIR}/../../templates/kb-grooming.json`
+4. Defaults: use built-in defaults from `${CLAUDE_PLUGIN_ROOT}/templates/kb-grooming.json`
 
 If no config file exists anywhere, use `AskUserQuestion`:
 - **Use defaults** — proceed with built-in configuration
@@ -33,7 +33,7 @@ Display which config was loaded (path or "built-in defaults").
 Run the structural analysis script:
 
 ```bash
-env CLAUDE_PROJECT_DIR="<project_root>" KB_CONFIG_FILE="<config_path>" bash "${SKILL_DIR}/../../scripts/kb-structural-scan.sh"
+env CLAUDE_PROJECT_DIR="<project_root>" KB_CONFIG_FILE="<config_path>" bash "${CLAUDE_PLUGIN_ROOT}/scripts/kb-structural-scan.sh"
 ```
 
 The script outputs a file path to a JSON report. Read that file to get structural findings.
