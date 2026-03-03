@@ -228,11 +228,11 @@ print_table() {
       else
         api_failed=1
         token_mode="api_failed"
-        t=$(( TBL_CHARS[i] / 4 ))
+        t=$(( TBL_CHARS[i] * 10 / 36 ))
         tokens+=("$t")
       fi
     else
-      t=$(( TBL_CHARS[i] / 4 ))
+      t=$(( TBL_CHARS[i] * 10 / 36 ))
       tokens+=("$t")
     fi
     total_tokens=$(( total_tokens + t ))
@@ -339,10 +339,10 @@ print_table() {
       printf '\nToken counts: exact (Anthropic count_tokens API)\n'
       ;;
     api_failed)
-      printf '\nToken counts: estimated (API error, fell back to chars/4)\n'
+      printf '\nToken counts: estimated (API error, fell back to chars/3.6)\n'
       ;;
     heuristic)
-      printf '\nToken counts: estimated (chars/4; set ANTHROPIC_API_KEY for exact)\n'
+      printf '\nToken counts: estimated (chars/3.6; set ANTHROPIC_API_KEY for exact)\n'
       ;;
   esac
 }
