@@ -28,7 +28,7 @@ The plugin also prints a summary table to stderr showing scope, type, source, st
 
 | Test | Status | Notes |
 |------|--------|-------|
-| 1.1 Static: plugin.json valid | ✅ Pass | version 0.6.0 |
+| 1.1 Static: plugin.json valid | ✅ Pass | version 0.6.1 |
 | 1.2 Static: hooks.json valid | ✅ Pass | |
 | 1.3 Static: SKILL.md frontmatter | ✅ Pass | |
 | 1.4 Static: script is executable | ✅ Pass | |
@@ -77,7 +77,7 @@ jq '.' "${PLUGIN_DIR}/.claude-plugin/plugin.json"
 **Expected result:**
 - ✅ Valid JSON (no parse error)
 - ✅ Has `name`, `version`, `commands`, `skills` fields
-- ✅ `version` is `0.6.0`
+- ✅ `version` is `0.6.1`
 - ✅ `skills` is `[]` (no auto-invocable skills)
 
 ---
@@ -625,12 +625,12 @@ echo "Column header is ~Tokens (should be 1):"
 grep -c '~Tokens' "$TABLE_FILE" || echo "0"
 
 echo "Footer says estimated (should be 1):"
-grep -c 'estimated (chars/4; set ANTHROPIC_API_KEY for exact)' "$TABLE_FILE" || echo "0"
+grep -c 'estimated (chars/3.6; set ANTHROPIC_API_KEY for exact)' "$TABLE_FILE" || echo "0"
 ```
 
 **Expected result:**
 - ✅ Column header is `~Tokens`
-- ✅ Footer: `Token counts: estimated (chars/4; set ANTHROPIC_API_KEY for exact)`
+- ✅ Footer: `Token counts: estimated (chars/3.6; set ANTHROPIC_API_KEY for exact)`
 
 ---
 
@@ -650,12 +650,12 @@ echo "Column header is ~Tokens (should be 1):"
 grep -c '~Tokens' "$TABLE_FILE" || echo "0"
 
 echo "Footer says API error (should be 1):"
-grep -c 'API error, fell back to chars/4' "$TABLE_FILE" || echo "0"
+grep -c 'API error, fell back to chars/3.6' "$TABLE_FILE" || echo "0"
 ```
 
 **Expected result:**
 - ✅ Column header is `~Tokens` (fallback)
-- ✅ Footer: `Token counts: estimated (API error, fell back to chars/4)`
+- ✅ Footer: `Token counts: estimated (API error, fell back to chars/3.6)`
 
 ---
 
@@ -681,7 +681,7 @@ grep -c 'exact (Anthropic count_tokens API)' "$TABLE_FILE" || echo "0"
 **Expected result:**
 - ✅ Column header is `Tokens` (not `~Tokens`)
 - ✅ Footer: `Token counts: exact (Anthropic count_tokens API)`
-- ✅ Token values differ from chars/4 heuristic (typically lower)
+- ✅ Token values differ from chars/3.6 heuristic (typically lower)
 
 ---
 
@@ -891,7 +891,7 @@ Run all automated tests in sequence:
 PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
 
 echo "=== 1.1 plugin.json ==="
-jq -e '.name == "context" and .version == "0.6.0" and .commands and (.skills | length == 0)' \
+jq -e '.name == "context" and .version == "0.6.1" and .commands and (.skills | length == 0)' \
   "${PLUGIN_DIR}/.claude-plugin/plugin.json" && echo "✅ PASS" || echo "❌ FAIL"
 
 echo "=== 1.2 hooks.json ==="
@@ -952,7 +952,7 @@ grep -q '~Tokens' "$TABLE_NOKEY" && grep -q 'set ANTHROPIC_API_KEY for exact' "$
 echo "=== 8.2 API fallback with invalid key ==="
 TABLE_BADKEY=$(env ANTHROPIC_API_KEY="sk-ant-invalid" \
   bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
-grep -q '~Tokens' "$TABLE_BADKEY" && grep -q 'API error, fell back to chars/4' "$TABLE_BADKEY" \
+grep -q '~Tokens' "$TABLE_BADKEY" && grep -q 'API error, fell back to chars/3.6' "$TABLE_BADKEY" \
   && echo "✅ PASS" || echo "❌ FAIL"
 
 echo "=== 9.1 user skills discovered ==="

@@ -107,6 +107,29 @@ Every source injected at session start costs context tokens. The `context` plugi
 | `CTX_CONTEXT_WINDOW` | `200000` | Total context window size in tokens |
 | `CTX_WARN_THRESHOLD` | `CTX_CONTEXT_WINDOW * 5 / 100` | Warning fires when total tokens exceed this |
 
+## Token Estimation
+
+Two approaches for estimating tokens in plugin scripts:
+
+| Method | Formula / Endpoint | Accuracy | When to use |
+|--------|-------------------|----------|-------------|
+| **Heuristic** | `chars * 10 / 36` (bash integer math) | ±5% | Default — no deps, instant |
+| **Exact API** | `POST /v1/messages/count_tokens` | Exact | When `ANTHROPIC_API_KEY` is set |
+
+**Heuristic ratio by content type** (Claude BPE tokenizer):
+
+| Content | chars/token |
+|---------|-------------|
+| English markdown | 3.7–3.9 |
+| Code (mixed) | 3.5–4.0 |
+| Cyrillic/English mix | 3.3–3.4 |
+| **Weighted average** | **3.6** |
+
+**Usage pattern** (see `ctx-show.sh` for reference):
+1. Check `ANTHROPIC_API_KEY` + `curl` + `jq` availability
+2. Try exact API (free, `--max-time 5`)
+3. Fall back to heuristic on failure
+
 ---
 
 ## Subagent Model Configuration
