@@ -19,7 +19,7 @@ Find the JSONL file for the current session:
    ```
    **Never use the Read tool on `.jsonl` files — they can exceed 256 KB. Always use Bash commands.**
 
-2. Resolve script path — `SCRIPT_DIR` = `${SKILL_DIR}/../../scripts` (i.e., `scripts/` at the plugin root).
+2. Resolve script path — `SCRIPT_DIR` = `${CLAUDE_PLUGIN_ROOT}/scripts`.
 
 3. Run stats first:
    ```bash

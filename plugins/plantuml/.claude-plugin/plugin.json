@@ -1,6 +1,6 @@
 {
   "name": "plantuml",
-  "version": "1.7.0",
+  "version": "1.7.2",
   "description": "PlantUML diagram automation: auto-sync, validation, diagram type guide",
   "author": {
     "name": "Tribe Coding"

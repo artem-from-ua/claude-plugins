@@ -1,7 +1,7 @@
 {
   "name": "context",
-  "version": "0.3.3",
-  "description": "Inspect full Claude Code session context: CLAUDE.md files, auto-memory, and SessionStart hook output",
+  "version": "0.7.1",
+  "description": "Inspect full Claude Code session context: CLAUDE.md files, auto-memory, SessionStart hook output, and skill listings",
   "author": {
     "name": "Tribe Coding"
   },

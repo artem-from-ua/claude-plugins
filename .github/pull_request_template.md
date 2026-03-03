@@ -43,8 +43,7 @@
 
 <!-- Describe how you tested these changes -->
 - [ ] Ran acceptance tests (if applicable)
-- [ ] Tested in fresh Claude Code session after `claude-marketplace-sync --force`
-- [ ] Verified new version appears in plugin cache
+- [ ] Tested in fresh Claude Code session
 
 ## Checklist
 

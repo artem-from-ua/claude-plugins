@@ -297,7 +297,7 @@ rm -f "$cache_file"
 
 **Step 1:** Install and sync plugin
 ```bash
-claude-marketplace-sync --force
+Restart Claude Code
 ```
 
 **Step 2:** Configure statusline

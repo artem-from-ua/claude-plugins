@@ -7,7 +7,9 @@
 #   2. {project}/CLAUDE.md              — project instructions
 #   3. ~/.claude/projects/{hash}/memory/MEMORY.md — auto-memory
 #   4. Global SessionStart hooks        — from ~/.claude/settings.json
-#   5. Plugin SessionStart hooks        — enabled plugins in cache
+#   5. Project SessionStart hooks       — from {project}/.claude/settings.json
+#   6. Plugin SessionStart hooks        — enabled plugins in cache
+#   7. Skills                           — SKILL.md listings (user, plugin, project)
 #
 # Summary table is printed to stderr after content output.
 
@@ -17,6 +19,15 @@ MODE="${1:---file}"
 CLAUDE_DIR="${HOME}/.claude"
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 OUTPUT=""
+CTX_CONTEXT_WINDOW="${CTX_CONTEXT_WINDOW:-200000}"
+CTX_WARN_THRESHOLD="${CTX_WARN_THRESHOLD:-$(( CTX_CONTEXT_WINDOW * 5 / 100 ))}"
+
+# ── API token counting ──────────────────────────────────────────────────────
+USE_API=0
+CTX_TOKEN_MODEL="${CTX_TOKEN_MODEL:-claude-sonnet-4-6}"
+if [ -n "${ANTHROPIC_API_KEY:-}" ] && command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+  USE_API=1
+fi
 
 # ── metadata arrays ───────────────────────────────────────────────────────────
 # Parallel arrays (bash 3.2 compatible — no associative arrays)
@@ -25,8 +36,8 @@ TBL_TYPE=()     # "CLAUDE.md", "Memory", "Plugin hook", "Playbook Preset"
 TBL_SOURCE=()   # display identifier (full shortened path or plugin id)
 TBL_STATUS=()   # "ok", "missing", "empty", "failed"
 TBL_LINES=()    # integer
-TBL_CHARS=()    # integer
-PLAYBOOK_PLUGIN_ID=""  # captured from first playbook preset marker
+TBL_BYTES=()    # integer (byte count for heuristic estimation)
+TBL_CONTENT=()  # raw text for API token counting
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -54,21 +65,54 @@ count_lines() {
   fi
 }
 
+count_tokens_api() {
+  local content="$1"
+  local json response token_count
+  json=$(jq -n --arg text "$content" --arg model "$CTX_TOKEN_MODEL" \
+    '{model: $model, messages: [{role: "user", content: $text}]}') || return 1
+  response=$(curl -s --connect-timeout 2 --max-time 5 \
+    -H "x-api-key: ${ANTHROPIC_API_KEY}" \
+    -H "content-type: application/json" \
+    -H "anthropic-version: 2023-06-01" \
+    -d "$json" \
+    "https://api.anthropic.com/v1/messages/count_tokens" 2>/dev/null) || return 1
+  token_count=$(echo "$response" | jq -r '.input_tokens // empty' 2>/dev/null) || return 1
+  [ -n "$token_count" ] && echo "$token_count" || return 1
+}
+
 record_meta() {
   local scope="$1"
   local type="$2"
   local source="$3"
   local status="$4"
   local content="$5"
-  local lines chars
+  local lines byte_count
   lines=$(count_lines "$content")
-  chars=${#content}
+  byte_count=$(printf '%s' "$content" | wc -c | tr -d ' ')
   TBL_SCOPE+=("$scope")
   TBL_TYPE+=("$type")
   TBL_SOURCE+=("$source")
   TBL_STATUS+=("$status")
   TBL_LINES+=("$lines")
-  TBL_CHARS+=("$chars")
+  TBL_BYTES+=("$byte_count")
+  TBL_CONTENT+=("$content")
+}
+
+extract_skill_meta() {
+  local skill_md="$1"
+  awk '
+    /^---$/ { fm++; next }
+    fm == 1 && /^name:/ { gsub(/^name: */, ""); name = $0 }
+    fm == 1 && /^description:/ {
+      gsub(/^description: *>? */, "")
+      if ($0 != "") desc = $0
+      indesc = 1; next
+    }
+    fm == 1 && indesc && /^  / { gsub(/^  +/, ""); desc = desc " " $0; next }
+    fm == 1 && indesc && !/^  / { indesc = 0 }
+    fm == 2 { exit }
+    END { printf "%s|%s", name, desc }
+  ' "$skill_md"
 }
 
 append_source() {
@@ -138,13 +182,11 @@ append_command_output() {
       if [ -n "$preset_name" ]; then
         # Save previous preset if any
         if [ -n "$current_name" ] && [ -n "$playbook_id" ]; then
-          record_meta "Project" "Playbook Preset" "$current_name" "ok" "$current_content"
+          record_meta "Project" "Playbook Preset" "${playbook_id} · ${current_name}" "ok" "$current_content"
         fi
         current_name="$preset_name"
         current_content=""
         playbook_id="$pid"
-        # Capture for legend (only first time)
-        [ -z "$PLAYBOOK_PLUGIN_ID" ] && PLAYBOOK_PLUGIN_ID="$pid"
       else
         if [ -n "$current_name" ]; then
           current_content+="${line}"$'\n'
@@ -154,7 +196,7 @@ append_command_output() {
 
     # Save last preset
     if [ -n "$current_name" ] && [ -n "$playbook_id" ]; then
-      record_meta "Project" "Playbook Preset" "$current_name" "ok" "$current_content"
+      record_meta "Project" "Playbook Preset" "${playbook_id} · ${current_name}" "ok" "$current_content"
     fi
   else
     # Regular hook — record as single row
@@ -168,18 +210,41 @@ print_table() {
   local total_lines=0
   local -a tokens=()
   local i
+  local api_failed=0
+  local token_mode="heuristic"
 
-  for i in "${!TBL_CHARS[@]}"; do
-    local t=$(( TBL_CHARS[i] / 4 ))
-    tokens+=("$t")
+  if [ "$USE_API" -eq 1 ]; then
+    token_mode="api"
+  fi
+
+  for i in "${!TBL_BYTES[@]}"; do
+    local t
+    if [ "$token_mode" = "api" ] && [ "$api_failed" -eq 0 ] && [ "${TBL_STATUS[i]}" = "ok" ] && [ "${TBL_BYTES[i]}" -gt 0 ]; then
+      if t=$(count_tokens_api "${TBL_CONTENT[i]}"); then
+        tokens+=("$t")
+      else
+        api_failed=1
+        token_mode="api_failed"
+        t=$(( TBL_BYTES[i] * 10 / 38 ))
+        tokens+=("$t")
+      fi
+    else
+      t=$(( TBL_BYTES[i] * 10 / 38 ))
+      tokens+=("$t")
+    fi
     total_tokens=$(( total_tokens + t ))
     total_lines=$(( total_lines + TBL_LINES[i] ))
   done
 
-  printf '| Scope | Type | Source/ID | Lines | ~Tokens | Context%% |\n'
+  local token_header="~Tokens"
+  if [ "$token_mode" = "api" ]; then
+    token_header="Tokens"
+  fi
+
+  printf '| Scope | Type | Source/ID | Lines | %s | Context%% |\n' "$token_header"
   printf '|-------|------|-----------|------:|--------:|---------:|\n'
 
-  local has_presets=0
+  local has_skills=0
 
   for i in "${!TBL_SCOPE[@]}"; do
     local scope_label type_label ctx_pct lines_cell tokens_cell ctx_cell
@@ -190,8 +255,8 @@ print_table() {
     local lines="${TBL_LINES[i]}"
     local tok="${tokens[i]}"
 
-    # Skip hooks that produced no output (empty or missing — not errors)
-    if { [ "$type" = "Plugin hook" ] || [ "$type" = "User hook" ] || [ "$type" = "Project hook" ]; } && \
+    # Skip hooks/skills that produced no output (empty or missing — not errors)
+    if { [ "$type" = "Plugin hook" ] || [ "$type" = "User hook" ] || [ "$type" = "Project hook" ] || [ "$type" = "Skill" ]; } && \
        { [ "$status" = "empty" ] || [ "$status" = "missing" ]; }; then
       continue
     fi
@@ -208,7 +273,8 @@ print_table() {
       "Plugin hook")     type_label="Plugin hook" ;;
       "User hook")       type_label="User hook" ;;
       "Project hook")    type_label="Project hook" ;;
-      "Playbook Preset") type_label="Playbook Preset"; has_presets=1 ;;
+      "Playbook Preset") type_label="Playbook Preset" ;;
+      "Skill")           type_label="Skill"; has_skills=1 ;;
       *)                 type_label="$type" ;;
     esac
 
@@ -248,10 +314,28 @@ print_table() {
   printf '| | **TOTAL** | | **%d** | **%d** | **100%%** |\n' \
     "$total_lines" "$total_tokens"
 
-  if [ "$has_presets" -eq 1 ]; then
-    local legend_id="${PLAYBOOK_PLUGIN_ID:-playbook@tribe-coding}"
-    printf '\nPlaybook Presets injected by %s\n' "$legend_id"
+  if [ "$total_tokens" -gt "$CTX_WARN_THRESHOLD" ]; then
+    printf '\n⚠️  Context load (%d tokens) exceeds threshold (%d tokens = %d%% of %dk context window)\n' \
+      "$total_tokens" "$CTX_WARN_THRESHOLD" \
+      "$(( 100 * CTX_WARN_THRESHOLD / CTX_CONTEXT_WINDOW ))" \
+      "$(( CTX_CONTEXT_WINDOW / 1000 ))"
   fi
+
+  if [ "$has_skills" -eq 1 ]; then
+    printf '\nSkills: names + descriptions loaded at session start (full SKILL.md on-demand)\n'
+  fi
+
+  case "$token_mode" in
+    api)
+      printf '\nToken counts: exact (Anthropic count_tokens API)\n'
+      ;;
+    api_failed)
+      printf '\nToken counts: estimated (API error, fell back to bytes/3.8)\n'
+      ;;
+    heuristic)
+      printf '\nToken counts: estimated (bytes/3.8; set ANTHROPIC_API_KEY for exact)\n'
+      ;;
+  esac
 }
 
 # ── 1. Global CLAUDE.md ───────────────────────────────────────────────────────
@@ -414,6 +498,115 @@ if [ -f "$SETTINGS" ] && command -v jq >/dev/null 2>&1 && [ -d "$CACHE_DIR" ]; t
   fi
 else
   OUTPUT+=$'\n'"<!-- Source: Plugin SessionStart hooks -->"$'\n'"<!-- (settings.json not found, jq not available, or cache directory missing) -->"$'\n'
+fi
+
+# ── 7. Skill listings ─────────────────────────────────────────────────────────
+# Skills are loaded at session start as a compact listing (name + description).
+# We approximate that listing for token counting.
+
+SEEN_SKILLS=""  # track absolute paths to avoid duplicates
+
+record_skill() {
+  local skill_md="$1"
+  local scope="$2"
+  local source_id="$3"
+
+  # Deduplicate by absolute path
+  local abs_path
+  abs_path=$(cd "$(dirname "$skill_md")" && pwd)/$(basename "$skill_md") 2>/dev/null || return
+  case "$SEEN_SKILLS" in
+    *"|${abs_path}|"*) return ;;
+  esac
+  SEEN_SKILLS+="|${abs_path}|"
+
+  local meta name desc listing
+  meta=$(extract_skill_meta "$skill_md")
+  name="${meta%%|*}"
+  desc="${meta#*|}"
+
+  # Skip if name is empty (malformed SKILL.md)
+  [ -z "$name" ] && return
+
+  listing="- ${name}: ${desc}"
+  record_meta "$scope" "Skill" "$source_id" "ok" "$listing"
+}
+
+# 7a. User skills — ~/.claude/commands/ and ~/.claude/skills/
+for user_skill_dir in "${CLAUDE_DIR}/commands" "${CLAUDE_DIR}/skills"; do
+  if [ -d "$user_skill_dir" ]; then
+    SKILL_LIST=$(find "$user_skill_dir" -maxdepth 2 -name "SKILL.md" 2>/dev/null | sort || true)
+    if [ -n "$SKILL_LIST" ]; then
+      while IFS= read -r skill_md; do
+        [ -z "$skill_md" ] && continue
+        local_name=$(basename "$(dirname "$skill_md")")
+        record_skill "$skill_md" "User" "$local_name"
+      done <<< "$SKILL_LIST"
+    fi
+  fi
+done
+
+# 7b. Plugin commands + skills (from enabled plugins in enabledPlugins order)
+if [ -f "$SETTINGS" ] && command -v jq >/dev/null 2>&1 && [ -d "$CACHE_DIR" ]; then
+  ENABLED_PLUGINS_SKILLS=$(jq -r '
+    .enabledPlugins // {} | to_entries[]
+    | select(.value == true)
+    | .key
+  ' "$SETTINGS" 2>/dev/null || true)
+
+  if [ -n "$ENABLED_PLUGINS_SKILLS" ]; then
+    while IFS= read -r plugin_key; do
+      [ -z "$plugin_key" ] && continue
+
+      PLUGIN_NAME="${plugin_key%%@*}"
+      MARKETPLACE="${plugin_key##*@}"
+      PLUGIN_CACHE="${CACHE_DIR}/${MARKETPLACE}/${PLUGIN_NAME}"
+      [ ! -d "$PLUGIN_CACHE" ] && continue
+
+      LATEST_VERSION=$(ls "$PLUGIN_CACHE" 2>/dev/null \
+        | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
+        | sort -t. -k1,1n -k2,2n -k3,3n \
+        | tail -1)
+      [ -z "$LATEST_VERSION" ] && continue
+
+      PLUGIN_ROOT="${PLUGIN_CACHE}/${LATEST_VERSION}"
+      PLUGIN_JSON="${PLUGIN_ROOT}/.claude-plugin/plugin.json"
+      [ ! -f "$PLUGIN_JSON" ] && continue
+
+      # Iterate commands dirs first, then skills dirs (matches Claude Code load order)
+      for dir_type in commands skills; do
+        DIRS=$(jq -r ".${dir_type}[]? // empty" "$PLUGIN_JSON" 2>/dev/null || true)
+        if [ -n "$DIRS" ]; then
+          while IFS= read -r rel_dir; do
+            [ -z "$rel_dir" ] && continue
+            full_dir="${PLUGIN_ROOT}/${rel_dir}"
+            [ ! -d "$full_dir" ] && continue
+            SKILL_LIST=$(find "$full_dir" -maxdepth 2 -name "SKILL.md" 2>/dev/null | sort || true)
+            if [ -n "$SKILL_LIST" ]; then
+              while IFS= read -r skill_md; do
+                [ -z "$skill_md" ] && continue
+                local_name=$(basename "$(dirname "$skill_md")")
+                record_skill "$skill_md" "Project" "${PLUGIN_NAME}@${MARKETPLACE} (v${LATEST_VERSION}) · ${local_name}"
+              done <<< "$SKILL_LIST"
+            fi
+          done <<< "$DIRS"
+        fi
+      done
+
+    done <<< "$ENABLED_PLUGINS_SKILLS"
+  fi
+fi
+
+# 7c. Project commands — {project}/.claude/commands/
+PROJECT_COMMANDS_DIR="${PROJECT_DIR}/.claude/commands"
+if [ -d "$PROJECT_COMMANDS_DIR" ]; then
+  SKILL_LIST=$(find "$PROJECT_COMMANDS_DIR" -maxdepth 2 -name "SKILL.md" 2>/dev/null | sort || true)
+  if [ -n "$SKILL_LIST" ]; then
+    while IFS= read -r skill_md; do
+      [ -z "$skill_md" ] && continue
+      local_name=$(basename "$(dirname "$skill_md")")
+      record_skill "$skill_md" "Project" "./.claude/commands/${local_name}"
+    done <<< "$SKILL_LIST"
+  fi
 fi
 
 # ── Output ────────────────────────────────────────────────────────────────────

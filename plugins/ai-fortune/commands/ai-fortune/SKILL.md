@@ -63,7 +63,7 @@ Collect data from up to 8 sources. Each source is optional — if unavailable, n
 
 1. Check `dataSources.insightsReportPath` in state; default fallback: `~/.claude/usage-data/report.html`
 2. `AskUserQuestion` with saved/default path, same pattern as Step 1
-3. If not skipped → `Bash`: `python3 ${SKILL_DIR}/../../scripts/parse-insights.py "{path}"`
+3. If not skipped → `Bash`: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/parse-insights.py "{path}"`
 4. Parse JSON output — key fields: `project_areas`, `top_tools`, `languages`, `session_types`, `usage_narrative`, `whats_working`, `whats_hindering`, `friction_categories`, `impressive_things`, `horizon_cards`, `satisfaction_distribution`, `multi_clauding`, `stats`
 5. Save path to `dataSources.insightsReportPath`
 6. Increment `sources_used`
@@ -72,7 +72,7 @@ Collect data from up to 8 sources. Each source is optional — if unavailable, n
 
 **Purpose:** Get recent work patterns — project diversity, tool usage, complexity indicators.
 
-1. `Bash`: `python3 ${SKILL_DIR}/../../scripts/aggregate-sessions.py --days 7`
+1. `Bash`: `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/aggregate-sessions.py --days 7`
 2. Parse JSON output — key fields: `sessions_total`, `projects`, `tool_distribution`, `language_distribution`, `complexity_indicators` (task_agent_pct, mcp_pct, web_search_pct), `averages`, `session_types`, `first_prompts`
 3. If `sessions_total == 0` → note as unavailable, continue
 4. Increment `sources_used`
@@ -147,7 +147,7 @@ Collect data from up to 8 sources. Each source is optional — if unavailable, n
 ### Step 7: Adaptive Interview
 
 1. `Read` `${SKILL_DIR}/references/interview-questions.md`
-2. For each question (Q1a, Q1b, Q2, Q3, Q4, Q5a, Q5b, Q6-Q12, Q14-Q18), apply re-ask logic:
+2. For each question (Q1a, Q1b, Q1c, Q2, Q2b, Q3, Q4, Q5a, Q5b, Q6-Q12, Q14-Q19), apply re-ask logic:
 
    **Re-ask decision tree:**
    ```
@@ -179,6 +179,8 @@ Collect data from up to 8 sources. Each source is optional — if unavailable, n
    - Q17 (languages): if memory file or resume mentions languages → pre-fill, confirm
    - Q18 (local market): if Q15 covers geography or memory/resume has location → pre-fill, confirm
    - Q18 should be asked before Q16 when both are unanswered (so currency placeholder adapts)
+   - Q2b (work description): if memory file or resume contains detailed work descriptions → pre-fill, confirm
+   - Q19 (AI monetization): if technology-explainer has expert entries or Q10 already answered → reference as context, still ask
    - **Resume pre-fills always confirm** — never silently skip, since resumes can be outdated
 
 6. **Tier 3 collapse**: If user gives 2+ consecutive minimal answers (picks first option without customizing), skip remaining Tier 3 questions
@@ -197,6 +199,10 @@ Collect data from up to 8 sources. Each source is optional — if unavailable, n
    - Claimed strengths (Q3, Q10) vs impressive_things from insights
    - Compensation (Q16) vs market rates for role (will compare in Step 9)
    - Session timestamps vs Q2 — detect night/weekend work patterns
+   - Work description (Q2b) vs project_areas from insights — discrepancy between described work and actual AI usage
+   - Satisfaction sources (Q1c) vs work description (Q2b) — satisfaction gap: is energy inside or outside work?
+   - Satisfaction sources (Q1c) vs career trajectory (Q1b) — says "Love it" but energy comes from pet projects?
+   - AI monetization vision (Q19) vs AI leverage score — inflated/overlooked opportunity assessment
    - (if resume provided) Resume title vs self-reported role (Q1a) → title inflation/deflation
    - (if resume provided) Resume tenure patterns vs career sentiment (Q1b) → says "Love it" but switches yearly?
    - (if resume provided) Resume skills vs technology-explainer proficiency → over/under-claiming
@@ -204,6 +210,7 @@ Collect data from up to 8 sources. Each source is optional — if unavailable, n
    - (if Q3b answered) Resume vs reality — user's honest disclosure about resume embellishments
 3. Note any discrepancies for the Blind Spots section
 4. Compute preliminary risk scores for each of the 5 dimensions
+5. **Satisfaction Alignment Score (1-5)**: Compare Q1c satisfaction sources against Q2b work description. Score 1 = energy exclusively outside job, 5 = fully aligned with day job. See analysis-framework.md § Satisfaction Alignment Score for scoring table and how it affects directions/blind spots.
 5. **Burnout risk screening**: Count burnout indicators from analysis-framework.md (night work >30%, no rest days 7/7, dual workload, session marathon >3h, escalating volume >50% WoW). Record flag count for report generation.
 
 ---
@@ -214,14 +221,15 @@ Collect data from up to 8 sources. Each source is optional — if unavailable, n
 
 Perform 5-8 targeted `WebSearch` queries based on the user's profile:
 
-1. `WebSearch`: "AI automation {user's industry} 2026 trends"
-2. `WebSearch`: "{user's role title} AI replacement risk 2026"
+1. `WebSearch`: "AI automation {user's industry} {current year} trends"
+2. `WebSearch`: "{user's role title} AI replacement risk {current year}"
 3. `WebSearch`: "AI-resistant careers {user's domain}"
-4. `WebSearch`: "{user's top technology} AI automation capabilities 2026" (if relevant)
-5. `WebSearch`: "{user's role} salary range {Q18 city/market} 2026" (use Q18 answer for geography-specific searches)
+4. `WebSearch`: "{user's top technology} AI automation capabilities {current year}" (if relevant)
+5. `WebSearch`: "{user's role} salary range {Q18 city/market} {current year}" (use Q18 answer for geography-specific searches)
 6. `WebSearch`: "{recommended L3 direction} job market {Q18 city}" (target business discovery)
-7. `WebSearch`: "{recommended L5 direction} freelance market demand 2026" (radical change validation)
+7. `WebSearch`: "{recommended L5 direction} freelance market demand {current year}" (radical change validation)
 8. `WebSearch`: "{recommended direction} salary range {user's geography}" (after directions are drafted, for remaining levels)
+9. `WebSearch`: "{Q19 skill/domain} AI service market demand {current year}" (validates AI monetization opportunities from Q19)
 
 For each search → extract key findings, specific companies/products, salary data.
 Increment `sources_used`.
@@ -236,6 +244,7 @@ Increment `sources_used`.
    - **AI Leverage Score**: compute from plugin count, session complexity, multi-clauding %, task-agent %, delegation maturity
    - **Delegation Maturity Level**: determine from session types, tool distribution, multi-clauding stats
    - (if resume provided) **Career Stability Score** and **Adaptability Evidence Score**: compute per analysis-framework.md § Career Trajectory Analysis
+   - **Satisfaction Alignment Score** (1-5): from Q1c vs Q2b comparison per analysis-framework.md
 5. Generate 5 recommended career directions (one per amplitude level):
    - L1 (Optimize Current): always detailed — baseline reference
    - L2 (Lateral Move): always included — low-friction alternative
@@ -302,7 +311,7 @@ Increment `sources_used`.
      }
    }
    ```
-   New answer keys: `career_direction_sentiment` (Q1b), `resume_vs_reality` (Q3b), `ai_dependency_work` (Q5a), `ai_dependency_personal` (Q5b), `current_compensation` (Q16), `working_languages` (Q17), `local_market` (Q18).
+   New answer keys: `career_direction_sentiment` (Q1b), `satisfaction_sources` (Q1c), `work_description` (Q2b), `resume_vs_reality` (Q3b), `ai_dependency_work` (Q5a), `ai_dependency_personal` (Q5b), `current_compensation` (Q16), `working_languages` (Q17), `local_market` (Q18), `ai_monetization_skills` (Q19).
    Old keys `ai_dependency` and `career_satisfaction` are preserved in state but no longer actively read. They serve as migration sources: on first run after upgrade, their values seed defaults for the new split questions (Q5a/Q1b). See interview-questions.md § Legacy answer migration for the mapping table. Old keys age out naturally after 6 months.
 2. `Write` to `~/.claude/ai-fortune.json`
 3. Confirm: "State saved. Run `/ai-fortune` again anytime — it will remember your answers and skip recent ones."

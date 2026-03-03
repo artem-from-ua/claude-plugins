@@ -2,10 +2,10 @@
 name: ctx-show
 description: >
   Show the full Claude Code session context assembled in load order.
-  Outputs all CLAUDE.md files, auto-memory, and SessionStart hook output
+  Outputs all CLAUDE.md files, auto-memory, SessionStart hook output, and skill listings
   in one document with source separators. Prints a summary table to stderr
   with scope, type, source, status, lines, tokens, and context% per source.
-  Keywords: session context, what is loaded, show context, debug context, rules, hooks.
+  Keywords: session context, what is loaded, show context, debug context, rules, hooks, skills.
 ---
 
 # /ctx-show — Show Full Session Context
@@ -27,6 +27,7 @@ Assemble and display everything Claude Code loads at session start, in load orde
 4. Global SessionStart hooks (from `~/.claude/settings.json`)
 5. Project SessionStart hooks (from `{project}/.claude/settings.json`)
 6. Plugin SessionStart hooks (enabled plugins in `~/.claude/plugins/cache/`)
+7. Skills — SKILL.md listings from user (`~/.claude/commands/`, `~/.claude/skills/`), plugins, and project (`{project}/.claude/commands/`)
 
 Each source is wrapped with `<!-- Source: ... -->` comments. Missing files are noted but do not cause errors.
 
@@ -37,36 +38,34 @@ After the file is written (or content printed), a summary table is printed to **
 | Column | Description |
 |--------|-------------|
 | Scope | `User` (global `~/.claude/`) or `Project` (project-level + plugins) |
-| Type | CLAUDE.md · Memory · Plugin hook · User hook · Project hook · Playbook Preset |
+| Type | CLAUDE.md · Memory · Plugin hook · User hook · Project hook · Playbook Preset · Skill |
 | Source/ID | Shortened path (`~/`, `./`) or plugin identifier `name@marketplace (vX.Y.Z)` |
 | Status | has content · missing/empty · command failed (shown as "script error" in Lines column) |
-| Lines / ~Tokens | Content metrics; tokens ≈ chars/4 |
+| Lines / Tokens | Content metrics; exact via Anthropic `count_tokens` API when `ANTHROPIC_API_KEY` is set, otherwise estimated as `~Tokens` (bytes/3.8) |
 | Context% | Each source's share of total context |
 
 Playbook presets (from `playbook@tribe-coding`) appear as individual rows when using playbook v0.3.1+.
 
 ## Steps
 
-1. Resolve `PLUGIN_DIR` from `${SKILL_DIR}` — it is `${SKILL_DIR}/../../scripts`.
-
-2. Run the script via Bash. It prints two paths on stdout: the context file path and the table file path.
+1. Run the script via Bash. `${CLAUDE_PLUGIN_ROOT}` is a runtime env var pointing to the plugin root — use it to locate scripts. The script prints two paths on stdout: the context file path and the table file path.
 
    **Default (write to file):**
    ```bash
-   bash "${SKILL_DIR}/../../scripts/ctx-show.sh"
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ctx-show.sh"
    ```
 
    **With --stdout flag:**
    ```bash
-   bash "${SKILL_DIR}/../../scripts/ctx-show.sh" --stdout
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ctx-show.sh" --stdout
    ```
 
    **With --file flag (explicit):**
    ```bash
-   bash "${SKILL_DIR}/../../scripts/ctx-show.sh" --file
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ctx-show.sh" --file
    ```
 
-3. After running the script, **always** read the table file (second line of output) using the Read tool and display its contents verbatim in the response. Example — if the script output is:
+3. After running the script, **always** read the table file (second line of output) using the Read tool and display its contents **verbatim** in the response — do NOT summarize, collapse, group, or reformat rows. Show the exact table the script produced. Example — if the script output is:
    ```
    /tmp/claude-context-20260225-123456.md
    /tmp/claude-ctx-table-20260225-123456.txt
@@ -81,3 +80,5 @@ Playbook presets (from `playbook@tribe-coding`) appear as individual rows when u
 - SessionStart hook commands are executed in isolation — their output may differ slightly from a real session start (e.g., different working directory).
 - For plugin hooks, the script uses `${CLAUDE_PLUGIN_ROOT}` substitution with the actual cache path.
 - Playbook preset splitting requires playbook plugin v0.3.1+ in cache (emits `<!-- Source: Plugin playbook@... Preset NAME -->` markers).
+- **Threshold warning:** When total tokens exceed `CTX_WARN_THRESHOLD` (default 5% of `CTX_CONTEXT_WINDOW`), a ⚠️ warning is printed after the TOTAL row. Override defaults: `CTX_CONTEXT_WINDOW=200000` (context window size), `CTX_WARN_THRESHOLD=10000` (warning threshold in tokens).
+- **Exact token counting:** Set `ANTHROPIC_API_KEY` to enable exact token counts via the Anthropic `count_tokens` API (free endpoint). The column header changes from `~Tokens` to `Tokens` and a footer line indicates the counting method. If the API call fails, the script falls back to the bytes/3.8 heuristic. Override the model used for counting with `CTX_TOKEN_MODEL` (default: `claude-sonnet-4-6`).

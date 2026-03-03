@@ -4,6 +4,8 @@
   "description": "Compact single-line Claude Code statusline with brightness-coded API usage values. Shows 5h/7d rate limits, extra usage, context window, git branch, model, and session name - all on one line.",
   "author": { "name": "Tribe Coding" },
   "license": "MIT",
-  "commands": ["./commands/"],
+  "commands": [
+    "./commands/"
+  ],
   "skills": []
 }

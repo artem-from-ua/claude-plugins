@@ -37,7 +37,7 @@ Then in the next session, run `/playbook-setup` to choose which presets to enabl
 |--------|-----------------|
 | [`action-over-planning`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/action-over-planning.md) | Bias toward implementation: max 1 planning round, then code |
 | [`debugging-discipline`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/debugging-discipline.md) | gather→diagnose→confirm→fix; never modify live state during debugging |
-| [`documentation-principles`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/documentation-principles.md) | Doc hierarchy, commit checklist, ADR policy, no TODO-in-code |
+| [`documentation-principles`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/documentation-principles.md) | Doc hierarchy, commit checklist, ADR policy, ripple analysis, automation reflection |
 | [`git-safety`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/git-safety.md) | force-with-lease, confirm before destructive ops, no --no-verify bypass |
 | [`github-workflow`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/github-workflow.md) | Squash merge, post-merge cleanup, PR description updates, issue linking |
 | [`macos-python`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/macos-python.md) | Python 3.12 targeting, no system Python, CWD isolation |

@@ -14,7 +14,7 @@ Configure the compact single-line Claude Code statusline with brightness-coded A
 
 1. Check if `~/.claude/statusline.sh` exists. If not, copy it from the plugin:
    ```bash
-   cp "${SKILL_DIR}/../../scripts/statusline.sh" ~/.claude/statusline.sh
+   cp "${CLAUDE_PLUGIN_ROOT}/scripts/statusline.sh" ~/.claude/statusline.sh
    chmod +x ~/.claude/statusline.sh
    ```
 

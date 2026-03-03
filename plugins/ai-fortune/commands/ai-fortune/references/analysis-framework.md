@@ -164,6 +164,10 @@ Compare self-reported data (interview) vs observed data (sessions/insights):
 | Skills claimed vs verified | Q10 domain expertise | Resume skills + technology-explainer | Over/under-claiming — listed skills not backed by experience descriptions |
 | Experience vs self-report | Q7 years experience | Resume career span computation | Inaccurate self-assessment of career stage |
 | Resume vs reality | Q3b honest disclosure | Resume content | User's own identification of where resume doesn't match reality |
+| Work substance | Q2b work description | project_areas, insights | Discrepancy between described work and actual AI usage |
+| Satisfaction gap | Q1c satisfaction sources vs Q2b work description | project_areas, session diversity | Energy is outside day job → career misalignment signal |
+| Satisfaction vs sentiment | Q1c satisfaction sources vs Q1b direction | satisfaction_distribution | Says "Love it" but energy comes only from pet projects? |
+| AI monetization vision | Q19 ai_monetization_skills | technology-explainer, AI leverage score | Inflated opportunity or overlooked strengths |
 
 ### How to present:
 - If data confirms self-report → reinforce with evidence
@@ -230,6 +234,32 @@ When resume is available, enhance the "Already Have" column in Skills Bridge tab
 - Add **years of experience** for each skill (computed from positions where it appeared)
 - Flag **dormant skills** — listed in resume but not used in last 2 positions (mark with ⚠️)
 - Distinguish **current skills** (last 2 positions) from **historical skills** (earlier only)
+
+---
+
+## Satisfaction Alignment Score (1-5)
+
+Measures how well the user's energy/satisfaction sources (Q1c) align with their actual day job (Q2b).
+
+| Score | Label | Evidence Pattern |
+|-------|-------|------------------|
+| 1 | **Misaligned** | Energy sources exclusively outside day job (only pet projects, hobbies, volunteering mentioned) |
+| 2 | **Mostly outside** | 1 work activity mentioned but majority outside job |
+| 3 | **Split** | Roughly equal energy from work and non-work activities |
+| 4 | **Mostly work** | Most energy from day job, some side interests |
+| 5 | **Fully aligned** | Energy sources are entirely within day job scope |
+
+### Computation rules:
+- Compare Q1c satisfaction sources against Q2b work description
+- Count how many Q1c items relate to day job work (Q2b) vs outside activities
+- If Q1c is empty or vague → default to 3 (Split)
+
+### How it affects the report:
+- **Displayed in Your Profile section:** `**Satisfaction Alignment: {X}/5** — {label}`
+- **Score 1-2** → triggers Satisfaction Gap subsection in Blind Spots. L3-L5 directions should prioritize aligning with Q1c energy sources, not just Q1a/Q2b work skills.
+- **Score 1-2 + Q1b "Love it"** → contrastive finding: "You say you love your career direction, but your energy is elsewhere"
+- **Score 4-5** → reinforce L1 (Optimize Current) as strong baseline
+- **Score 3** → note in Blind Spots as "worth monitoring" but not alarming
 
 ---
 

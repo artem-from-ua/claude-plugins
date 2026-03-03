@@ -68,6 +68,116 @@ Inside scripts, use a fallback so they work both as hooks and when run directly:
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 ```
 
+### SKILL.md files
+
+SKILL.md files also reference plugin files (scripts, templates, presets). Use `${CLAUDE_PLUGIN_ROOT}` for anything outside the skill directory:
+
+```bash
+# CORRECT — runtime variable, resolves to plugin root
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/ctx-show.sh"
+cat "${CLAUDE_PLUGIN_ROOT}/templates/default.json"
+
+# WRONG — SKILL_DIR parent-traversal is fragile (LLM may mis-infer the directory)
+bash "${SKILL_DIR}/../../scripts/ctx-show.sh"
+```
+
+`${SKILL_DIR}` is safe only for co-located references (e.g., `${SKILL_DIR}/references/catalog.md`). See [`docs/AUTHORING.md`](AUTHORING.md) — §5 "Path references in SKILL.md" for the full convention.
+
+### SessionStart Script Naming
+
+SessionStart scripts follow a naming convention based on their purpose. The `context` plugin (`/ctx-show`) derives a display ID from the **script basename** (minus `.sh`), so consistent naming produces uniform, scannable output.
+
+| Purpose | Convention | Used by |
+|---------|-----------|---------|
+| Inject rules into system prompt | `inject-rules.sh` | plantuml, semver, retroscope, playbook, technology-explainer, git-branch-naming |
+| Configure environment / UI | `setup-<what>.sh` | statusline, statusline-compact, plantuml (`setup-project.sh`) |
+
+**Rules:**
+- Rule-injection scripts MUST be named `inject-rules.sh` — no qualifiers (`inject-base-rules.sh`, `inject-core-rules.sh`).
+- Setup scripts use `setup-<descriptive-noun>.sh` (e.g., `setup-statusline.sh`, `setup-project.sh`).
+- If a plugin has both types, use separate entries in the SessionStart hooks array.
+
+---
+
+## Cache Determinism
+
+SessionStart hooks inject text into Claude's system prompt. The Anthropic API caches prompt prefixes — if the prefix is identical across sessions, it hits the cache (lower latency, lower cost). Non-deterministic hook output invalidates the cache on every session start.
+
+**Plugin classification by determinism:**
+
+| Category | Plugins | Why |
+|----------|---------|-----|
+| **Deterministic** | `plantuml`, `git-branch-naming`, `retroscope`, `statusline`, `statusline-compact` | Static output — same input always produces identical text. Safe for prefix caching. |
+| **Config-dependent** | `playbook`, `semver`, `technology-explainer` | Output depends on user config files (`.claude-plugin/*.json`). Config rarely changes between sessions, so practically stable. |
+| **No SessionStart hooks** | `context`, `kb-grooming`, `ai-fortune` | These plugins use only commands/skills, no hook output injected at session start. |
+
+**Rule for new plugins:** SessionStart hooks MUST NOT use `date`, `git log`, `$RANDOM`, network calls, or any other non-deterministic data source in their output. Config-dependent output is acceptable — it changes rarely and the caching benefit is preserved across the majority of sessions.
+
+---
+
+## Token Budget
+
+Every source injected at session start costs context tokens. The `context` plugin (`/ctx-show`) warns when total context load exceeds a configurable threshold.
+
+**Per-component budgets:**
+
+| Component | Budget | Notes |
+|-----------|--------|-------|
+| SessionStart hook output | ≤300 tokens | Per plugin. Rules only — no catalogs. |
+| Playbook preset RULES zone | ≤150 tokens | Per preset. Standard ~100-120, critical up to ~200. |
+| Skill description (plugin.json) | ≤50 tokens | Per skill. Lead with trigger signal. |
+
+**Aggregate cap:** ~10,000 tokens (5% of 200K context window).
+
+**Environment variables** (override defaults in `ctx-show.sh`):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CTX_CONTEXT_WINDOW` | `200000` | Total context window size in tokens |
+| `CTX_WARN_THRESHOLD` | `CTX_CONTEXT_WINDOW * 5 / 100` | Warning fires when total tokens exceed this |
+
+## Token Estimation
+
+Two approaches for estimating tokens in plugin scripts:
+
+| Method | Formula / Endpoint | Accuracy | When to use |
+|--------|-------------------|----------|-------------|
+| **Heuristic** | `chars * 10 / 36` (bash integer math) | ±5% | Default — no deps, instant |
+| **Exact API** | `POST /v1/messages/count_tokens` | Exact | When `ANTHROPIC_API_KEY` is set |
+
+**Heuristic ratio by content type** (Claude BPE tokenizer):
+
+| Content | chars/token |
+|---------|-------------|
+| English markdown | 3.7–3.9 |
+| Code (mixed) | 3.5–4.0 |
+| Cyrillic/English mix | 3.3–3.4 |
+| **Weighted average** | **3.6** |
+
+**Usage pattern** (see `ctx-show.sh` for reference):
+1. Check `ANTHROPIC_API_KEY` + `curl` + `jq` availability
+2. Try exact API (free, `--max-time 5`)
+3. Fall back to heuristic on failure
+
+---
+
+## Subagent Model Configuration
+
+Plugins that delegate work to subagents must make the model configurable in their config file.
+
+**Config field convention:**
+
+| Plugin type | Config field | Example |
+|-------------|-------------|---------|
+| Single subagent | `"model": "<value>"` | `{ "model": "sonnet" }` |
+| Multi-subagent (phases) | `"models": { "<phase>": "<value>" }` | `{ "models": { "dataCollection": "haiku", "analysis": "sonnet" } }` |
+
+**Valid values:** `"haiku"`, `"sonnet"`, `"opus"`, `"inherit"` (use parent session model).
+
+**Setup wizard requirement:** The model selection question must include a plugin-specific recommendation explaining WHY that model fits the task (e.g., "Haiku (Recommended) — Mechanical task, no reasoning needed").
+
+See [`docs/plugin-behavior.md`](plugin-behavior.md) — §5 Subagent Design Guidelines for the full default selection table and opus usage criteria.
+
 ---
 
 ## Git Hook Installation
@@ -155,12 +265,3 @@ cp -r plugins/<name> ~/.claude/plugins/marketplaces/tribe-coding/plugins/<name>
 
 **Why this works:** Claude Code resolves plugin `"source"` paths relative to `~/.claude/plugins/marketplaces/<marketplace>/`. So `"source": "./plugins/ai-fortune"` resolves to `~/.claude/plugins/marketplaces/tribe-coding/plugins/ai-fortune`. Placing files there makes the plugin discoverable without pushing to remote.
 
----
-
-## Plugin Cache Sync
-
-Claude Code has a bug where the plugin cache is not invalidated on auto-update ([#14061](https://github.com/anthropics/claude-code/issues/14061), [#15621](https://github.com/anthropics/claude-code/issues/15621), [#15642](https://github.com/anthropics/claude-code/issues/15642)).
-
-**Solution:** The standalone `scripts/claude-marketplace-sync` script runs _before_ Claude Code starts, pulling marketplace repos and rsyncing into cache. Run `scripts/install-sync.sh` to install — it configures PATH and shell alias automatically. See README for details.
-
-**Debug logging:** Both `claude-marketplace-sync` and plugin SessionStart hooks log detailed operations to `/tmp/claude-plugin-sync.log`. Use this file to diagnose sync issues (stale `CLAUDE_PLUGIN_ROOT`, failed hook execution, rsync problems).
