@@ -2,9 +2,11 @@
 
 ## Purpose
 
-The `context` plugin provides the `/ctx-show` command for assembling the full Claude Code session context in load order. These acceptance tests verify that the script correctly discovers, reads, and outputs all source types — including skills — and handles missing files gracefully.
+The `context` plugin provides two commands:
+- `/ctx-show` — assembles the full session context by re-reading files from disk and re-executing hooks, with a token usage summary table
+- `/ctx-dump` — dumps the verbatim context from Claude's memory (pure SKILL.md, no scripts)
 
-The plugin also prints a summary table to stderr showing scope, type, source, status, lines, tokens, and context% for every source — including per-preset rows for playbook presets (v0.3.1+) and per-skill rows for SKILL.md listings.
+These acceptance tests verify that `/ctx-show` correctly discovers, reads, and outputs all source types — including skills — and handles missing files gracefully. Tests for `/ctx-dump` verify the SKILL.md structure and behavioral correctness.
 
 ## Test Execution Order
 
@@ -17,11 +19,12 @@ The plugin also prints a summary table to stderr showing scope, type, source, st
 7. Threshold warning tests (automated)
 8. API token counting tests (automated / partially automated)
 9. Skill discovery tests (automated)
+10. ctx-dump tests (static: automated, behavioral: partially automated)
 
 ## Automation Status
 
-- ✅ Fully automated: Tests 1–5, 7, 8.1–8.2, 9.1–9.5
-- 🟡 Partially automated: Test 6 (Claude invocation requires a fresh session or `/clear`), 8.3 (requires valid API key)
+- ✅ Fully automated: Tests 1–5, 7, 8.1–8.2, 9.1–9.5, 10.1–10.2
+- 🟡 Partially automated: Test 6 (Claude invocation requires a fresh session or `/clear`), 8.3 (requires valid API key), 10.3–10.7 (require live Claude session)
 - ⚠️ Manual only: None
 
 ## Test Results (last run: 2026-03-03)
@@ -55,6 +58,13 @@ The plugin also prints a summary table to stderr showing scope, type, source, st
 | 9.3 Skill: deduplication works | ⬜ | |
 | 9.4 Skill: malformed SKILL.md skipped | ⬜ | |
 | 9.5 Skill: footer legend shown | ⬜ | |
+| 10.1 Static: ctx-dump SKILL.md frontmatter | ⬜ | |
+| 10.2 Static: ctx-dump line count ≤100 | ⬜ | |
+| 10.3 Behavioral: --file mode writes file | ⬜ | requires live session |
+| 10.4 Behavioral: --stdout mode prints content | ⬜ | requires live session |
+| 10.5 Behavioral: all 7 source types present | ⬜ | requires live session |
+| 10.6 Behavioral: content is verbatim | ⬜ | requires live session |
+| 10.7 Behavioral: exclusions respected | ⬜ | requires live session |
 
 ---
 
@@ -875,6 +885,148 @@ rm -rf "$FAKE_HOME"
 
 ---
 
+### 10. ctx-dump Tests
+
+#### 10.1 Static: SKILL.md Frontmatter Valid
+
+**Objective:** Verify ctx-dump SKILL.md has valid agentskills.io frontmatter.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
+head -10 "${PLUGIN_DIR}/commands/ctx-dump/SKILL.md"
+```
+
+**Expected result:**
+- ✅ Starts with `---`
+- ✅ Has `name: ctx-dump`
+- ✅ Has `description:` field mentioning "verbatim" and "memory"
+- ✅ Ends frontmatter with `---`
+
+---
+
+#### 10.2 Static: Line Count ≤100
+
+**Objective:** Verify ctx-dump SKILL.md stays within the 100-line budget.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
+LINES=$(wc -l < "${PLUGIN_DIR}/commands/ctx-dump/SKILL.md")
+echo "Line count: $LINES"
+test "$LINES" -le 100 && echo "✅ PASS" || echo "❌ FAIL"
+```
+
+**Expected result:**
+- ✅ Line count ≤ 100
+
+---
+
+#### 10.3 Behavioral: --file Mode Writes File
+
+**Objective:** Verify `/ctx-dump` writes context to `/tmp/claude-context-dump-*.md`.
+
+**Automation:** 🟡 (requires live Claude session)
+
+**Steps:**
+1. In a Claude Code session with the plugin installed, run: `/ctx-dump`
+2. Expected: Claude uses Write tool to create `/tmp/claude-context-dump-{timestamp}.md`
+3. Expected: Claude reports the file path
+
+**Expected result:**
+- ✅ File created at `/tmp/claude-context-dump-*.md`
+- ✅ File starts with `# Session Context Dump (from memory)`
+- ✅ File path reported in response
+
+---
+
+#### 10.4 Behavioral: --stdout Mode Prints Content
+
+**Objective:** Verify `/ctx-dump --stdout` prints content to terminal.
+
+**Automation:** 🟡
+
+**Steps:**
+1. In a Claude Code session, run: `/ctx-dump --stdout`
+2. Expected: Full context printed in response (not written to file)
+
+**Expected result:**
+- ✅ Content appears in terminal response
+- ✅ Starts with `# Session Context Dump (from memory)`
+
+---
+
+#### 10.5 Behavioral: All 7 Source Types Present
+
+**Objective:** Verify output contains all 7 documented source types.
+
+**Automation:** 🟡
+
+**Steps:**
+After running `/ctx-dump`, verify the output contains:
+```bash
+DUMP_FILE="/tmp/claude-context-dump-LATEST.md"
+grep -c "## Source:" "$DUMP_FILE"          # should be >= 7
+grep -q "## Source: ~/.claude/CLAUDE.md" "$DUMP_FILE"
+grep -q "## Source:.*CLAUDE.md.*project" "$DUMP_FILE"
+grep -q "## Source: Auto-memory" "$DUMP_FILE"
+grep -q "## Source: SessionStart hook" "$DUMP_FILE"
+grep -q "## Source: Available skills" "$DUMP_FILE"
+grep -q "## Source: gitStatus" "$DUMP_FILE"
+grep -q "## Source: currentDate" "$DUMP_FILE"
+```
+
+**Expected result:**
+- ✅ At least 7 `## Source:` headers
+- ✅ All 7 source types present
+
+---
+
+#### 10.6 Behavioral: Content Is Verbatim
+
+**Objective:** Verify content matches what Claude actually received (spot check).
+
+**Automation:** 🟡
+
+**Steps:**
+1. Run `/ctx-dump` and `/ctx-show` in the same session
+2. Compare CLAUDE.md and MEMORY.md sections — they should match exactly
+3. Verify no translation, abbreviation, or reformatting occurred
+
+**Expected result:**
+- ✅ CLAUDE.md content in ctx-dump matches ctx-show output
+- ✅ MEMORY.md content matches
+- ✅ Original markdown formatting preserved (code blocks, headers, lists)
+
+---
+
+#### 10.7 Behavioral: Exclusions Respected
+
+**Objective:** Verify internal system prompt, SKILL.md content, and conversation history are excluded.
+
+**Automation:** 🟡
+
+**Steps:**
+After running `/ctx-dump`, verify:
+```bash
+DUMP_FILE="/tmp/claude-context-dump-LATEST.md"
+# Should NOT contain Claude Code internals
+grep -c "You are Claude Code" "$DUMP_FILE"   # should be 0
+grep -c "tone and style" "$DUMP_FILE"         # should be 0
+grep -c "ctx-dump" "$DUMP_FILE"               # should be 0 (SKILL.md itself excluded)
+```
+
+**Expected result:**
+- ✅ No Claude Code system prompt content
+- ✅ No ctx-dump SKILL.md content
+- ✅ No user conversation messages
+
+---
+
 ## Regression Testing Guide
 
 ### When to run
@@ -882,6 +1034,7 @@ rm -rf "$FAKE_HOME"
 - Before creating a PR that modifies `plugins/context/`
 - After updating `ctx-show.sh` (re-run tests 2.1–6.2)
 - After changing `commands/ctx-show/SKILL.md` (re-run test 7.1)
+- After creating or modifying `commands/ctx-dump/SKILL.md` (re-run tests 10.1–10.7)
 
 ### Automated test batch
 
@@ -980,6 +1133,14 @@ rm -rf "$FAKE_HOME_94"
 echo "=== 9.5 skills footer legend ==="
 TABLE=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
 grep -q 'Skills: names + descriptions' "$TABLE" && echo "✅ PASS" || echo "❌ FAIL"
+
+echo "=== 10.1 ctx-dump SKILL.md frontmatter ==="
+grep -q '^name: ctx-dump' "${PLUGIN_DIR}/commands/ctx-dump/SKILL.md" \
+  && echo "✅ PASS" || echo "❌ FAIL"
+
+echo "=== 10.2 ctx-dump line count ≤100 ==="
+LINES=$(wc -l < "${PLUGIN_DIR}/commands/ctx-dump/SKILL.md")
+test "$LINES" -le 100 && echo "✅ PASS: $LINES lines" || echo "❌ FAIL: $LINES lines"
 ```
 
 ### CI integration
