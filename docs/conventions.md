@@ -213,12 +213,3 @@ cp -r plugins/<name> ~/.claude/plugins/marketplaces/tribe-coding/plugins/<name>
 
 **Why this works:** Claude Code resolves plugin `"source"` paths relative to `~/.claude/plugins/marketplaces/<marketplace>/`. So `"source": "./plugins/ai-fortune"` resolves to `~/.claude/plugins/marketplaces/tribe-coding/plugins/ai-fortune`. Placing files there makes the plugin discoverable without pushing to remote.
 
----
-
-## Plugin Cache Sync
-
-Claude Code has a bug where the plugin cache is not invalidated on auto-update ([#14061](https://github.com/anthropics/claude-code/issues/14061), [#15621](https://github.com/anthropics/claude-code/issues/15621), [#15642](https://github.com/anthropics/claude-code/issues/15642)).
-
-**Solution:** The standalone `scripts/claude-marketplace-sync` script runs _before_ Claude Code starts, pulling marketplace repos and rsyncing into cache. Run `scripts/install-sync.sh` to install — it configures PATH and shell alias automatically. See README for details.
-
-**Debug logging:** Both `claude-marketplace-sync` and plugin SessionStart hooks log detailed operations to `/tmp/claude-plugin-sync.log`. Use this file to diagnose sync issues (stale `CLAUDE_PLUGIN_ROOT`, failed hook execution, rsync problems).

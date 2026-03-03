@@ -182,12 +182,7 @@ rm -rf /tmp/semver-global-test /tmp/semver-project-test
 
 #### Manual Test Procedure
 
-**Step 1:** Ensure semver plugin is synced to cache:
-```bash
-claude-marketplace-sync --force --verbose 2>&1 | grep semver
-```
-
-**Step 2:** Start fresh Claude Code session in any project:
+**Step 1:** Start fresh Claude Code session in any project:
 ```bash
 mkdir /tmp/semver-session-test && cd /tmp/semver-session-test && git init && claude
 ```
@@ -204,8 +199,8 @@ mkdir /tmp/semver-session-test && cd /tmp/semver-session-test && git init && cla
 
 | Symptom | Root Cause | Fix |
 |---------|-----------|-----|
-| No SemVer rules mentioned | Plugin not in cache | Run `claude-marketplace-sync --force` |
-| Rules appear but strategy is wrong | Old config cached | Delete `/tmp/claude-plugin-sync.log`, restart session |
+| No SemVer rules mentioned | Plugin not loaded | Restart Claude Code |
+| Rules appear but strategy is wrong | Old config cached | Restart Claude Code |
 | SessionStart hook error | Script not executable | `chmod +x plugins/semver/scripts/*.sh` |
 
 ---

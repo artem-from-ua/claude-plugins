@@ -162,4 +162,4 @@ Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude-plugin
 
 **Plugin not loading:**
 - Verify `retroscope` is in your enabled plugins in `~/.claude/settings.json`
-- Restart Claude Code to pick up the latest plugin cache
+- Restart Claude Code

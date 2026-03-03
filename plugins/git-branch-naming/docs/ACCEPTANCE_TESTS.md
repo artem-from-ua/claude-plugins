@@ -442,7 +442,7 @@ If rules are NOT enforced in your test session:
 
 | Symptom | Root Cause | Fix |
 |---------|-----------|-----|
-| Claude ignores prefix requirement | Plugin cache stale | Run `claude-marketplace-sync --force` |
+| Claude ignores prefix requirement | Plugin cache stale | Restart Claude Code |
 | Hook doesn't run | SessionStart race condition ([#10997](https://github.com/anthropics/claude-code/issues/10997)) | Run `/clear` to restart session |
 | Rules partially followed | API timeout | Set `CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000` |
 
