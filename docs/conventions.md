@@ -83,6 +83,20 @@ bash "${SKILL_DIR}/../../scripts/ctx-show.sh"
 
 `${SKILL_DIR}` is safe only for co-located references (e.g., `${SKILL_DIR}/references/catalog.md`). See [`docs/AUTHORING.md`](AUTHORING.md) — §5 "Path references in SKILL.md" for the full convention.
 
+### SessionStart Script Naming
+
+SessionStart scripts follow a naming convention based on their purpose. The `context` plugin (`/ctx-show`) derives a display ID from the **script basename** (minus `.sh`), so consistent naming produces uniform, scannable output.
+
+| Purpose | Convention | Used by |
+|---------|-----------|---------|
+| Inject rules into system prompt | `inject-rules.sh` | plantuml, semver, retroscope, playbook, technology-explainer, git-branch-naming |
+| Configure environment / UI | `setup-<what>.sh` | statusline, statusline-compact, plantuml (`setup-project.sh`) |
+
+**Rules:**
+- Rule-injection scripts MUST be named `inject-rules.sh` — no qualifiers (`inject-base-rules.sh`, `inject-core-rules.sh`).
+- Setup scripts use `setup-<descriptive-noun>.sh` (e.g., `setup-statusline.sh`, `setup-project.sh`).
+- If a plugin has both types, use separate entries in the SessionStart hooks array.
+
 ---
 
 ## Cache Determinism

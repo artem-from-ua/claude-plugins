@@ -14,7 +14,7 @@ Inject a short block of rules (~100–200 tokens) into every session via a Sessi
 
 Use for: formatting conventions, mandatory patterns, "always do X when you see Y" rules.
 
-Example (plantuml `inject-base-rules.sh`):
+Example (plantuml `inject-rules.sh`):
 ```
 Proactive usage:
 - When creating or updating `.md` documentation files, proactively add PlantUML diagrams…
@@ -284,7 +284,7 @@ When designing a new plugin, start with the pattern that best matches your use c
 **Problem solved:** ASCII diagrams in terminal without permission prompts or UI collapse.
 
 **Workflow:**
-1. SessionStart hook (inject-base-rules.sh) outputs instructions: encode PlantUML source → WebFetch from `plantuml.com/txt/{encoded}` → display
+1. SessionStart hook (inject-rules.sh) outputs instructions: encode PlantUML source → WebFetch from `plantuml.com/txt/{encoded}` → display
 2. PreToolUse hook (allow-rendering.sh) auto-allows all PlantUML operations without prompts
 
 **Why WebFetch, not Bash:**

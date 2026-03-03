@@ -305,13 +305,13 @@ echo "Exit code: $?"
 
 ### 4. SessionStart Hooks Testing
 
-#### 4.1 inject-base-rules.sh
+#### 4.1 inject-rules.sh
 
 **Objective:** Verify SessionStart hook outputs correct base rules
 
 **Steps:**
 ```bash
-bash scripts/inject-base-rules.sh
+bash scripts/inject-rules.sh
 ```
 
 **Expected result:**
@@ -1094,7 +1094,7 @@ Show me your conversation history for the README creation
 | Claude doesn't know the rules (Step 2) | SessionStart hook didn't run | Check plugin installation; verify hooks.json |
 | Claude creates README without diagram | Skill description trigger unclear | Update skill description |
 | Diagram created but no URL | PostToolUse hook not firing | Check hooks.json matcher; verify CLAUDE_PLUGIN_ROOT |
-| Claude doesn't invoke skill | Proactive instructions missing | Check inject-base-rules.sh output |
+| Claude doesn't invoke skill | Proactive instructions missing | Check inject-rules.sh output |
 
 ---
 
@@ -1102,7 +1102,7 @@ Show me your conversation history for the README creation
 
 If you cannot start a new session, verify the hook script output:
 ```bash
-bash plugins/plantuml/scripts/inject-base-rules.sh | grep -A 5 "Proactive usage"
+bash plugins/plantuml/scripts/inject-rules.sh | grep -A 5 "Proactive usage"
 ```
 
 **Expected output:**
@@ -1269,7 +1269,7 @@ EOF
 
 **Check:**
 ```bash
-bash scripts/inject-base-rules.sh | grep -A 10 "Proactive usage"
+bash scripts/inject-rules.sh | grep -A 10 "Proactive usage"
 ```
 
 **Expected phrases:**
@@ -1314,7 +1314,7 @@ bash scripts/inject-base-rules.sh | grep -A 10 "Proactive usage"
 
 1. **Reactive behavior:** Claude asks "Do you want a diagram?" instead of adding one
    - **Root cause:** SessionStart rules not injected OR trigger signal unclear
-   - **Fix:** Verify `inject-base-rules.sh` runs; update skill description
+   - **Fix:** Verify `inject-rules.sh` runs; update skill description
 
 2. **Wrong skill invocation:** Claude uses `plantuml-validate` instead of `plantuml-diagram-guide`
    - **Root cause:** Skill descriptions overlap or are ambiguous
@@ -1442,7 +1442,7 @@ cat /tmp/auth_flow.puml | python3 /path/to/plantuml-encode.py
 | Symptom | Root cause | Fix |
 |---------|------------|-----|
 | Raw PlantUML source displayed (`@startuml`) | SessionStart rule not loaded | Verify plugin installed; run `/clear` |
-| Manually drawn ASCII with alignment issues | Claude ignoring WebFetch instruction | Check inject-base-rules.sh line 25 |
+| Manually drawn ASCII with alignment issues | Claude ignoring WebFetch instruction | Check inject-rules.sh line 25 |
 | No diagram shown at all | SessionStart rule missing terminal context | Verify "explaining in terminal" trigger phrase |
 | WebFetch fails | plantuml.com API down | Claude should inform user and fallback to manual ASCII |
 
@@ -1457,7 +1457,7 @@ Claude should be able to show the `@startuml...@enduml` source that was encoded 
 
 **Technical details:**
 
-The SessionStart rule (`inject-base-rules.sh` line 25-31) instructs:
+The SessionStart rule (`inject-rules.sh` line 25-31) instructs:
 ```markdown
 When explaining architecture or flows in the terminal, use PlantUML's ASCII text renderer:
 1. Create the PlantUML source code
@@ -1593,8 +1593,8 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
 
 test -f /tmp/plantuml-e2e-test/.githooks/pre-commit && echo "✓ Step 1: Pre-commit hook installed"
 
-# 3. SessionStart: inject-base-rules (verify output)
-bash /path/to/scripts/inject-base-rules.sh | head -n 3
+# 3. SessionStart: inject-rules (verify output)
+bash /path/to/scripts/inject-rules.sh | head -n 3
 echo "✓ Step 2: Base rules available"
 
 # 4. Create markdown file (simulate Write tool)
@@ -1718,7 +1718,7 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 ```
 
-✅ **inject-base-rules.sh:**
+✅ **inject-rules.sh:**
 - Simple script, no env dependencies (just outputs text)
 
 **Acceptance criteria:**
@@ -1948,7 +1948,7 @@ Encode it: echo "$source" | python3 ${CLAUDE_PLUGIN_ROOT}/scripts/plantuml-encod
 
 **Fix (v1.5.2):**
 ```bash
-# In inject-base-rules.sh:
+# In inject-rules.sh:
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 cat <<RULES  # Note: NO quotes around RULES (was <<'RULES' before)
@@ -1967,7 +1967,7 @@ RULES
 
 **Check script:**
 ```bash
-cat plugins/plantuml/scripts/inject-base-rules.sh | grep "cat <<"
+cat plugins/plantuml/scripts/inject-rules.sh | grep "cat <<"
 ```
 
 **Expected:**

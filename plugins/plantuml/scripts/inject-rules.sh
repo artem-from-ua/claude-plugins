@@ -1,5 +1,5 @@
 #!/bin/bash
-# SessionStart hook: inject PlantUML base formatting rules into Claude's context.
+# SessionStart hook: inject PlantUML formatting rules into Claude's context.
 # Outputs ~200 tokens of critical rules so Claude always knows the 2-part format.
 # The full diagram type catalog is available on-demand via the plantuml-diagram-guide skill.
 

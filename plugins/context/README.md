@@ -21,7 +21,7 @@
 | User    | CLAUDE.md       | ~/.claude/CLAUDE.md                                |    15 |     191 |       1% |
 | Project | CLAUDE.md       | ./CLAUDE.md                                        |   752 |   8,545 |      74% |
 | Project | Memory          | ~/.claude/projects/.../memory/MEMORY.md            |    14 |     198 |       1% |
-| Project | Plugin hook     | plantuml@tribe-coding (v1.6.3) · inject-base-rules |    49 |     836 |       7% |
+| Project | Plugin hook     | plantuml@tribe-coding (v1.6.3) · inject-rules |    49 |     836 |       7% |
 | Project | Playbook Preset | playbook@tribe-coding (v0.5.5) · documentation-principles |    16 |     308 |       2% |
 | Project | Playbook Preset | playbook@tribe-coding (v0.5.5) · github-workflow          |    12 |     178 |       1% |
 | Project | Playbook Preset | playbook@tribe-coding (v0.5.5) · macos-python             |    13 |     191 |       1% |

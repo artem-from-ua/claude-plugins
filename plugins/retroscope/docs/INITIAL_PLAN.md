@@ -136,7 +136,7 @@ Extract mode pre-processes JSONL via Python script, outputting only user text + 
 - `/retro` command availability (modes: `session`, `today`, `yesterday`)
 - Brief format hint
 
-Pattern: follows `plugins/plantuml/scripts/inject-base-rules.sh` (PLUGIN_ROOT resolution, heredoc).
+Pattern: follows `plugins/plantuml/scripts/inject-rules.sh` (PLUGIN_ROOT resolution, heredoc).
 
 ### 4. `plugins/retroscope/scripts/session-end.sh`
 
@@ -300,7 +300,7 @@ Add entry to `.claude-plugin/marketplace.json`.
 ## Key Reference Files
 
 - `plugins/git-branch-naming/commands/git-branch-naming-setup/SKILL.md` — setup wizard pattern
-- `plugins/plantuml/scripts/inject-base-rules.sh` — SessionStart hook pattern
+- `plugins/plantuml/scripts/inject-rules.sh` — SessionStart hook pattern
 - `plugins/plantuml/.claude-plugin/plugin.json` — manifest format
 - `plugins/plantuml/hooks/hooks.json` — hooks structure
 - `~/.claude/projects/-Users-artem-devel-claude-plugins/*.jsonl` — real session data for testing
