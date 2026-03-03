@@ -72,7 +72,7 @@ Co-Authored-By: Claude <model> <noreply@anthropic.com>"
 
 See [Version Bump Requirements](docs/versioning.md) for detailed examples.
 
-**Why this matters:** Without a version bump, the plugin cache won't be updated and users won't see your changes.
+**Why this matters:** Without a version bump, users won't see your changes after restarting Claude Code.
 
 ### 5. Create Pull Request
 
@@ -101,7 +101,7 @@ git checkout main
 git pull origin main
 ```
 
-Then restart Claude Code to pick up the updated plugin cache.
+Then restart Claude Code to pick up changes.
 
 ## Common Tasks
 

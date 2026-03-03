@@ -1,6 +1,6 @@
 # Version Bump Requirements
 
-**CRITICAL:** Before merging any PR to `main`, you MUST bump the version of affected plugins. This is required for `claude-marketplace-sync` to pick up changes.
+**CRITICAL:** Before merging any PR to `main`, you MUST bump the version of affected plugins.
 
 ---
 
@@ -82,7 +82,6 @@ Examples:
    Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
    ```
 6. **Then create PR** (NEVER before version bump)
-7. **After merge**: User runs `claude-marketplace-sync --force` to update cache
 
 ---
 
@@ -141,16 +140,14 @@ statusline 1.0.3 → 1.1.0:
 
 After version bump:
 1. Check `plugin.json` contains new version
-2. After merge, run `claude-marketplace-sync --force --verbose`
-3. Verify new version appears in `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`
-4. Test in fresh Claude Code session
+2. Test in fresh Claude Code session
 
 ---
 
 ## Why This Matters
 
-Without version bumps, `claude-marketplace-sync` won't update plugin files in cache because it only syncs when version changes. This means:
-- ❌ Users won't see your changes (old version still loaded)
+Without version bumps, users won't receive your changes:
+- ❌ Old version still loaded after restart
 - ❌ Manual testing becomes invalid (testing old code)
 - ❌ Bug fixes won't reach users
 

@@ -163,7 +163,7 @@ Tests in `ACCEPTANCE_TESTS.md` are run by Claude Code's Bash tool (zsh on macOS)
 3. **Document environmental failure modes** — Not all test failures indicate bugs. Common environmental causes:
    - **API timeouts** (32K token limit) — Claude may skip "optional" steps to finish before timeout
    - **SessionStart race conditions** (upstream [#10997](https://github.com/anthropics/claude-code/issues/10997), [#19491](https://github.com/anthropics/claude-code/issues/19491)) — Hooks may execute before plugins fully load
-   - **Plugin cache not synced** — Changes not yet in `~/.claude/plugins/cache/`
+   - **Plugin not loaded** — Restart Claude Code
 
 4. **Provide mitigation steps** — For each failure mode, document workarounds:
    ```markdown

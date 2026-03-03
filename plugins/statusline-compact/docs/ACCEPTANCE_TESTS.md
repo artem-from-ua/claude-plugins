@@ -259,7 +259,7 @@ echo "$output" | grep -q "Test" && echo "✅ Shows basic info despite API failur
 
 **Step 1:** Install and sync plugin
 ```bash
-claude-marketplace-sync --force
+Restart Claude Code
 ```
 
 **Step 2:** Configure statusline
