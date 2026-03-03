@@ -1,6 +1,6 @@
 # Proactive Plugin Behavior
 
-Reference for plugin authors. Explains the three mechanisms for proactive behavior and how to combine them. See also [`docs/AUTHORING.md`](AUTHORING.md) for SKILL.md and preset authoring guidelines.
+Reference for plugin authors. Explains delivery mechanisms for proactive behavior and how to combine them. See also [`docs/AUTHORING.md`](AUTHORING.md) for SKILL.md and preset authoring guidelines.
 
 ---
 
@@ -112,18 +112,170 @@ Example (plantuml `sync-plantuml.sh`): runs after every Write/Edit on `.md` file
 
 ---
 
-## Choosing the Right Mechanism
+## Choosing the Right Delivery Mechanism
 
-| Need | Mechanism | Context cost |
-|------|-----------|--------------|
-| Claude must always follow a rule | SessionStart hook | Per-session (fixed) |
-| Claude should use a skill when relevant | Skill description trigger | Only the description line |
-| Action must happen after every matching tool call | PostToolUse hook | Zero (runs externally) |
+### §1 Mechanism Overview
 
-When designing a new plugin, combine these layers. Typical setup:
-1. SessionStart injects **base rules** (what to always do)
-2. Skill descriptions provide **trigger signals** (when to load more context)
-3. PostToolUse hooks handle **automatic actions** (no Claude involvement needed)
+Six delivery mechanisms, each suited for different autonomy levels and cost profiles:
+
+| Mechanism | What it delivers | Fired by | Per-session cost | Examples |
+|-----------|-----------------|----------|-----------------|---------|
+| Playbook preset | ~100–150 token RULES block | Playbook SessionStart | RULES zone tokens | `action-over-planning`, `git-safety` |
+| Skill description trigger | SKILL.md body on-demand | Claude's skill selection | Description only (~60–100 tokens) | `plantuml-diagram-guide`, `semver-guide` |
+| SessionStart hook | Config-dependent rules block | Session init | Hook output tokens (≤300) | `plantuml`, `semver`, `technology-explainer` |
+| Pre/PostToolUse hook | Shell script on tool calls | Tool matcher | Zero (external) | `plantuml` (PostToolUse sync), `git-branch-naming` (PreToolUse validate) |
+| Subagent | Heavy analysis delegated to cheaper model | SKILL.md orchestration | Per-invocation model cost | `kb-grooming` (semantic analysis) |
+| Pure script | All logic in bash/python | User-invoked command | Zero | `statusline`, `context` |
+
+### §2 Decision Factors
+
+| Factor | Question | Impact on mechanism choice |
+|--------|----------|---------------------------|
+| Frequency | How often does it fire? | Every session → preset or SessionStart hook. On demand → skill or pure script. |
+| Latency | How fast must it respond? | <1s → PreToolUse hook (bash only). <30s → PostToolUse hook. Minutes → subagent. |
+| Context pollution | Does output consume context tokens? | High → skill (loaded on demand). Low → SessionStart hook or preset. Zero → Pre/PostToolUse hook or pure script. |
+| Data volume | How much data does it process? | <500 tokens → inline. Large datasets → subagent or pure script. |
+| Model needs | Does it require LLM reasoning? | No → pure script or Pre/PostToolUse hook. Yes → skill, preset, or subagent. |
+| User interaction | Does it need conversational back-and-forth? | Yes → skill (main session). No → subagent or pure script. |
+
+### §3 Decision Tree
+
+Use this branching logic to pick a mechanism:
+
+1. **Does it need to fire without the user asking?**
+   - No → **skill** (on-demand reference) or **pure script** (user-invoked command)
+   - Yes → continue ↓
+
+2. **Is it a simple rule (≤150 tokens, no config dependency)?**
+   - Yes, general → **playbook preset**
+   - Yes, but config-dependent → **SessionStart hook**
+   - No → continue ↓
+
+3. **Does it react to a specific tool call?**
+   - Yes, validation (<1s, must block) → **PreToolUse hook** (bash only, no LLM)
+   - Yes, sync/transform (<30s) → **PostToolUse hook**
+   - No → continue ↓
+
+4. **Is it data-heavy, separable work?**
+   - Yes → **subagent** (haiku for mechanical tasks, sonnet for semantic analysis)
+   - No → reconsider — likely a combination of mechanisms above
+
+**Quick-reference shortcuts:**
+
+| I need to… | Use |
+|------------|-----|
+| Enforce a coding convention in every session | Playbook preset |
+| Inject project-specific rules based on config | SessionStart hook |
+| Provide a reference guide Claude loads when relevant | Skill description trigger |
+| Validate input before a tool executes | PreToolUse hook |
+| Auto-fix artifacts after Write/Edit | PostToolUse hook |
+| Run heavy analysis on a codebase | Subagent |
+| Display computed data to the user | Pure script |
+| Combine mandatory rules with optional deep reference | SessionStart hook + Skill |
+
+### §4 Cost Profile
+
+| Mechanism | Per-session cost | Per-invocation cost | Notes |
+|-----------|-----------------|---------------------|-------|
+| Playbook preset | RULES zone tokens (~100–150) | — | Loaded every session via playbook SessionStart |
+| Skill description trigger | Description tokens (~60–100) | Full SKILL.md when invoked | On-demand — no cost when unused |
+| SessionStart hook | Hook output tokens (≤300) | — | Budget enforced by convention (see [Token Budget](conventions.md#token-budget)) |
+| Pre/PostToolUse hook | Zero | Zero (external script) | No context cost; runs outside the model |
+| Subagent | Zero | Model cost per invocation | e.g., kb-grooming semantic scan: ~$0.004/invocation with haiku |
+| Pure script | Zero | Zero | All logic in bash/python, no model involvement |
+
+Cross-ref: [Token Budget](conventions.md#token-budget) for per-component budgets, [Cache Determinism](conventions.md#cache-determinism) for SessionStart caching rules.
+
+### §5 Subagent Design Guidelines
+
+Plugins that delegate work to subagents MUST make the model configurable. This follows the established pattern from `kb-grooming` and `retroscope`.
+
+**Config convention:**
+
+For single-subagent plugins — one `model` field:
+```json
+{ "model": "sonnet" }
+```
+
+For multi-subagent plugins — named model fields per phase:
+```json
+{
+  "models": {
+    "dataCollection": "haiku",
+    "analysis": "sonnet",
+    "reportGeneration": "haiku"
+  }
+}
+```
+
+Valid values: `"haiku"`, `"sonnet"`, `"opus"`, `"inherit"` (use parent session model).
+
+Cross-ref: [Subagent Model Configuration](conventions.md#subagent-model-configuration) for the config field convention.
+
+**Setup wizard model question pattern:**
+
+Each subagent's model selection should include a plugin-specific recommendation explaining WHY that model fits the task:
+
+- kb-grooming semantic analysis: "**Sonnet (Recommended)** — Best balance of quality and speed for documentation analysis" / "**Haiku** — Faster and cheaper, good for large codebases"
+- retroscope report generation: "**Haiku (Recommended)** — Sufficient for structured summarization, 12x cheaper" / "**Sonnet** — Richer narrative, better for detailed reports"
+- Data collection / extraction phases: "**Haiku (Recommended)** — Mechanical task: run scripts, collect JSON, no reasoning needed"
+- Semantic judgment phases: "**Sonnet (Recommended)** — Requires nuanced evaluation of content quality and consistency"
+
+**Default model selection rules:**
+
+| Subagent task type | Default model | Rationale |
+|-------------------|---------------|-----------|
+| Classification, extraction, counting | `haiku` | Mechanical — no reasoning needed |
+| Template-based generation (reports, issues) | `haiku` | Structured output from templates |
+| Semantic analysis, compliance checking | `sonnet` | Requires nuanced judgment |
+| Web research, synthesis | `sonnet` | Needs to evaluate and integrate diverse sources |
+| Multi-step reasoning with large context (architecture analysis, security audit) | `opus` | Complex interdependencies, high cost of error |
+| User-facing conversational phases | `inherit` | Must match parent session quality |
+
+**When to use opus in subagents:**
+
+Opus is the most expensive model (~15x haiku, ~5x sonnet). Use it only when ALL three conditions are met:
+1. The task requires **multi-step reasoning** with complex interdependencies (not just pattern matching)
+2. **Error cost is high** — a missed finding is more expensive than the model price difference (security audit, compliance, architecture impact analysis)
+3. **The task processes large context** where subtle cross-references matter (50+ files, multi-module dependency chains)
+
+If only conditions 1–2 apply but context is small — sonnet is sufficient. If only condition 3 applies but reasoning is mechanical — haiku with good prompting handles it.
+
+**Anti-pattern:** defaulting subagents to opus "for quality". Subagents lose the main advantage of opus (conversation rapport, iterative refinement with the user). If a task truly needs opus-level reasoning AND user interaction, it belongs in the main session, not a subagent.
+
+**When NOT to use subagents:**
+
+- Analysis input < 500 tokens — overhead exceeds benefit, do inline
+- Task requires conversational context from the current session — subagent can't access it
+- PreToolUse hooks — subagent latency (2–10s) is unacceptable for validation that blocks tool execution
+- The plugin fires on every tool call — per-invocation cost adds up fast
+
+### §6 Anti-Patterns
+
+| Anti-pattern | Why it fails | Fix |
+|---|---|---|
+| SessionStart with heavy output (>300 tokens) | Wastes context in every session, even when irrelevant | Move reference content to a skill; keep SessionStart ≤300 tokens |
+| Subagent for <500 token analysis | Subagent overhead (cold start, model call) exceeds benefit | Do analysis inline in the main session |
+| PreToolUse hook calling LLM | 2–10s latency blocks tool execution; unacceptable UX | Bash-only validation, <1s |
+| Playbook preset for project-specific rules | Presets are global; project config varies per repo | Use SessionStart hook that reads `.claude-plugin/<name>.json` |
+| Skill as only mechanism for mandatory behavior | Claude may not invoke the skill voluntarily | Pair with SessionStart mandate: "ALWAYS invoke skill X BEFORE..." |
+| Subagent for every common action | Per-invocation cost adds up; most actions don't need a separate model call | Reserve subagents for on-demand, data-heavy analysis |
+| Pure script pretending to be a skill | No description trigger — Claude never discovers it automatically | Add proper SKILL.md with description frontmatter |
+| Hardcoded subagent model | Users can't optimize cost/quality tradeoff for their use case | Always make model configurable with plugin-specific recommendation |
+
+### §7 Combining Mechanisms
+
+Most plugins combine multiple mechanisms. Five named patterns:
+
+| Pattern | Mechanisms | Example plugins |
+|---------|-----------|-----------------|
+| **Enforcement** | SessionStart + Skill + PreToolUse | `semver`, `git-branch-naming` — inject rules, provide guide, validate on action |
+| **Automation** | SessionStart + Skill + PreToolUse + PostToolUse | `plantuml` — inject rules, guide type selection, auto-allow rendering, sync URLs (see [PlantUML case study](#plantuml-ascii-rendering-v156) below) |
+| **Analysis** | Skill + Pure script + Subagent | `kb-grooming` — user invokes command, scripts collect data, subagent analyzes |
+| **Display** | Pure script + Setup command | `statusline`, `context` — compute and display data, setup wizard configures |
+| **Rule injection** | SessionStart only | `technology-explainer` — reads config, injects proficiency-adapted rules |
+
+When designing a new plugin, start with the pattern that best matches your use case, then add or remove mechanisms as needed.
 
 ---
 
