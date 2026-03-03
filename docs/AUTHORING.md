@@ -1,6 +1,6 @@
 # Skill & Preset Authoring Guide
 
-Reference for writing SKILL.md files and playbook presets. Read this before creating or reviewing either.
+Reference for writing SKILL.md files and playbook presets. Read this before creating or reviewing either. For choosing between presets, skills, hooks, and subagents, see [`docs/plugin-behavior.md`](plugin-behavior.md) — Choosing the Right Delivery Mechanism.
 
 ---
 

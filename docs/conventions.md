@@ -109,6 +109,25 @@ Every source injected at session start costs context tokens. The `context` plugi
 
 ---
 
+## Subagent Model Configuration
+
+Plugins that delegate work to subagents must make the model configurable in their config file.
+
+**Config field convention:**
+
+| Plugin type | Config field | Example |
+|-------------|-------------|---------|
+| Single subagent | `"model": "<value>"` | `{ "model": "sonnet" }` |
+| Multi-subagent (phases) | `"models": { "<phase>": "<value>" }` | `{ "models": { "dataCollection": "haiku", "analysis": "sonnet" } }` |
+
+**Valid values:** `"haiku"`, `"sonnet"`, `"opus"`, `"inherit"` (use parent session model).
+
+**Setup wizard requirement:** The model selection question must include a plugin-specific recommendation explaining WHY that model fits the task (e.g., "Haiku (Recommended) — Mechanical task, no reasoning needed").
+
+See [`docs/plugin-behavior.md`](plugin-behavior.md) — §5 Subagent Design Guidelines for the full default selection table and opus usage criteria.
+
+---
+
 ## Git Hook Installation
 
 Plugins that install git hooks (pre-commit, pre-push, etc.) **must not overwrite** existing hooks. Plugins are additive guests in the user's repository.
