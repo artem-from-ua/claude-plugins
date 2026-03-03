@@ -36,7 +36,7 @@ TBL_TYPE=()     # "CLAUDE.md", "Memory", "Plugin hook", "Playbook Preset"
 TBL_SOURCE=()   # display identifier (full shortened path or plugin id)
 TBL_STATUS=()   # "ok", "missing", "empty", "failed"
 TBL_LINES=()    # integer
-TBL_CHARS=()    # integer
+TBL_BYTES=()    # integer (byte count for heuristic estimation)
 TBL_CONTENT=()  # raw text for API token counting
 PLAYBOOK_PLUGIN_ID=""  # captured from first playbook preset marker
 
@@ -87,15 +87,15 @@ record_meta() {
   local source="$3"
   local status="$4"
   local content="$5"
-  local lines chars
+  local lines byte_count
   lines=$(count_lines "$content")
-  chars=${#content}
+  byte_count=$(printf '%s' "$content" | wc -c | tr -d ' ')
   TBL_SCOPE+=("$scope")
   TBL_TYPE+=("$type")
   TBL_SOURCE+=("$source")
   TBL_STATUS+=("$status")
   TBL_LINES+=("$lines")
-  TBL_CHARS+=("$chars")
+  TBL_BYTES+=("$byte_count")
   TBL_CONTENT+=("$content")
 }
 
@@ -220,19 +220,19 @@ print_table() {
     token_mode="api"
   fi
 
-  for i in "${!TBL_CHARS[@]}"; do
+  for i in "${!TBL_BYTES[@]}"; do
     local t
-    if [ "$token_mode" = "api" ] && [ "$api_failed" -eq 0 ] && [ "${TBL_STATUS[i]}" = "ok" ] && [ "${TBL_CHARS[i]}" -gt 0 ]; then
+    if [ "$token_mode" = "api" ] && [ "$api_failed" -eq 0 ] && [ "${TBL_STATUS[i]}" = "ok" ] && [ "${TBL_BYTES[i]}" -gt 0 ]; then
       if t=$(count_tokens_api "${TBL_CONTENT[i]}"); then
         tokens+=("$t")
       else
         api_failed=1
         token_mode="api_failed"
-        t=$(( TBL_CHARS[i] * 10 / 36 ))
+        t=$(( TBL_BYTES[i] * 10 / 38 ))
         tokens+=("$t")
       fi
     else
-      t=$(( TBL_CHARS[i] * 10 / 36 ))
+      t=$(( TBL_BYTES[i] * 10 / 38 ))
       tokens+=("$t")
     fi
     total_tokens=$(( total_tokens + t ))
@@ -339,10 +339,10 @@ print_table() {
       printf '\nToken counts: exact (Anthropic count_tokens API)\n'
       ;;
     api_failed)
-      printf '\nToken counts: estimated (API error, fell back to chars/3.6)\n'
+      printf '\nToken counts: estimated (API error, fell back to bytes/3.8)\n'
       ;;
     heuristic)
-      printf '\nToken counts: estimated (chars/3.6; set ANTHROPIC_API_KEY for exact)\n'
+      printf '\nToken counts: estimated (bytes/3.8; set ANTHROPIC_API_KEY for exact)\n'
       ;;
   esac
 }

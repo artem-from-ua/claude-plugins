@@ -625,12 +625,12 @@ echo "Column header is ~Tokens (should be 1):"
 grep -c '~Tokens' "$TABLE_FILE" || echo "0"
 
 echo "Footer says estimated (should be 1):"
-grep -c 'estimated (chars/3.6; set ANTHROPIC_API_KEY for exact)' "$TABLE_FILE" || echo "0"
+grep -c 'estimated (bytes/3.8; set ANTHROPIC_API_KEY for exact)' "$TABLE_FILE" || echo "0"
 ```
 
 **Expected result:**
 - ✅ Column header is `~Tokens`
-- ✅ Footer: `Token counts: estimated (chars/3.6; set ANTHROPIC_API_KEY for exact)`
+- ✅ Footer: `Token counts: estimated (bytes/3.8; set ANTHROPIC_API_KEY for exact)`
 
 ---
 
@@ -650,12 +650,12 @@ echo "Column header is ~Tokens (should be 1):"
 grep -c '~Tokens' "$TABLE_FILE" || echo "0"
 
 echo "Footer says API error (should be 1):"
-grep -c 'API error, fell back to chars/3.6' "$TABLE_FILE" || echo "0"
+grep -c 'API error, fell back to bytes/3.8' "$TABLE_FILE" || echo "0"
 ```
 
 **Expected result:**
 - ✅ Column header is `~Tokens` (fallback)
-- ✅ Footer: `Token counts: estimated (API error, fell back to chars/3.6)`
+- ✅ Footer: `Token counts: estimated (API error, fell back to bytes/3.8)`
 
 ---
 
@@ -681,7 +681,7 @@ grep -c 'exact (Anthropic count_tokens API)' "$TABLE_FILE" || echo "0"
 **Expected result:**
 - ✅ Column header is `Tokens` (not `~Tokens`)
 - ✅ Footer: `Token counts: exact (Anthropic count_tokens API)`
-- ✅ Token values differ from chars/3.6 heuristic (typically lower)
+- ✅ Token values differ from bytes/3.8 heuristic (typically lower)
 
 ---
 
@@ -952,7 +952,7 @@ grep -q '~Tokens' "$TABLE_NOKEY" && grep -q 'set ANTHROPIC_API_KEY for exact' "$
 echo "=== 8.2 API fallback with invalid key ==="
 TABLE_BADKEY=$(env ANTHROPIC_API_KEY="sk-ant-invalid" \
   bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
-grep -q '~Tokens' "$TABLE_BADKEY" && grep -q 'API error, fell back to chars/3.6' "$TABLE_BADKEY" \
+grep -q '~Tokens' "$TABLE_BADKEY" && grep -q 'API error, fell back to bytes/3.8' "$TABLE_BADKEY" \
   && echo "✅ PASS" || echo "❌ FAIL"
 
 echo "=== 9.1 user skills discovered ==="

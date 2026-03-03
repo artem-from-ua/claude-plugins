@@ -85,7 +85,7 @@ Collected in load order:
 | Source/ID | Shortened path (`~/`, `./`) or plugin identifier `name@marketplace (vX.Y.Z)` |
 | Status | Content present · missing/empty · command failed |
 | Lines | Line count of the source content |
-| ~Tokens | Estimated token count (≈ chars/4) |
+| ~Tokens | Estimated token count (≈ bytes/3.8) |
 | Context% | Each source's share of total context |
 
 Playbook presets appear as individual rows when using playbook plugin v0.3.1+.
