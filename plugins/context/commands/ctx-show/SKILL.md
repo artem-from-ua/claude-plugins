@@ -65,7 +65,7 @@ Playbook presets (from `playbook@tribe-coding`) appear as individual rows when u
    bash "${CLAUDE_PLUGIN_ROOT}/scripts/ctx-show.sh" --file
    ```
 
-3. After running the script, **always** read the table file (second line of output) using the Read tool and display its contents verbatim in the response. Example — if the script output is:
+3. After running the script, **always** read the table file (second line of output) using the Read tool and display its contents **verbatim** in the response — do NOT summarize, collapse, group, or reformat rows. Show the exact table the script produced. Example — if the script output is:
    ```
    /tmp/claude-context-20260225-123456.md
    /tmp/claude-ctx-table-20260225-123456.txt
