@@ -15,7 +15,7 @@ Configure which coding guideline presets are active for your sessions.
 
 ### 1. Scan available presets
 
-Read all `.md` files in `${SKILL_DIR}/../../presets/` (resolves to `plugins/playbook/presets/`). For each file, extract the YAML frontmatter fields `name`, `description`, and `tags`.
+Read all `.md` files in `${CLAUDE_PLUGIN_ROOT}/presets/` (resolves to `plugins/playbook/presets/`). For each file, extract the YAML frontmatter fields `name`, `description`, and `tags`.
 
 > When **creating a new preset** (not just enabling existing ones), read `docs/AUTHORING.md` at the project root first for authoring guidelines (rule patterns, budget, anti-patterns).
 
