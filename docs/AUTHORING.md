@@ -227,6 +227,29 @@ Inline a 200-line catalog in SKILL.md only if it is always needed. Otherwise, lo
 
 NEVER have the same `name:` frontmatter in both `commands/foo/SKILL.md` and `skills/foo/SKILL.md`. Claude Code does not deduplicate — both will appear in `/context`, causing confusion.
 
+### Path references in SKILL.md
+
+SKILL.md files instruct Claude how to find plugin scripts, templates, and presets. Two variables are available:
+
+| Variable | Type | Scope | Use for |
+|----------|------|-------|---------|
+| `${CLAUDE_PLUGIN_ROOT}` | Runtime env var | Entire plugin root | `scripts/`, `templates/`, `presets/` — anything outside the skill directory |
+| `${SKILL_DIR}` | LLM-inferred | Current skill directory only | `references/` — files co-located with the SKILL.md |
+
+**Rule:** NEVER use `${SKILL_DIR}/../../` (parent-traversal). `${SKILL_DIR}` is a textual convention that Claude resolves at runtime — if it infers the wrong directory (e.g., `skills/` instead of `commands/`), parent-traversal breaks silently with "No such file or directory".
+
+```bash
+# CORRECT — runtime variable, always resolves to plugin root
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/my-script.sh"
+cat "${CLAUDE_PLUGIN_ROOT}/templates/default.json"
+
+# CORRECT — local reference, no parent-traversal
+Read ${SKILL_DIR}/references/catalog.md
+
+# WRONG — fragile parent-traversal, breaks if SKILL_DIR is mis-inferred
+bash "${SKILL_DIR}/../../scripts/my-script.sh"
+```
+
 ---
 
 ## §6. REFERENCE Zone Guidelines
