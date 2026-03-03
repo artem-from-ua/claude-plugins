@@ -38,7 +38,6 @@ TBL_STATUS=()   # "ok", "missing", "empty", "failed"
 TBL_LINES=()    # integer
 TBL_BYTES=()    # integer (byte count for heuristic estimation)
 TBL_CONTENT=()  # raw text for API token counting
-PLAYBOOK_PLUGIN_ID=""  # captured from first playbook preset marker
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -183,13 +182,11 @@ append_command_output() {
       if [ -n "$preset_name" ]; then
         # Save previous preset if any
         if [ -n "$current_name" ] && [ -n "$playbook_id" ]; then
-          record_meta "Project" "Playbook Preset" "$current_name" "ok" "$current_content"
+          record_meta "Project" "Playbook Preset" "${playbook_id} · ${current_name}" "ok" "$current_content"
         fi
         current_name="$preset_name"
         current_content=""
         playbook_id="$pid"
-        # Capture for legend (only first time)
-        [ -z "$PLAYBOOK_PLUGIN_ID" ] && PLAYBOOK_PLUGIN_ID="$pid"
       else
         if [ -n "$current_name" ]; then
           current_content+="${line}"$'\n'
@@ -199,7 +196,7 @@ append_command_output() {
 
     # Save last preset
     if [ -n "$current_name" ] && [ -n "$playbook_id" ]; then
-      record_meta "Project" "Playbook Preset" "$current_name" "ok" "$current_content"
+      record_meta "Project" "Playbook Preset" "${playbook_id} · ${current_name}" "ok" "$current_content"
     fi
   else
     # Regular hook — record as single row
@@ -247,7 +244,6 @@ print_table() {
   printf '| Scope | Type | Source/ID | Lines | %s | Context%% |\n' "$token_header"
   printf '|-------|------|-----------|------:|--------:|---------:|\n'
 
-  local has_presets=0
   local has_skills=0
 
   for i in "${!TBL_SCOPE[@]}"; do
@@ -277,7 +273,7 @@ print_table() {
       "Plugin hook")     type_label="Plugin hook" ;;
       "User hook")       type_label="User hook" ;;
       "Project hook")    type_label="Project hook" ;;
-      "Playbook Preset") type_label="Playbook Preset"; has_presets=1 ;;
+      "Playbook Preset") type_label="Playbook Preset" ;;
       "Skill")           type_label="Skill"; has_skills=1 ;;
       *)                 type_label="$type" ;;
     esac
@@ -323,11 +319,6 @@ print_table() {
       "$total_tokens" "$CTX_WARN_THRESHOLD" \
       "$(( 100 * CTX_WARN_THRESHOLD / CTX_CONTEXT_WINDOW ))" \
       "$(( CTX_CONTEXT_WINDOW / 1000 ))"
-  fi
-
-  if [ "$has_presets" -eq 1 ]; then
-    local legend_id="${PLAYBOOK_PLUGIN_ID:-playbook@tribe-coding}"
-    printf '\nPlaybook Presets injected by %s\n' "$legend_id"
   fi
 
   if [ "$has_skills" -eq 1 ]; then
@@ -594,7 +585,7 @@ if [ -f "$SETTINGS" ] && command -v jq >/dev/null 2>&1 && [ -d "$CACHE_DIR" ]; t
               while IFS= read -r skill_md; do
                 [ -z "$skill_md" ] && continue
                 local_name=$(basename "$(dirname "$skill_md")")
-                record_skill "$skill_md" "Project" "${PLUGIN_NAME}:${local_name}"
+                record_skill "$skill_md" "Project" "${PLUGIN_NAME}@${MARKETPLACE} (v${LATEST_VERSION}) · ${local_name}"
               done <<< "$SKILL_LIST"
             fi
           done <<< "$DIRS"

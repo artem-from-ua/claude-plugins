@@ -745,17 +745,17 @@ TABLE_FILE=$(HOME="$FAKE_HOME" CLAUDE_PROJECT_DIR="/tmp" \
   bash "${CONTEXT_PLUGIN}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
 
 echo "Plugin skill rows (should be 3+):"
-grep -c 'plantuml:' "$TABLE_FILE" || echo "0"
+grep -c 'plantuml@tribe-coding' "$TABLE_FILE" || echo "0"
 
 echo "plantuml-diagram-guide present:"
-grep -c 'plantuml:plantuml-diagram-guide' "$TABLE_FILE" || echo "0"
+grep -c 'plantuml@tribe-coding.*plantuml-diagram-guide' "$TABLE_FILE" || echo "0"
 
 rm -rf "$FAKE_HOME"
 ```
 
 **Expected result:**
-- ✅ Plugin skills appear with `plantuml:skill-name` format
-- ✅ `plantuml:plantuml-diagram-guide` is present
+- ✅ Plugin skills appear with `plantuml@tribe-coding (vX.Y.Z) · skill-name` format
+- ✅ `plantuml@tribe-coding (v1.0.0) · plantuml-diagram-guide` is present
 
 ---
 
