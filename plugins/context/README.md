@@ -5,8 +5,10 @@
 
 `/ctx-show` collects everything Claude Code loads at session start — CLAUDE.md files, auto-memory, SessionStart hook output, and skill listings — and writes it to a single `.md` snapshot file. A summary table breaks down token usage per source so you know exactly what's filling your context window.
 
+`/ctx-dump` takes the complementary approach: it dumps the **verbatim context from Claude's memory** — exactly what Claude received at session start, including gitStatus and currentDate that `/ctx-show` cannot access.
+
 > [!NOTE]
-> [⚙️ How it works](#how-it-works) · [📋 Sources](#sources) · [📊 Summary Table Columns](#summary-table-columns) · [⚡ Commands](#commands) · [📦 Installation](#installation)
+> [⚙️ How it works](#how-it-works) · [🔀 ctx-show vs ctx-dump](#ctx-show-vs-ctx-dump) · [📋 Sources](#sources) · [📊 Summary Table Columns](#summary-table-columns) · [⚡ Commands](#commands) · [📦 Installation](#installation)
 
 ## 🎬 Demo <a name="demo"></a>
 
@@ -45,6 +47,17 @@ Summary:
 - Active Playbook presets: 5 presets from playbook@tribe-coding (v0.5.5)
 - Total context load: ~11,800 tokens
 ```
+
+## 🔀 ctx-show vs ctx-dump <a name="ctx-show-vs-ctx-dump"></a>
+
+| Aspect | `/ctx-show` | `/ctx-dump` |
+|--------|-------------|-------------|
+| Data source | Re-reads files from disk, re-executes hooks | Dumps what Claude actually has in memory |
+| Implementation | Bash script (`ctx-show.sh`) | Pure SKILL.md (Claude uses Write tool) |
+| Token metrics | Summary table with lines/tokens/context% | No metrics (raw content only) |
+| Includes gitStatus, currentDate | No | Yes |
+| Use case | Audit what's on disk right now | See exactly what Claude received at session start |
+| When they differ | Hook output changed since session start | `/ctx-dump` shows the original version |
 
 ## ⚙️ How it works <a name="how-it-works"></a>
 
@@ -95,6 +108,8 @@ Playbook presets appear as individual rows when using playbook plugin v0.3.1+.
 |---------|-------|-------------|
 | `/ctx-show` | `--file` (default) | Write context to `/tmp/claude-context-{timestamp}.md` and print path |
 | `/ctx-show` | `--stdout` | Print full context content to terminal |
+| `/ctx-dump` | `--file` (default) | Write in-memory context to `/tmp/claude-context-dump-{timestamp}.md` |
+| `/ctx-dump` | `--stdout` | Print in-memory context to terminal |
 
 ## 📦 Installation <a name="installation"></a>
 
