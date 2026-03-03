@@ -5,6 +5,13 @@ All notable changes to the PlantUML plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2] - 2026-03-03
+
+### Changed
+- Renamed `inject-base-rules.sh` → `inject-rules.sh` to follow SessionStart script naming convention
+- Updated all documentation references (ACCEPTANCE_TESTS.md, plugin-behavior.md, INITIAL_PLAN.md, context/README.md)
+- Added SessionStart Script Naming convention to `docs/conventions.md`
+
 ## [1.5.9] - 2026-02-14
 
 ### Removed

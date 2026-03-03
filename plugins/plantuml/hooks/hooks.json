@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/inject-base-rules.sh\"",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/inject-rules.sh\"",
             "timeout": 10
           },
           {
