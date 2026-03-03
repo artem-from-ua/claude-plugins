@@ -14,18 +14,20 @@ The plugin also prints a summary table to stderr showing scope, type, source, st
 4. Summary table tests (automated)
 5. Playbook preset splitting tests (automated)
 6. Behavioral tests — SKILL.md invocation (partially automated)
+7. Threshold warning tests (automated)
+8. API token counting tests (automated / partially automated)
 
 ## Automation Status
 
-- ✅ Fully automated: Tests 1–5, 7
-- 🟡 Partially automated: Test 6 (Claude invocation requires a fresh session or `/clear`)
+- ✅ Fully automated: Tests 1–5, 7, 8.1–8.2
+- 🟡 Partially automated: Test 6 (Claude invocation requires a fresh session or `/clear`), 8.3 (requires valid API key)
 - ⚠️ Manual only: None
 
-## Test Results (last run: 2026-02-25)
+## Test Results (last run: 2026-03-03)
 
 | Test | Status | Notes |
 |------|--------|-------|
-| 1.1 Static: plugin.json valid | ✅ Pass | version 0.4.0 |
+| 1.1 Static: plugin.json valid | ✅ Pass | version 0.5.0 |
 | 1.2 Static: hooks.json valid | ✅ Pass | |
 | 1.3 Static: SKILL.md frontmatter | ✅ Pass | |
 | 1.4 Static: script is executable | ✅ Pass | |
@@ -44,6 +46,9 @@ The plugin also prints a summary table to stderr showing scope, type, source, st
 | 6.2 Legend shown when presets present | ✅ Pass | |
 | 7.3 Threshold warning fires when exceeded | ✅ Pass | CTX_WARN_THRESHOLD=1 |
 | 7.4 No warning when under threshold | ✅ Pass | CTX_WARN_THRESHOLD=999999 |
+| 8.1 Heuristic mode without API key | ✅ Pass | ~Tokens header, heuristic footer |
+| 8.2 API fallback with invalid key | ✅ Pass | ~Tokens header, API error footer |
+| 8.3 Exact counting with valid key | 🟡 Skip | requires valid ANTHROPIC_API_KEY |
 
 ---
 
@@ -596,6 +601,84 @@ grep -c "exceeds threshold" "$TABLE_FILE" || echo "0"
 
 ---
 
+### 8. API Token Counting Tests
+
+#### 8.1 Heuristic Mode Without API Key
+
+**Objective:** Verify heuristic mode when `ANTHROPIC_API_KEY` is not set.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
+TABLE_FILE=$(env -u ANTHROPIC_API_KEY \
+  bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+
+echo "Column header is ~Tokens (should be 1):"
+grep -c '~Tokens' "$TABLE_FILE" || echo "0"
+
+echo "Footer says estimated (should be 1):"
+grep -c 'estimated (chars/4; set ANTHROPIC_API_KEY for exact)' "$TABLE_FILE" || echo "0"
+```
+
+**Expected result:**
+- ✅ Column header is `~Tokens`
+- ✅ Footer: `Token counts: estimated (chars/4; set ANTHROPIC_API_KEY for exact)`
+
+---
+
+#### 8.2 API Fallback With Invalid Key
+
+**Objective:** Verify graceful fallback when API key is invalid.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
+TABLE_FILE=$(env ANTHROPIC_API_KEY="sk-ant-invalid-key" \
+  bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+
+echo "Column header is ~Tokens (should be 1):"
+grep -c '~Tokens' "$TABLE_FILE" || echo "0"
+
+echo "Footer says API error (should be 1):"
+grep -c 'API error, fell back to chars/4' "$TABLE_FILE" || echo "0"
+```
+
+**Expected result:**
+- ✅ Column header is `~Tokens` (fallback)
+- ✅ Footer: `Token counts: estimated (API error, fell back to chars/4)`
+
+---
+
+#### 8.3 Exact Counting With Valid API Key
+
+**Objective:** Verify exact token counting when `ANTHROPIC_API_KEY` is valid.
+
+**Automation:** 🟡 (requires valid API key)
+
+**Steps:**
+```bash
+PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
+# Requires ANTHROPIC_API_KEY to be set to a valid key
+TABLE_FILE=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+
+echo "Column header is Tokens (not ~Tokens):"
+grep -c '| Tokens |' "$TABLE_FILE" || echo "0"
+
+echo "Footer says exact (should be 1):"
+grep -c 'exact (Anthropic count_tokens API)' "$TABLE_FILE" || echo "0"
+```
+
+**Expected result:**
+- ✅ Column header is `Tokens` (not `~Tokens`)
+- ✅ Footer: `Token counts: exact (Anthropic count_tokens API)`
+- ✅ Token values differ from chars/4 heuristic (typically lower)
+
+---
+
 ## Regression Testing Guide
 
 ### When to run
@@ -612,7 +695,7 @@ Run all automated tests in sequence:
 PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
 
 echo "=== 1.1 plugin.json ==="
-jq -e '.name == "context" and .version == "0.4.0" and .commands and (.skills | length == 0)' \
+jq -e '.name == "context" and .version == "0.5.0" and .commands and (.skills | length == 0)' \
   "${PLUGIN_DIR}/.claude-plugin/plugin.json" && echo "✅ PASS" || echo "❌ FAIL"
 
 echo "=== 1.2 hooks.json ==="
@@ -663,6 +746,18 @@ echo "=== 7.4 no warning under threshold ==="
 TABLE_NOWARN=$(env CTX_WARN_THRESHOLD=999999 \
   bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
 grep -q "exceeds threshold" "$TABLE_NOWARN" && echo "❌ FAIL" || echo "✅ PASS"
+
+echo "=== 8.1 heuristic mode without API key ==="
+TABLE_NOKEY=$(env -u ANTHROPIC_API_KEY \
+  bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+grep -q '~Tokens' "$TABLE_NOKEY" && grep -q 'set ANTHROPIC_API_KEY for exact' "$TABLE_NOKEY" \
+  && echo "✅ PASS" || echo "❌ FAIL"
+
+echo "=== 8.2 API fallback with invalid key ==="
+TABLE_BADKEY=$(env ANTHROPIC_API_KEY="sk-ant-invalid" \
+  bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+grep -q '~Tokens' "$TABLE_BADKEY" && grep -q 'API error, fell back to chars/4' "$TABLE_BADKEY" \
+  && echo "✅ PASS" || echo "❌ FAIL"
 ```
 
 ### CI integration
