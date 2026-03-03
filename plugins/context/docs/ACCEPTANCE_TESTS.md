@@ -2,9 +2,9 @@
 
 ## Purpose
 
-The `context` plugin provides the `/ctx-show` command for assembling the full Claude Code session context in load order. These acceptance tests verify that the script correctly discovers, reads, and outputs all five source types — and handles missing files gracefully.
+The `context` plugin provides the `/ctx-show` command for assembling the full Claude Code session context in load order. These acceptance tests verify that the script correctly discovers, reads, and outputs all source types — including skills — and handles missing files gracefully.
 
-The plugin also prints a summary table to stderr showing scope, type, source, status, lines, tokens, and context% for every source — including per-preset rows for playbook presets (v0.3.1+).
+The plugin also prints a summary table to stderr showing scope, type, source, status, lines, tokens, and context% for every source — including per-preset rows for playbook presets (v0.3.1+) and per-skill rows for SKILL.md listings.
 
 ## Test Execution Order
 
@@ -16,10 +16,11 @@ The plugin also prints a summary table to stderr showing scope, type, source, st
 6. Behavioral tests — SKILL.md invocation (partially automated)
 7. Threshold warning tests (automated)
 8. API token counting tests (automated / partially automated)
+9. Skill discovery tests (automated)
 
 ## Automation Status
 
-- ✅ Fully automated: Tests 1–5, 7, 8.1–8.2
+- ✅ Fully automated: Tests 1–5, 7, 8.1–8.2, 9.1–9.5
 - 🟡 Partially automated: Test 6 (Claude invocation requires a fresh session or `/clear`), 8.3 (requires valid API key)
 - ⚠️ Manual only: None
 
@@ -27,7 +28,7 @@ The plugin also prints a summary table to stderr showing scope, type, source, st
 
 | Test | Status | Notes |
 |------|--------|-------|
-| 1.1 Static: plugin.json valid | ✅ Pass | version 0.5.0 |
+| 1.1 Static: plugin.json valid | ✅ Pass | version 0.6.0 |
 | 1.2 Static: hooks.json valid | ✅ Pass | |
 | 1.3 Static: SKILL.md frontmatter | ✅ Pass | |
 | 1.4 Static: script is executable | ✅ Pass | |
@@ -49,6 +50,11 @@ The plugin also prints a summary table to stderr showing scope, type, source, st
 | 8.1 Heuristic mode without API key | ✅ Pass | ~Tokens header, heuristic footer |
 | 8.2 API fallback with invalid key | ✅ Pass | ~Tokens header, API error footer |
 | 8.3 Exact counting with valid key | 🟡 Skip | requires valid ANTHROPIC_API_KEY |
+| 9.1 Skill: user skills discovered | ⬜ | |
+| 9.2 Skill: plugin skills discovered | ⬜ | |
+| 9.3 Skill: deduplication works | ⬜ | |
+| 9.4 Skill: malformed SKILL.md skipped | ⬜ | |
+| 9.5 Skill: footer legend shown | ⬜ | |
 
 ---
 
@@ -71,7 +77,7 @@ jq '.' "${PLUGIN_DIR}/.claude-plugin/plugin.json"
 **Expected result:**
 - ✅ Valid JSON (no parse error)
 - ✅ Has `name`, `version`, `commands`, `skills` fields
-- ✅ `version` is `0.4.0`
+- ✅ `version` is `0.6.0`
 - ✅ `skills` is `[]` (no auto-invocable skills)
 
 ---
@@ -679,6 +685,196 @@ grep -c 'exact (Anthropic count_tokens API)' "$TABLE_FILE" || echo "0"
 
 ---
 
+### 9. Skill Discovery Tests
+
+#### 9.1 User Skills Discovered
+
+**Objective:** Verify user skills from `~/.claude/commands/` and `~/.claude/skills/` appear as User/Skill rows.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+CONTEXT_PLUGIN="/Users/artem/devel/claude-plugins/plugins/context"
+
+FAKE_HOME="/tmp/fake-home-skills-$$"
+mkdir -p "$FAKE_HOME/.claude/skills/test-skill"
+cat > "$FAKE_HOME/.claude/skills/test-skill/SKILL.md" <<'SKILLEOF'
+---
+name: test-skill
+description: A test skill for acceptance testing
+---
+# Test Skill
+SKILLEOF
+mkdir -p "$FAKE_HOME/.claude/plugins"
+echo '{}' > "$FAKE_HOME/.claude/settings.json"
+
+TABLE_FILE=$(HOME="$FAKE_HOME" CLAUDE_PROJECT_DIR="/tmp" \
+  bash "${CONTEXT_PLUGIN}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+
+echo "User skill row present (should be 1):"
+grep -c 'User.*Skill.*test-skill' "$TABLE_FILE" || echo "0"
+
+rm -rf "$FAKE_HOME"
+```
+
+**Expected result:**
+- ✅ `test-skill` appears as a User/Skill row
+
+---
+
+#### 9.2 Plugin Skills Discovered
+
+**Objective:** Verify plugin skills from enabled plugins appear as Project/Skill rows with `plugin:name` format.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+CONTEXT_PLUGIN="/Users/artem/devel/claude-plugins/plugins/context"
+PLANTUML_PLUGIN="/Users/artem/devel/claude-plugins/plugins/plantuml"
+
+FAKE_HOME="/tmp/fake-home-plugskill-$$"
+FAKE_CACHE="$FAKE_HOME/.claude/plugins/cache/tribe-coding/plantuml/1.0.0"
+mkdir -p "$FAKE_CACHE"
+cp -r "$PLANTUML_PLUGIN/." "$FAKE_CACHE/"
+jq '.enabledPlugins = {"plantuml@tribe-coding": true}' \
+  "$HOME/.claude/settings.json" > "$FAKE_HOME/.claude/settings.json"
+
+TABLE_FILE=$(HOME="$FAKE_HOME" CLAUDE_PROJECT_DIR="/tmp" \
+  bash "${CONTEXT_PLUGIN}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+
+echo "Plugin skill rows (should be 3+):"
+grep -c 'plantuml:' "$TABLE_FILE" || echo "0"
+
+echo "plantuml-diagram-guide present:"
+grep -c 'plantuml:plantuml-diagram-guide' "$TABLE_FILE" || echo "0"
+
+rm -rf "$FAKE_HOME"
+```
+
+**Expected result:**
+- ✅ Plugin skills appear with `plantuml:skill-name` format
+- ✅ `plantuml:plantuml-diagram-guide` is present
+
+---
+
+#### 9.3 Deduplication Works
+
+**Objective:** Verify that the same SKILL.md is not counted twice when commands/ and skills/ dirs overlap.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+CONTEXT_PLUGIN="/Users/artem/devel/claude-plugins/plugins/context"
+
+FAKE_HOME="/tmp/fake-home-dedup-$$"
+mkdir -p "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/.claude-plugin"
+mkdir -p "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/commands/foo"
+mkdir -p "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/skills"
+
+cat > "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/.claude-plugin/plugin.json" <<'EOF'
+{"name":"testplugin","version":"1.0.0","commands":["./commands/"],"skills":["./commands/"]}
+EOF
+
+cat > "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/commands/foo/SKILL.md" <<'EOF'
+---
+name: foo
+description: Duplicate test skill
+---
+EOF
+
+mkdir -p "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/hooks"
+echo '{"hooks":{}}' > "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/hooks/hooks.json"
+
+jq '.enabledPlugins = {"testplugin@tribe-coding": true}' \
+  "$HOME/.claude/settings.json" > "$FAKE_HOME/.claude/settings.json"
+
+TABLE_FILE=$(HOME="$FAKE_HOME" CLAUDE_PROJECT_DIR="/tmp" \
+  bash "${CONTEXT_PLUGIN}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+
+echo "foo skill count (should be 1, not 2):"
+grep -c 'testplugin:foo' "$TABLE_FILE" || echo "0"
+
+rm -rf "$FAKE_HOME"
+```
+
+**Expected result:**
+- ✅ `testplugin:foo` appears exactly once (not duplicated)
+
+---
+
+#### 9.4 Malformed SKILL.md Skipped
+
+**Objective:** Verify that SKILL.md without a `name:` field is silently skipped.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+CONTEXT_PLUGIN="/Users/artem/devel/claude-plugins/plugins/context"
+
+FAKE_HOME="/tmp/fake-home-malform-$$"
+mkdir -p "$FAKE_HOME/.claude/skills/bad-skill"
+cat > "$FAKE_HOME/.claude/skills/bad-skill/SKILL.md" <<'EOF'
+---
+description: No name field here
+---
+# Bad Skill
+EOF
+mkdir -p "$FAKE_HOME/.claude/plugins"
+echo '{}' > "$FAKE_HOME/.claude/settings.json"
+
+TABLE_FILE=$(HOME="$FAKE_HOME" CLAUDE_PROJECT_DIR="/tmp" \
+  bash "${CONTEXT_PLUGIN}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+
+echo "bad-skill NOT in table (should be 0):"
+grep -c 'bad-skill' "$TABLE_FILE" || echo "0"
+
+rm -rf "$FAKE_HOME"
+```
+
+**Expected result:**
+- ✅ `bad-skill` does NOT appear in the table
+
+---
+
+#### 9.5 Footer Legend Shown When Skills Present
+
+**Objective:** Verify the Skills footer legend appears when skill rows are in the table.
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+CONTEXT_PLUGIN="/Users/artem/devel/claude-plugins/plugins/context"
+
+FAKE_HOME="/tmp/fake-home-legend-skill-$$"
+mkdir -p "$FAKE_HOME/.claude/skills/test-legend"
+cat > "$FAKE_HOME/.claude/skills/test-legend/SKILL.md" <<'EOF'
+---
+name: test-legend
+description: Legend test skill
+---
+EOF
+mkdir -p "$FAKE_HOME/.claude/plugins"
+echo '{}' > "$FAKE_HOME/.claude/settings.json"
+
+TABLE_FILE=$(HOME="$FAKE_HOME" CLAUDE_PROJECT_DIR="/tmp" \
+  bash "${CONTEXT_PLUGIN}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+
+echo "Skills footer legend (should be 1):"
+grep -c 'Skills: names + descriptions loaded at session start' "$TABLE_FILE" || echo "0"
+
+rm -rf "$FAKE_HOME"
+```
+
+**Expected result:**
+- ✅ Footer contains `Skills: names + descriptions loaded at session start (full SKILL.md on-demand)`
+
+---
+
 ## Regression Testing Guide
 
 ### When to run
@@ -695,7 +891,7 @@ Run all automated tests in sequence:
 PLUGIN_DIR="/Users/artem/devel/claude-plugins/plugins/context"
 
 echo "=== 1.1 plugin.json ==="
-jq -e '.name == "context" and .version == "0.5.0" and .commands and (.skills | length == 0)' \
+jq -e '.name == "context" and .version == "0.6.0" and .commands and (.skills | length == 0)' \
   "${PLUGIN_DIR}/.claude-plugin/plugin.json" && echo "✅ PASS" || echo "❌ FAIL"
 
 echo "=== 1.2 hooks.json ==="
@@ -758,6 +954,32 @@ TABLE_BADKEY=$(env ANTHROPIC_API_KEY="sk-ant-invalid" \
   bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
 grep -q '~Tokens' "$TABLE_BADKEY" && grep -q 'API error, fell back to chars/4' "$TABLE_BADKEY" \
   && echo "✅ PASS" || echo "❌ FAIL"
+
+echo "=== 9.1 user skills discovered ==="
+FAKE_HOME_91="/tmp/fake-home-skill91-$$"
+mkdir -p "$FAKE_HOME_91/.claude/skills/test-skill91"
+printf -- '---\nname: test-skill91\ndescription: test\n---\n' \
+  > "$FAKE_HOME_91/.claude/skills/test-skill91/SKILL.md"
+echo '{}' > "$FAKE_HOME_91/.claude/settings.json"
+TABLE_91=$(HOME="$FAKE_HOME_91" CLAUDE_PROJECT_DIR="/tmp" \
+  bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+grep -q 'User.*Skill.*test-skill91' "$TABLE_91" && echo "✅ PASS" || echo "❌ FAIL"
+rm -rf "$FAKE_HOME_91"
+
+echo "=== 9.4 malformed SKILL.md skipped ==="
+FAKE_HOME_94="/tmp/fake-home-skill94-$$"
+mkdir -p "$FAKE_HOME_94/.claude/skills/bad-skill"
+printf -- '---\ndescription: no name\n---\n' \
+  > "$FAKE_HOME_94/.claude/skills/bad-skill/SKILL.md"
+echo '{}' > "$FAKE_HOME_94/.claude/settings.json"
+TABLE_94=$(HOME="$FAKE_HOME_94" CLAUDE_PROJECT_DIR="/tmp" \
+  bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+grep -q 'bad-skill' "$TABLE_94" && echo "❌ FAIL" || echo "✅ PASS"
+rm -rf "$FAKE_HOME_94"
+
+echo "=== 9.5 skills footer legend ==="
+TABLE=$(bash "${PLUGIN_DIR}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
+grep -q 'Skills: names + descriptions' "$TABLE" && echo "✅ PASS" || echo "❌ FAIL"
 ```
 
 ### CI integration

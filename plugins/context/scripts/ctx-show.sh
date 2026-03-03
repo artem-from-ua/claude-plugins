@@ -7,7 +7,9 @@
 #   2. {project}/CLAUDE.md              — project instructions
 #   3. ~/.claude/projects/{hash}/memory/MEMORY.md — auto-memory
 #   4. Global SessionStart hooks        — from ~/.claude/settings.json
-#   5. Plugin SessionStart hooks        — enabled plugins in cache
+#   5. Project SessionStart hooks       — from {project}/.claude/settings.json
+#   6. Plugin SessionStart hooks        — enabled plugins in cache
+#   7. Skills                           — SKILL.md listings (user, plugin, project)
 #
 # Summary table is printed to stderr after content output.
 
@@ -95,6 +97,23 @@ record_meta() {
   TBL_LINES+=("$lines")
   TBL_CHARS+=("$chars")
   TBL_CONTENT+=("$content")
+}
+
+extract_skill_meta() {
+  local skill_md="$1"
+  awk '
+    /^---$/ { fm++; next }
+    fm == 1 && /^name:/ { gsub(/^name: */, ""); name = $0 }
+    fm == 1 && /^description:/ {
+      gsub(/^description: *>? */, "")
+      if ($0 != "") desc = $0
+      indesc = 1; next
+    }
+    fm == 1 && indesc && /^  / { gsub(/^  +/, ""); desc = desc " " $0; next }
+    fm == 1 && indesc && !/^  / { indesc = 0 }
+    fm == 2 { exit }
+    END { printf "%s|%s", name, desc }
+  ' "$skill_md"
 }
 
 append_source() {
@@ -229,6 +248,7 @@ print_table() {
   printf '|-------|------|-----------|------:|--------:|---------:|\n'
 
   local has_presets=0
+  local has_skills=0
 
   for i in "${!TBL_SCOPE[@]}"; do
     local scope_label type_label ctx_pct lines_cell tokens_cell ctx_cell
@@ -239,8 +259,8 @@ print_table() {
     local lines="${TBL_LINES[i]}"
     local tok="${tokens[i]}"
 
-    # Skip hooks that produced no output (empty or missing — not errors)
-    if { [ "$type" = "Plugin hook" ] || [ "$type" = "User hook" ] || [ "$type" = "Project hook" ]; } && \
+    # Skip hooks/skills that produced no output (empty or missing — not errors)
+    if { [ "$type" = "Plugin hook" ] || [ "$type" = "User hook" ] || [ "$type" = "Project hook" ] || [ "$type" = "Skill" ]; } && \
        { [ "$status" = "empty" ] || [ "$status" = "missing" ]; }; then
       continue
     fi
@@ -258,6 +278,7 @@ print_table() {
       "User hook")       type_label="User hook" ;;
       "Project hook")    type_label="Project hook" ;;
       "Playbook Preset") type_label="Playbook Preset"; has_presets=1 ;;
+      "Skill")           type_label="Skill"; has_skills=1 ;;
       *)                 type_label="$type" ;;
     esac
 
@@ -307,6 +328,10 @@ print_table() {
   if [ "$has_presets" -eq 1 ]; then
     local legend_id="${PLAYBOOK_PLUGIN_ID:-playbook@tribe-coding}"
     printf '\nPlaybook Presets injected by %s\n' "$legend_id"
+  fi
+
+  if [ "$has_skills" -eq 1 ]; then
+    printf '\nSkills: names + descriptions loaded at session start (full SKILL.md on-demand)\n'
   fi
 
   case "$token_mode" in
@@ -482,6 +507,115 @@ if [ -f "$SETTINGS" ] && command -v jq >/dev/null 2>&1 && [ -d "$CACHE_DIR" ]; t
   fi
 else
   OUTPUT+=$'\n'"<!-- Source: Plugin SessionStart hooks -->"$'\n'"<!-- (settings.json not found, jq not available, or cache directory missing) -->"$'\n'
+fi
+
+# ── 7. Skill listings ─────────────────────────────────────────────────────────
+# Skills are loaded at session start as a compact listing (name + description).
+# We approximate that listing for token counting.
+
+SEEN_SKILLS=""  # track absolute paths to avoid duplicates
+
+record_skill() {
+  local skill_md="$1"
+  local scope="$2"
+  local source_id="$3"
+
+  # Deduplicate by absolute path
+  local abs_path
+  abs_path=$(cd "$(dirname "$skill_md")" && pwd)/$(basename "$skill_md") 2>/dev/null || return
+  case "$SEEN_SKILLS" in
+    *"|${abs_path}|"*) return ;;
+  esac
+  SEEN_SKILLS+="|${abs_path}|"
+
+  local meta name desc listing
+  meta=$(extract_skill_meta "$skill_md")
+  name="${meta%%|*}"
+  desc="${meta#*|}"
+
+  # Skip if name is empty (malformed SKILL.md)
+  [ -z "$name" ] && return
+
+  listing="- ${name}: ${desc}"
+  record_meta "$scope" "Skill" "$source_id" "ok" "$listing"
+}
+
+# 7a. User skills — ~/.claude/commands/ and ~/.claude/skills/
+for user_skill_dir in "${CLAUDE_DIR}/commands" "${CLAUDE_DIR}/skills"; do
+  if [ -d "$user_skill_dir" ]; then
+    SKILL_LIST=$(find "$user_skill_dir" -maxdepth 2 -name "SKILL.md" 2>/dev/null | sort || true)
+    if [ -n "$SKILL_LIST" ]; then
+      while IFS= read -r skill_md; do
+        [ -z "$skill_md" ] && continue
+        local_name=$(basename "$(dirname "$skill_md")")
+        record_skill "$skill_md" "User" "$local_name"
+      done <<< "$SKILL_LIST"
+    fi
+  fi
+done
+
+# 7b. Plugin commands + skills (from enabled plugins in enabledPlugins order)
+if [ -f "$SETTINGS" ] && command -v jq >/dev/null 2>&1 && [ -d "$CACHE_DIR" ]; then
+  ENABLED_PLUGINS_SKILLS=$(jq -r '
+    .enabledPlugins // {} | to_entries[]
+    | select(.value == true)
+    | .key
+  ' "$SETTINGS" 2>/dev/null || true)
+
+  if [ -n "$ENABLED_PLUGINS_SKILLS" ]; then
+    while IFS= read -r plugin_key; do
+      [ -z "$plugin_key" ] && continue
+
+      PLUGIN_NAME="${plugin_key%%@*}"
+      MARKETPLACE="${plugin_key##*@}"
+      PLUGIN_CACHE="${CACHE_DIR}/${MARKETPLACE}/${PLUGIN_NAME}"
+      [ ! -d "$PLUGIN_CACHE" ] && continue
+
+      LATEST_VERSION=$(ls "$PLUGIN_CACHE" 2>/dev/null \
+        | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
+        | sort -t. -k1,1n -k2,2n -k3,3n \
+        | tail -1)
+      [ -z "$LATEST_VERSION" ] && continue
+
+      PLUGIN_ROOT="${PLUGIN_CACHE}/${LATEST_VERSION}"
+      PLUGIN_JSON="${PLUGIN_ROOT}/.claude-plugin/plugin.json"
+      [ ! -f "$PLUGIN_JSON" ] && continue
+
+      # Iterate commands dirs first, then skills dirs (matches Claude Code load order)
+      for dir_type in commands skills; do
+        DIRS=$(jq -r ".${dir_type}[]? // empty" "$PLUGIN_JSON" 2>/dev/null || true)
+        if [ -n "$DIRS" ]; then
+          while IFS= read -r rel_dir; do
+            [ -z "$rel_dir" ] && continue
+            full_dir="${PLUGIN_ROOT}/${rel_dir}"
+            [ ! -d "$full_dir" ] && continue
+            SKILL_LIST=$(find "$full_dir" -maxdepth 2 -name "SKILL.md" 2>/dev/null | sort || true)
+            if [ -n "$SKILL_LIST" ]; then
+              while IFS= read -r skill_md; do
+                [ -z "$skill_md" ] && continue
+                local_name=$(basename "$(dirname "$skill_md")")
+                record_skill "$skill_md" "Project" "${PLUGIN_NAME}:${local_name}"
+              done <<< "$SKILL_LIST"
+            fi
+          done <<< "$DIRS"
+        fi
+      done
+
+    done <<< "$ENABLED_PLUGINS_SKILLS"
+  fi
+fi
+
+# 7c. Project commands — {project}/.claude/commands/
+PROJECT_COMMANDS_DIR="${PROJECT_DIR}/.claude/commands"
+if [ -d "$PROJECT_COMMANDS_DIR" ]; then
+  SKILL_LIST=$(find "$PROJECT_COMMANDS_DIR" -maxdepth 2 -name "SKILL.md" 2>/dev/null | sort || true)
+  if [ -n "$SKILL_LIST" ]; then
+    while IFS= read -r skill_md; do
+      [ -z "$skill_md" ] && continue
+      local_name=$(basename "$(dirname "$skill_md")")
+      record_skill "$skill_md" "Project" "./.claude/commands/${local_name}"
+    done <<< "$SKILL_LIST"
+  fi
 fi
 
 # ── Output ────────────────────────────────────────────────────────────────────

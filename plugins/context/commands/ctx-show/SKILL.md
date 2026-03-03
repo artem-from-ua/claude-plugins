@@ -2,10 +2,10 @@
 name: ctx-show
 description: >
   Show the full Claude Code session context assembled in load order.
-  Outputs all CLAUDE.md files, auto-memory, and SessionStart hook output
+  Outputs all CLAUDE.md files, auto-memory, SessionStart hook output, and skill listings
   in one document with source separators. Prints a summary table to stderr
   with scope, type, source, status, lines, tokens, and context% per source.
-  Keywords: session context, what is loaded, show context, debug context, rules, hooks.
+  Keywords: session context, what is loaded, show context, debug context, rules, hooks, skills.
 ---
 
 # /ctx-show — Show Full Session Context
@@ -27,6 +27,7 @@ Assemble and display everything Claude Code loads at session start, in load orde
 4. Global SessionStart hooks (from `~/.claude/settings.json`)
 5. Project SessionStart hooks (from `{project}/.claude/settings.json`)
 6. Plugin SessionStart hooks (enabled plugins in `~/.claude/plugins/cache/`)
+7. Skills — SKILL.md listings from user (`~/.claude/commands/`, `~/.claude/skills/`), plugins, and project (`{project}/.claude/commands/`)
 
 Each source is wrapped with `<!-- Source: ... -->` comments. Missing files are noted but do not cause errors.
 
@@ -37,7 +38,7 @@ After the file is written (or content printed), a summary table is printed to **
 | Column | Description |
 |--------|-------------|
 | Scope | `User` (global `~/.claude/`) or `Project` (project-level + plugins) |
-| Type | CLAUDE.md · Memory · Plugin hook · User hook · Project hook · Playbook Preset |
+| Type | CLAUDE.md · Memory · Plugin hook · User hook · Project hook · Playbook Preset · Skill |
 | Source/ID | Shortened path (`~/`, `./`) or plugin identifier `name@marketplace (vX.Y.Z)` |
 | Status | has content · missing/empty · command failed (shown as "script error" in Lines column) |
 | Lines / Tokens | Content metrics; exact via Anthropic `count_tokens` API when `ANTHROPIC_API_KEY` is set, otherwise estimated as `~Tokens` (chars/4) |

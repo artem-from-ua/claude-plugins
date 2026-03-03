@@ -3,7 +3,7 @@
 > [!TIP]
 > ✨ ***See exactly what's loaded into your Claude Code session — and how much context budget each source consumes.***
 
-`/ctx-show` collects everything Claude Code loads at session start — CLAUDE.md files, auto-memory, and SessionStart hook output — and writes it to a single `.md` snapshot file. A summary table breaks down token usage per source so you know exactly what's filling your context window.
+`/ctx-show` collects everything Claude Code loads at session start — CLAUDE.md files, auto-memory, SessionStart hook output, and skill listings — and writes it to a single `.md` snapshot file. A summary table breaks down token usage per source so you know exactly what's filling your context window.
 
 > [!NOTE]
 > [⚙️ How it works](#how-it-works) · [📋 Sources](#sources) · [📊 Summary Table Columns](#summary-table-columns) · [⚡ Commands](#commands) · [📦 Installation](#installation)
@@ -29,17 +29,24 @@
 | Project | Playbook Preset | readme                                             |    17 |     375 |       3% |
 | Project | Plugin hook     | semver@tribe-coding (v0.2.1) · inject-rules        |    20 |     265 |       2% |
 | Project | Plugin hook     | retroscope@tribe-coding (v0.2.3) · inject-rules    |     8 |     115 |       1% |
-|         | **TOTAL**       |                                                    |   929 |  11,414 |     100% |
+| User    | Skill           | interview-simple                                     |     1 |       5 |       0% |
+| Project | Skill           | plantuml:plantuml-diagram-guide                      |     1 |      98 |       0% |
+| Project | Skill           | semver:semver-guide                                  |     1 |      96 |       0% |
+| Project | Skill           | context:ctx-show                                     |     1 |      95 |       0% |
+|         | **TOTAL**       |                                                    |   933 |  11,808 |     100% |
 
-⚠️  Context load (11414 tokens) exceeds threshold (10000 tokens = 5% of 200k context window)
+⚠️  Context load (11808 tokens) exceeds threshold (10000 tokens = 5% of 200k context window)
 
 Playbook Presets injected by playbook@tribe-coding (v0.5.5)
 
+Skills: names + descriptions loaded at session start (full SKILL.md on-demand)
+
 Summary:
-- ./CLAUDE.md dominates — 74% of context (8,545 tokens)
+- ./CLAUDE.md dominates — 72% of context (8,545 tokens)
 - Loaded plugins: plantuml (v1.6.3), semver (v0.2.1), retroscope (v0.2.3)
 - Active Playbook presets: 5 presets from playbook@tribe-coding (v0.5.5)
-- Total context load: ~11,400 tokens
+- Skills: 3 skill listings from enabled plugins + 1 user skill
+- Total context load: ~11,800 tokens
 ```
 
 ## ⚙️ How it works <a name="how-it-works"></a>
@@ -50,9 +57,10 @@ The plugin runs `ctx-show.sh`, which:
 2. Reads auto-memory (`MEMORY.md`) for the current project
 3. Discovers SessionStart hooks from `~/.claude/settings.json` and `.claude/settings.json`
 4. Scans enabled plugins in `~/.claude/plugins/cache/` and executes their SessionStart hooks
-5. Wraps each source in `<!-- Source: ... -->` comment markers
-6. Writes the assembled context to `/tmp/claude-context-{timestamp}.md`
-7. Prints the summary table to stderr
+5. Discovers skills from user dirs (`~/.claude/commands/`, `~/.claude/skills/`), enabled plugins, and project (`{project}/.claude/commands/`)
+6. Wraps each source in `<!-- Source: ... -->` comment markers
+7. Writes the assembled context to `/tmp/claude-context-{timestamp}.md`
+8. Prints the summary table to stderr
 
 Missing files are noted but do not cause errors.
 
@@ -66,13 +74,14 @@ Collected in load order:
 4. Global SessionStart hooks (from `~/.claude/settings.json`)
 5. Project SessionStart hooks (from `{project}/.claude/settings.json`)
 6. Plugin SessionStart hooks (enabled plugins in `~/.claude/plugins/cache/`)
+7. Skills — SKILL.md listings from user (`~/.claude/commands/`, `~/.claude/skills/`), plugins, and project
 
 ## 📊 Summary Table Columns <a name="summary-table-columns"></a>
 
 | Column | Description |
 |--------|-------------|
 | Scope | `User` (global `~/.claude/`) or `Project` (project-level + plugins) |
-| Type | CLAUDE.md · Memory · Plugin hook · User hook · Project hook · Playbook Preset |
+| Type | CLAUDE.md · Memory · Plugin hook · User hook · Project hook · Playbook Preset · Skill |
 | Source/ID | Shortened path (`~/`, `./`) or plugin identifier `name@marketplace (vX.Y.Z)` |
 | Status | Content present · missing/empty · command failed |
 | Lines | Line count of the source content |
