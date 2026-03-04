@@ -6,7 +6,8 @@ description: >
   GitHub workflow, git safety, debugging, or other configured guidelines.
   Do NOT skip this when RULES zone references it.
   Keywords: guidelines, documentation rules, commit checklist, ADR, PR workflow, playbook,
-  debugging, git safety, planning, subagent verification.
+  debugging, git safety, planning, subagent verification, shell scripting, bash pitfalls,
+  find path, strict mode.
 ---
 
 # Playbook Browse
