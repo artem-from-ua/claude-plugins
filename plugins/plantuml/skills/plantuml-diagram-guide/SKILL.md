@@ -49,7 +49,7 @@ Use color coding to improve diagram readability. Apply a **muted pastel palette*
 
 | Type | When to use | When to suggest | Syntax |
 |------|-------------|-----------------|--------|
-| **Sequence** | Interactions between processes/services, API call flows, request-response chains | Spec files with pipeline/API descriptions; new inter-process communication | `@startuml` with `->`, `-->` |
+| **Sequence** | Interactions between processes/services, API call flows, request-response chains. For ≤ 10 arrows add `hide footbox`; for longer diagrams keep footbox for navigation | Spec files with pipeline/API descriptions; new inter-process communication | `@startuml` with `->`, `-->` |
 | **Activity** | Algorithms, business logic, decision trees, branching flows, parallel processes | Decision log entries; complex functions with many branches; CI/CD procedures | `@startuml` with `start`, `:action;`, `if/then/else`, `fork` |
 | **State** | State machines, object lifecycles, connection/session/process states | Code with if/else chains that implement a state machine; specs describing behavior with distinct states | `@startuml` with `[*] -->`, `state` |
 | **Use Case** | Functional requirements, actor-system interactions, feature overview | PRD files; new feature overview; user stories | `@startuml` with `actor`, `usecase`, `-->` |
