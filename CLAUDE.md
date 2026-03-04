@@ -93,6 +93,14 @@ For full authoring guidelines — SKILL.md hybrid design, preset RULES/REFERENCE
 10. **Update the Plugins list above** — add bullet to the Plugins section in this file (alphabetical order)
 11. **README navbar** — nav line goes after the header block (motto + intro paragraph), lists ALL sections except the first one (usually Demo); see `readme` playbook preset for full rules
 
+## Adding a New Playbook Preset
+
+1. Create `plugins/playbook/presets/<name>.md` (see [`docs/AUTHORING.md`](docs/AUTHORING.md) for format)
+2. Update `plugins/playbook/README.md` preset table (alphabetical order)
+3. Bump playbook version (MINOR for new preset)
+4. If replacing a rule from `~/.claude/CLAUDE.md` or `memory/` → remove the source after merge
+5. Update `playbook-browse` SKILL.md description keywords if needed
+
 ## README Demo Sections
 
 Claude Code console interaction examples (blocks showing `You: … Claude: …` dialogues, tool call output, or slash command output) in plugin README files MUST use `` ```markdown `` fenced code blocks — not bare `` ``` ``. This enables syntax highlighting on GitHub (tables, emoji, bold) and ensures consistent appearance across all plugins. Do NOT apply `` ```markdown `` to non-interaction blocks (plain text lists, file trees, format templates) — those stay as bare `` ``` ``.
