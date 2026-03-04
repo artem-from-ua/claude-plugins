@@ -43,6 +43,7 @@ Then in the next session, run `/playbook-setup` to choose which presets to enabl
 | [`macos-python`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/macos-python.md) | Python 3.12 targeting, no system Python, CWD isolation |
 | [`macos-zsh-quirks`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/macos-zsh-quirks.md) | Zsh/Bash tool quirks: CWD, `echo` escapes, absolute paths |
 | [`readme`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/readme.md) | README as landing page: 5-second test, compact structure, cross-links |
+| [`shell-scripting-safety`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/shell-scripting-safety.md) | Prevent common pitfalls in generated shell scripts |
 | [`verify-before-relay`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/verify-before-relay.md) | Verify subagent URLs before relaying to user |
 
 Use `/playbook-browse` to read the full reference for any preset.
