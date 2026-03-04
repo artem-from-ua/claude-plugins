@@ -173,6 +173,29 @@ print('PASS')
 rm -rf "$TMPDIR" "$CONFIG"
 ```
 
+### 2.5b Scan correctly excludes directories with `**` glob patterns
+
+**Objective:** Exclude patterns with `**/` prefix and directories in parent path do not cause false exclusions.
+
+```bash
+TMPDIR=$(mktemp -d)
+mkdir -p "$TMPDIR/docs" "$TMPDIR/raw/data"
+echo "# Main" > "$TMPDIR/README.md"
+echo "# Docs" > "$TMPDIR/docs/guide.md"
+echo "# Raw" > "$TMPDIR/raw/data/dump.md"
+CONFIG=$(mktemp)
+printf '{"checks":{"brokenLinks":true},"scope":{"include":["*.md"],"exclude":["**/raw/"]}}\n' > "$CONFIG"
+REPORT=$(env CLAUDE_PROJECT_DIR="$TMPDIR" KB_CONFIG_FILE="$CONFIG" bash plugins/kb-grooming/scripts/kb-structural-scan.sh)
+python3 -c "
+import json
+r = json.load(open('$REPORT'))
+scanned = r['summary']['filesScanned']
+assert scanned == 2, f'Expected 2 files (README.md + guide.md), got {scanned}'
+print('PASS')
+"
+rm -rf "$TMPDIR" "$CONFIG"
+```
+
 ### 2.6 Scan with no markdown files produces empty report
 
 **Objective:** Empty directory produces valid empty JSON report.

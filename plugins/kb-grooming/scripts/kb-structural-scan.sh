@@ -46,12 +46,14 @@ build_find_args() {
 import sys, json
 patterns = json.load(sys.stdin)
 for p in patterns:
-    p = p.rstrip('/')
-    print(p)
+    p = p.strip('/')
+    p = p.lstrip('*').lstrip('/')
+    if p:
+        print(p)
 ")
   while IFS= read -r pattern; do
     [ -z "$pattern" ] && continue
-    find_cmd+=" -not -path \"*/${pattern}/*\" -not -path \"*/${pattern}\""
+    find_cmd+=" -not -path \"${PROJECT_DIR}/${pattern}/*\" -not -path \"${PROJECT_DIR}/*/${pattern}/*\""
   done <<< "$excludes"
 
   echo "$find_cmd"
