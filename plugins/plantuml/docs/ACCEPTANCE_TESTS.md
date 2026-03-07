@@ -2067,6 +2067,77 @@ explain microservices architecture with API gateway
 
 ---
 
+## Test 12: Sequence Diagram ACK Suppression and Arrow Conventions
+
+Tests for correct application of ACK suppression rules, async arrow styles, visual styling defaults, and legend usage.
+
+### 12.1 Fire-and-Forget Suppression
+
+**Setup:** Ask Claude to create a sequence diagram for an event-driven system where Order Service emits an `orderPlaced` event to Notification Service and Audit Log.
+
+**Expected behavior:**
+- `->>` used for fire-and-forget messages (not `->`)
+- No return arrows for notification/audit messages
+- `legend right` block present with "ACK responses omitted for clarity"
+- `skinparam sequenceArrowThickness 1.5` present
+- `skinparam LifeLineBorderColor #C0C0C0` present
+
+**Pass criteria:**
+- ✅ `->>` on fire-and-forget arrows
+- ✅ No `-->>` or `-->` return arrows for async notifications
+- ✅ Legend block included
+- ✅ Both visual styling skinparams present
+
+### 12.2 All-Meaningful-ACK Scenario
+
+**Setup:** Ask Claude to create a sequence diagram for a payment processing flow where the client needs to know if the payment succeeded or failed.
+
+**Expected behavior:**
+- `-->` return arrows shown for all responses that drive branching
+- `alt [success] / [failure]` fragment present
+- No legend needed (all ACKs are meaningful)
+
+**Pass criteria:**
+- ✅ Return arrows shown for payment gateway response
+- ✅ `alt` fragment follows the response
+- ✅ No legend about "ACK responses omitted" (would be incorrect here)
+
+### 12.3 Mixed Flow with Error Branching
+
+**Setup:** Ask Claude to create a sequence diagram for a service that: (1) writes to DB and retries on failure, (2) sends a fire-and-forget email notification on success.
+
+**Expected behavior:**
+- DB write response shown (drives `loop` retry logic)
+- Email notification uses `->>` with no return arrow
+- Legend present explaining suppression
+- `alt`/`loop` fragments use the shown ACK meaningfully
+
+**Pass criteria:**
+- ✅ DB response arrow shown (`-->`)
+- ✅ `loop` or `opt` fragment references DB response
+- ✅ Email uses `->>`, no return arrow
+- ✅ Legend present
+
+### 12.4 Arrow Style Consistency
+
+**Setup:** Ask Claude to create a sequence diagram mixing sync API calls and async event publishing.
+
+**Expected behavior:**
+- `->` for synchronous blocking calls
+- `-->` for synchronous responses
+- `->>` for async fire-and-forget
+- `-->>` for async callbacks (if applicable)
+- No mixing of styles (e.g., `->` used for clearly async operations)
+
+**Pass criteria:**
+- ✅ Arrow types match their documented semantics
+- ✅ Sync operations use `->` / `-->`
+- ✅ Async operations use `->>` / `-->>`
+- ✅ `skinparam sequenceArrowThickness 1.5` present
+- ✅ `skinparam LifeLineBorderColor #C0C0C0` present
+
+---
+
 ## Contributing
 
 When adding new features to the PlantUML plugin:

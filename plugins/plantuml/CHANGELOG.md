@@ -5,6 +5,21 @@ All notable changes to the PlantUML plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-03-07
+
+### Added
+- ACK suppression rules for sequence diagrams (`skills/plantuml-diagram-guide/references/sequence.md`)
+- Arrow style conventions: sync `->` / `-->`, async `->>` / `-->>`
+- Decision table with 6 concrete ACK suppression scenarios
+- `group` fragment guidance for clustering request-response pairs
+- Visual styling defaults: thicker arrows (`sequenceArrowThickness 1.5`), gray lifelines (`LifeLineBorderColor #C0C0C0`)
+- Legend format template for suppressed ACK diagrams
+- 4 new acceptance test scenarios (Test 12: ACK Suppression)
+
+### Changed
+- Sequence row in SKILL.md now documents `->>` syntax
+- `inject-rules.sh` SessionStart output includes visual styling skinparam rules and sequence reference note
+
 ## [1.7.2] - 2026-03-03
 
 ### Changed
