@@ -13,6 +13,7 @@ MANDATORY: Follow these rules for all PR and branch operations.
 - Before using `gh pr merge --auto` → check `gh api repos/OWNER/REPO --jq '.allow_auto_merge'`
 - After merging a PR → delete the source branch (remote + local)
 - Before first commit on a branch → run `gh pr list --head <branch> --state open --json number,title,author`; if open PR exists → check: (a) different author, or (b) your changes don't match the PR topic — in either case, ask user whether to commit here or create a new branch
+- **Before EVERY commit** → verify your changes match the branch scope (name + existing commits). If changes are unrelated to the branch topic → stop and ask whether to create a new branch. This applies even when there is no open PR — the branch name itself defines the scope
 - After committing on a PR branch → offer to update the PR description
 - After committing on a branch with no open PR → offer to create a PR
 - When creating PR without linked issue → ask user to create one first
@@ -51,6 +52,22 @@ After creating a commit on a branch that has an open PR, **always offer to updat
    - Update summary to reflect the full scope of changes
    - Keep existing issue links (`Closes #N`)
    - Use `gh pr edit <NUMBER> --body "..."`
+
+## Scope check before every commit
+
+Before creating **any** commit, verify that your staged changes match the branch scope:
+
+1. Determine branch scope from:
+   - **Branch name** — e.g., `feature/plantuml-sequence-ack-rules` means only sequence ACK rule changes belong here
+   - **Existing commits** — `git log main..HEAD --oneline` shows what the branch is about
+   - **Open PR title/description** (if exists)
+
+2. Compare your staged changes against that scope. Ask yourself: "Would this change make sense in a PR titled after this branch?"
+
+3. If the answer is no → **do NOT commit**. Instead, ask the user:
+   > "These changes (X) don't match the branch scope (Y). Should I create a separate branch?"
+
+This is the **most important** pre-commit check. Mixing unrelated changes on a branch creates messy PRs, complicates reviews, and makes git history harder to follow.
 
 ## Checking for open PRs before committing
 
