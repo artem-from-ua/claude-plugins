@@ -14,6 +14,7 @@ MANDATORY: Follow these rules for all PR and branch operations.
 - After merging a PR → delete the source branch (remote + local)
 - Before first commit on a branch → run `gh pr list --head <branch> --state open --json number,title,author`; if open PR exists → check: (a) different author, or (b) your changes don't match the PR topic — in either case, ask user whether to commit here or create a new branch
 - After committing on a PR branch → offer to update the PR description
+- After committing on a branch with no open PR → offer to create a PR
 - When creating PR without linked issue → ask user to create one first
 - "Not mergeable" after another PR merged → `git fetch origin main && git rebase origin/main && git push --force-with-lease`
 - **ALWAYS invoke the `playbook-browse github-workflow` skill BEFORE performing PR or branch operations** to load full guidelines. This is MANDATORY — do not skip this step.
@@ -70,6 +71,22 @@ Before first commit on any branch, check if an open PR already exists:
    - **New branch** — auto-generate a suggested branch name based on your staged changes (e.g., `bugfix/fix-navbar-placement`), show it as the option label; the user can pick it or type their own via "Other"
 
 4. If `gh` unavailable or not authenticated → skip (the git-branch-naming hook provides a separate automated guard for the different-author case).
+
+## Offering to create a PR after committing on a new branch
+
+After committing on a branch that has **no open PR**, offer to create one:
+
+1. Check if current branch has an open PR:
+   ```bash
+   gh pr list --head $(git branch --show-current) --state open --json number,title
+   ```
+
+2. If no PR exists and branch is not `main`/`master`/`develop`, ask the user:
+   > "No PR exists for this branch. Want me to create one?"
+
+3. If yes, follow the standard PR creation flow (title from commits, summary, test plan).
+
+4. If `gh` unavailable or not authenticated → skip silently.
 
 ## Every PR should have a linked issue
 
