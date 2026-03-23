@@ -11,7 +11,7 @@ Single-line statusline with brightness-coded API usage values.
 ## 🎬 Demo <a name="demo"></a>
 
 ```markdown
-5h 92% 50m !!   7d 22% ~5d   extra $4.79   Sonnet 4.6   context 30%   my-project/   main*
+5h 92% 50m !!   7d 22% ~5d   7d:sonnet 8% ~5d   extra $4.79   Sonnet 4.6   context 30%   my-project/   main*
 ```
 
 Values dim at low usage and brighten as they climb: yellow above 90%, red at 100%.
@@ -28,7 +28,7 @@ Values dim at low usage and brighten as they climb: yellow above 90%, red at 100
 - Model brightness = capability tier: Opus bright, Sonnet default, Haiku dim
 - Usage values: dim at low, brighten as they climb, yellow > 90%, red at 100%
 
-**Tracked values:** 5h rate limit · 7d rate limit · extra usage ($ amount) · context % · directory · git branch · model name
+**Tracked values:** 5h rate limit · 7d rate limit (all models) · 7d per-model limit (e.g., sonnet) · extra usage ($ amount) · context % · directory · git branch · model name
 
 ## 📦 Installation <a name="installation"></a>
 
