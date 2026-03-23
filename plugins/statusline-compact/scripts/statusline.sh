@@ -3,7 +3,7 @@
 # Reads JSON from stdin (piped by Claude Code)
 #
 # Layout:
-#   5h 12% ~2h14m   7d 45% ~3d5h   extra $4.79   $0.42   Sonnet 4.5   context 52%   my-project/   main
+#   5h 12% ~2h14m   7d 45% ~3d5h   7d:sonnet 8% ~5d   extra $4.79   $0.42   Sonnet 4.5   context 52%   my-project/   main
 #
 # Brightness-coded values: dim at low usage, brighter as they climb,
 # yellow >90%, red at 100%. Text indicators: !! warning, XX exhausted.
@@ -249,6 +249,52 @@ if [ -n "$usage_json" ]; then
   fi
 fi
 
+# Per-model 7d segment: "7d:sonnet 1% ~5d" (highest utilization non-null per-model limit)
+compact_7d_model=""
+if [ -n "$usage_json" ]; then
+  # Extract all seven_day_* entries that are non-null with utilization
+  per_model_lines=$(echo "$usage_json" | jq -r '
+    to_entries[]
+    | select(.key | startswith("seven_day_"))
+    | select(.value != null and (.value | type) == "object" and .value.utilization != null)
+    | "\(.key | ltrimstr("seven_day_"))|\(.value.utilization)|\(.value.resets_at)"
+  ' 2>/dev/null)
+
+  if [ -n "$per_model_lines" ]; then
+    # Find the entry with the highest utilization
+    best_name=""
+    best_pct=""
+    best_resets=""
+    best_val=0
+    while IFS='|' read -r pm_name pm_pct pm_resets; do
+      pm_int=${pm_pct%.*}
+      if [ "$pm_int" -gt "$best_val" ] 2>/dev/null || [ -z "$best_name" ]; then
+        best_name="$pm_name"
+        best_pct="$pm_pct"
+        best_resets="$pm_resets"
+        best_val="$pm_int"
+      fi
+    done <<< "$per_model_lines"
+
+    if [ -n "$best_name" ]; then
+      pm_int=${best_pct%.*}
+      pm_remaining=$(format_time_remaining "$best_resets" 48)
+      pm_time_with_dim=$(dim_time_units "$pm_remaining")
+
+      pm_color=$(pct_color "$pm_int")
+      pm_pct_fmt="${pm_color}${pm_int}%${rst}"
+      pm_suffix=""
+      [ "$pm_int" -ge 100 ] 2>/dev/null && pm_suffix=" ${bright_red}XX${rst}"
+      [ "$pm_int" -gt 90 ] 2>/dev/null && [ "$pm_int" -lt 100 ] 2>/dev/null && pm_suffix=" ${yellow}!!${rst}"
+      pm_time=""
+      if [ -n "$pm_remaining" ]; then
+        pm_time=" ${pm_time_with_dim}"
+      fi
+      compact_7d_model="${dim}7d:${best_name}${rst} ${pm_pct_fmt}${pm_time}${pm_suffix}"
+    fi
+  fi
+fi
+
 # Extra usage segment: "extra $4.79" or "extra>> $13.87"
 compact_mo=""
 if [ -n "$usage_json" ]; then
@@ -319,7 +365,7 @@ fi
 
 # Assemble single line with 3-space gaps
 compact_line=""
-for seg in "$compact_5h" "$compact_7d" "$compact_mo" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch"; do
+for seg in "$compact_5h" "$compact_7d" "$compact_7d_model" "$compact_mo" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch"; do
   if [ -n "$seg" ]; then
     if [ -n "$compact_line" ]; then
       compact_line="${compact_line}   ${seg}"

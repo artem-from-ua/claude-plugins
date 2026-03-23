@@ -4,6 +4,7 @@
 
 The statusline-compact plugin provides a single-line compact status display for Claude Code, showing:
 - 5h/7d rate limits with brightness-coded percentages
+- Per-model 7d limits (e.g., sonnet-only weekly limit)
 - Extra usage (monthly billing) with dollar amount
 - Model name, context window usage, directory, git branch
 
@@ -131,7 +132,7 @@ cd plugins/statusline-compact
 create_mock_cache() {
   local five_h=$1
   cat > /tmp/claude-statusline-usage-cache-${UID} <<EOF
-{"five_hour":{"utilization":$five_h,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"extra_usage":{"is_enabled":false}}
+{"five_hour":{"utilization":$five_h,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":50.0,"resets_at":"2026-02-25T12:00:00+00:00"},"seven_day_sonnet":{"utilization":10.0,"resets_at":"2026-02-25T16:00:00+00:00"},"seven_day_opus":null,"extra_usage":{"is_enabled":false}}
 EOF
 }
 
@@ -229,7 +230,46 @@ rm -rf "$test_dir"
 
 ---
 
-#### 3.4 API timeout/failure
+#### 3.4 Per-model 7d limits
+
+**Objective:** Verify per-model weekly limits (e.g., `seven_day_sonnet`) are displayed
+
+**Automation:** ✅
+
+**Steps:**
+```bash
+cd plugins/statusline-compact
+
+# Mock cache with sonnet-only limit
+cat > /tmp/claude-statusline-usage-cache-${UID} <<EOF
+{"five_hour":{"utilization":10.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":20.0,"resets_at":"2026-02-25T12:00:00+00:00"},"seven_day_sonnet":{"utilization":5.0,"resets_at":"2026-02-25T16:00:00+00:00"},"seven_day_opus":null,"extra_usage":{"is_enabled":false}}
+EOF
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g')
+echo "$output" | grep -q '7d:sonnet' && echo "✅ Per-model segment present" || echo "❌ FAIL: Missing 7d:sonnet"
+
+# Mock cache with all per-model limits null
+cat > /tmp/claude-statusline-usage-cache-${UID} <<EOF
+{"five_hour":{"utilization":10.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":20.0,"resets_at":"2026-02-25T12:00:00+00:00"},"seven_day_sonnet":null,"seven_day_opus":null,"extra_usage":{"is_enabled":false}}
+EOF
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g')
+echo "$output" | grep -q '7d:' && echo "❌ FAIL: Per-model segment shown when null" || echo "✅ No per-model segment when all null"
+
+# Mock cache with multiple per-model limits - highest shown
+cat > /tmp/claude-statusline-usage-cache-${UID} <<EOF
+{"five_hour":{"utilization":10.0,"resets_at":"2026-02-20T12:00:00+00:00"},"seven_day":{"utilization":20.0,"resets_at":"2026-02-25T12:00:00+00:00"},"seven_day_sonnet":{"utilization":15.0,"resets_at":"2026-02-25T16:00:00+00:00"},"seven_day_opus":{"utilization":30.0,"resets_at":"2026-02-25T16:00:00+00:00"},"extra_usage":{"is_enabled":false}}
+EOF
+output=$(echo '{"workspace":{"current_dir":"/test"},"model":{"display_name":"Test"},"context_window":{"used_percentage":50}}' | bash scripts/statusline.sh | sed 's/\x1b\[[0-9;]*m//g')
+echo "$output" | grep -q '7d:opus' && echo "✅ Highest utilization per-model shown" || echo "❌ FAIL: Expected 7d:opus (highest)"
+```
+
+**Acceptance criteria:**
+- ✅ Per-model segment shows when API returns non-null per-model limits
+- ✅ Per-model segment hidden when all per-model limits are null
+- ✅ When multiple per-model limits exist, the highest utilization is shown
+
+---
+
+#### 3.5 API timeout/failure
 
 **Objective:** Verify graceful degradation when API fails
 
@@ -272,7 +312,7 @@ claude
 
 Expected appearance:
 ```
-5h 12% ~2h14m   7d 45% ~3d5h   extra $4.79   Sonnet 4.5   context 52%   claude-plugins/   main
+5h 12% ~2h14m   7d 45% ~3d5h   7d:sonnet 8% ~5d   extra $4.79   Sonnet 4.5   context 52%   claude-plugins/   main
 ```
 
 Visual checklist:
@@ -313,6 +353,10 @@ echo '{"model":{"display_name":"Claude Sonnet 4.5"},"workspace":{"current_dir":"
 ---
 
 ## Version history
+
+### 0.5.0
+
+- Per-model 7d limits: shows highest-utilization per-model weekly limit (e.g., `7d:sonnet 1% ~5d`)
 
 ### 0.4.0
 
