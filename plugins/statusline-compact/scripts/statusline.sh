@@ -3,7 +3,10 @@
 # Reads JSON from stdin (piped by Claude Code)
 #
 # Layout:
-#   5h 12% ~2h14m   7d 45% ~3d5h   7d:sonnet 8% ~5d   extra $4.79   $0.42   Sonnet 4.5   context 52%   my-project/   main
+#   5h 12% ~2h14m   7d 45% ~3d5h   extra $4.79   $0.42   Sonnet 4.5   context 52%   my-project/   main
+#
+# Progressive hiding: when terminal is narrow, drops segments to leave room
+# for Claude Code system notifications. Drop order: dir, cost, extra usage.
 #
 # Brightness-coded values: dim at low usage, brighter as they climb,
 # yellow >90%, red at 100%. Text indicators: !! warning, XX exhausted.
@@ -20,6 +23,26 @@ bright_red=$(printf '\033[38;5;167m')
 yellow=$(printf '\033[38;5;178m')
 
 DOLLAR='$'
+
+# Measure visual width of a string (strip ANSI escape sequences)
+visual_width() {
+  printf '%s' "$1" | sed $'s/\x1b\\[[0-9;]*m//g' | wc -m | tr -d ' '
+}
+
+# Join non-empty segments with 3-space gaps
+assemble_line() {
+  local line=""
+  for seg in "$@"; do
+    if [ -n "$seg" ]; then
+      if [ -n "$line" ]; then
+        line="${line}   ${seg}"
+      else
+        line="${seg}"
+      fi
+    fi
+  done
+  printf '%s' "$line"
+}
 
 # Brightness gradient for percentage values
 # Low usage fades into background, high usage draws attention
@@ -249,52 +272,6 @@ if [ -n "$usage_json" ]; then
   fi
 fi
 
-# Per-model 7d segment: "7d:sonnet 1% ~5d" (highest utilization non-null per-model limit)
-compact_7d_model=""
-if [ -n "$usage_json" ]; then
-  # Extract all seven_day_* entries that are non-null with utilization
-  per_model_lines=$(echo "$usage_json" | jq -r '
-    to_entries[]
-    | select(.key | startswith("seven_day_"))
-    | select(.value != null and (.value | type) == "object" and .value.utilization != null)
-    | "\(.key | ltrimstr("seven_day_"))|\(.value.utilization)|\(.value.resets_at)"
-  ' 2>/dev/null)
-
-  if [ -n "$per_model_lines" ]; then
-    # Find the entry with the highest utilization
-    best_name=""
-    best_pct=""
-    best_resets=""
-    best_val=0
-    while IFS='|' read -r pm_name pm_pct pm_resets; do
-      pm_int=${pm_pct%.*}
-      if [ "$pm_int" -gt "$best_val" ] 2>/dev/null || [ -z "$best_name" ]; then
-        best_name="$pm_name"
-        best_pct="$pm_pct"
-        best_resets="$pm_resets"
-        best_val="$pm_int"
-      fi
-    done <<< "$per_model_lines"
-
-    if [ -n "$best_name" ]; then
-      pm_int=${best_pct%.*}
-      pm_remaining=$(format_time_remaining "$best_resets" 48)
-      pm_time_with_dim=$(dim_time_units "$pm_remaining")
-
-      pm_color=$(pct_color "$pm_int")
-      pm_pct_fmt="${pm_color}${pm_int}%${rst}"
-      pm_suffix=""
-      [ "$pm_int" -ge 100 ] 2>/dev/null && pm_suffix=" ${bright_red}XX${rst}"
-      [ "$pm_int" -gt 90 ] 2>/dev/null && [ "$pm_int" -lt 100 ] 2>/dev/null && pm_suffix=" ${yellow}!!${rst}"
-      pm_time=""
-      if [ -n "$pm_remaining" ]; then
-        pm_time=" ${pm_time_with_dim}"
-      fi
-      compact_7d_model="${dim}7d:${best_name}${rst} ${pm_pct_fmt}${pm_time}${pm_suffix}"
-    fi
-  fi
-fi
-
 # Extra usage segment: "extra $4.79" or "extra>> $13.87"
 compact_mo=""
 if [ -n "$usage_json" ]; then
@@ -363,16 +340,40 @@ if [ -n "$branch" ]; then
   fi
 fi
 
-# Assemble single line with 3-space gaps
-compact_line=""
-for seg in "$compact_5h" "$compact_7d" "$compact_7d_model" "$compact_mo" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch"; do
-  if [ -n "$seg" ]; then
-    if [ -n "$compact_line" ]; then
-      compact_line="${compact_line}   ${seg}"
-    else
-      compact_line="${seg}"
-    fi
+# ===== PROGRESSIVE HIDING =====
+# Claude Code appends system notifications to the right of the last statusline line.
+# Reserve space so notifications (e.g. "auto mode is unavailable for your plan") aren't truncated.
+
+NOTIFICATION_RESERVE=45
+
+term_width=$(tput cols 2>/dev/null)
+if ! [ "$term_width" -ge 40 ] 2>/dev/null; then
+  term_width=""
+fi
+
+if [ -n "$term_width" ]; then
+  available=$(( term_width - NOTIFICATION_RESERVE ))
+
+  # Level 0: all segments
+  compact_line=$(assemble_line "$compact_5h" "$compact_7d" "$compact_mo" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch")
+
+  if [ "$(visual_width "$compact_line")" -gt "$available" ]; then
+    # Level 1: drop directory
+    compact_line=$(assemble_line "$compact_5h" "$compact_7d" "$compact_mo" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_branch")
   fi
-done
+
+  if [ "$(visual_width "$compact_line")" -gt "$available" ]; then
+    # Level 2: drop session cost
+    compact_line=$(assemble_line "$compact_5h" "$compact_7d" "$compact_mo" "$compact_model" "$compact_ctx" "$compact_branch")
+  fi
+
+  if [ "$(visual_width "$compact_line")" -gt "$available" ]; then
+    # Level 3: drop extra usage (only required segments remain)
+    compact_line=$(assemble_line "$compact_5h" "$compact_7d" "$compact_model" "$compact_ctx" "$compact_branch")
+  fi
+else
+  # Fallback: no terminal width detected, show everything
+  compact_line=$(assemble_line "$compact_5h" "$compact_7d" "$compact_mo" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch")
+fi
 
 echo "$compact_line"
