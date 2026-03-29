@@ -342,9 +342,9 @@ fi
 
 # ===== PROGRESSIVE HIDING =====
 # Claude Code appends system notifications to the right of the last statusline line.
-# Reserve space so notifications (e.g. "auto mode is unavailable for your plan") aren't truncated.
+# Reserve space so notifications aren't truncated. 20 chars fits most short alerts.
 
-NOTIFICATION_RESERVE=45
+NOTIFICATION_RESERVE=20
 
 term_width=$(tput cols 2>/dev/null)
 if ! [ "$term_width" -ge 40 ] 2>/dev/null; then
