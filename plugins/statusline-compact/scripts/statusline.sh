@@ -313,8 +313,8 @@ if [ -n "$session_cost_usd" ] && [ "$session_cost_usd" != "null" ]; then
   compact_cost="${dim}${DOLLAR}${rst}${cost_int}${dim}${cost_frac}${rst}"
 fi
 
-# Model segment: strip "Claude " prefix for compactness
-compact_model_name=$(echo "$model" | sed 's/^Claude //')
+# Model segment: strip "Claude " prefix and " context" suffix for compactness
+compact_model_name=$(echo "$model" | sed 's/^Claude //; s/ context)/)/g')
 compact_model_colored=$(colorize_model "$compact_model_name")
 compact_model=$(echo "$compact_model_colored" | sed -E "s/([0-9]+\.[0-9]+)/${dim}\1${rst}/g")
 
