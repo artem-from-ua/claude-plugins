@@ -1,5 +1,5 @@
 # >>> tribe-coding/plantuml >>>
-# PlantUML URL sync check — installed by plantuml Claude Code plugin.
+# Diagram validation (PlantUML + Mermaid) — installed by plantuml Claude Code plugin.
 # Do not edit between markers; managed automatically by setup-project.sh.
 PLANTUML_STAGED_MD=$(git diff --cached --name-only --diff-filter=ACM -- '*.md')
 
@@ -16,11 +16,12 @@ if [ -n "$PLANTUML_STAGED_MD" ]; then
     done
 
     if [ -n "$PLANTUML_ENCODER" ]; then
-        echo "Checking PlantUML diagrams in: $PLANTUML_STAGED_MD"
+        echo "Checking diagrams in: $PLANTUML_STAGED_MD"
         if ! python3 "$PLANTUML_ENCODER" --check $PLANTUML_STAGED_MD; then
             echo ""
-            echo "Commit blocked: PlantUML URLs out of sync."
-            echo "  Fix: python3 $PLANTUML_ENCODER --sync <file.md>"
+            echo "Commit blocked: diagram validation failed."
+            echo "  PlantUML fix: python3 $PLANTUML_ENCODER --sync <file.md>"
+            echo "  Mermaid fix: check diagram type keywords in source blocks"
             exit 1
         fi
     fi

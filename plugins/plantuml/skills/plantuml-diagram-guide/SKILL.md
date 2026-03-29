@@ -1,73 +1,101 @@
 ---
 name: plantuml-diagram-guide
 description: >
-  Invoked automatically before creating PlantUML diagrams to select the correct type.
-  Covers 17 types: sequence, activity, state, class, ER, component, deployment,
-  timing, mindmap, gantt, WBS, JSON, YAML, network, object, usecase, wireframe.
-  Do NOT create PlantUML without consulting this guide.
-  Keywords: diagram type, which diagram, best diagram, choose diagram, UML.
+  Invoked automatically before creating diagrams (PlantUML or Mermaid) to select
+  the correct type and format. Covers 26 diagram types across both formats.
+  Do NOT create diagrams without consulting this guide.
+  Keywords: diagram type, which diagram, mermaid, plantuml, flowchart, UML.
 ---
 
-# PlantUML Diagram Type Guide
+# Diagram Type Guide
 
-Use this guide to choose the right PlantUML diagram type for documentation. When creating or updating `.md` files, proactively suggest and use the appropriate diagram type.
+Use this guide to choose the right diagram type and format. When creating or updating `.md` files, proactively suggest and use the appropriate diagram type.
+
+**Format preference:** Use Mermaid when both formats support a type - it renders natively in GitHub, Obsidian, and Excalidraw. Use PlantUML when Mermaid doesn't support the type or when you need advanced features.
 
 **IMPORTANT:** Every diagram MUST include a `title` directive immediately after the opening tag. This makes diagrams self-documenting. Example: `title User Authentication Flow`
 
-> **Color coding:** Read `references/colors.md` for the muted pastel palette, color support by diagram type, and legend guidance.
+> **PlantUML color coding:** Read `references/colors.md` for the muted pastel palette, color support by diagram type, and legend guidance.
+>
+> **Mermaid syntax:** Read `references/mermaid-syntax.md` for syntax examples of all Mermaid diagram types.
 
-## Behavioral Diagrams (how things work)
+## Behavioral diagrams (how things work)
 
-| Type | When to use | When to suggest | Syntax |
-|------|-------------|-----------------|--------|
-| **Sequence** | Interactions between processes/services, API call flows, request-response chains. For ≤ 10 arrows add `hide footbox`; for longer diagrams keep footbox for navigation | Spec files with pipeline/API descriptions; new inter-process communication | `@startuml` with `->`, `-->`, `->>` |
-| **Activity** | Algorithms, business logic, decision trees, branching flows, parallel processes | Decision log entries; complex functions with many branches; CI/CD procedures | `@startuml` with `start`, `:action;`, `if/then/else`, `fork` |
-| **State** | State machines, object lifecycles, connection/session/process states | Code with if/else chains that implement a state machine; specs describing behavior with distinct states | `@startuml` with `[*] -->`, `state` |
-| **Use Case** | Functional requirements, actor-system interactions, feature overview | PRD files; new feature overview; user stories | `@startuml` with `actor`, `usecase`, `-->` |
-| **Timing** | Time-based event characteristics, latency profiling, synchronization, timeout/retry logic | Performance documentation; pipeline latency analysis | `@startuml` with `concise`/`robust`, `@` |
+| Type | Format | When to use | When to suggest |
+|------|--------|-------------|-----------------|
+| **Sequence** | Both (prefer Mermaid) | Interactions between processes/services, API call flows, request-response chains | Spec files with pipeline/API descriptions; new inter-process communication |
+| **Activity** | PlantUML only | Algorithms, business logic, decision trees, branching flows, parallel processes | Decision log entries; complex functions with many branches; CI/CD procedures |
+| **State** | Both (prefer Mermaid) | State machines, object lifecycles, connection/session/process states | Code with if/else chains that implement a state machine; specs with distinct states |
+| **Use Case** | PlantUML only | Functional requirements, actor-system interactions, feature overview | PRD files; new feature overview; user stories |
+| **Timing** | PlantUML only | Time-based event characteristics, latency profiling, synchronization, timeout/retry logic | Performance documentation; pipeline latency analysis |
+| **Flowchart** | Mermaid only | General-purpose flow diagrams, decision flows, process maps | Any flow that isn't a strict algorithm (use Activity for those) |
+| **Journey** | Mermaid only | User journey maps showing satisfaction across touchpoints | UX documentation; customer experience mapping |
 
 > **Before creating any sequence diagram**, read `references/sequence.md` for ACK suppression rules, arrow conventions, and visual styling defaults.
 
-## Structural Diagrams (how things are built)
+## Structural diagrams (how things are built)
 
-| Type | When to use | When to suggest | Syntax |
-|------|-------------|-----------------|--------|
-| **Component / Package** | High-level system architecture, layers, module dependencies | Architecture docs; adding new modules; specs showing system composition | `@startuml` with `package`, `component`, `[name]` |
-| **Class** | Class hierarchies, interfaces, data models (dataclasses, Pydantic), entity relationships | Adding new classes/models; refactoring class hierarchy; storage/query models | `@startuml` with `class`, `interface`, inheritance arrows |
-| **Object** | Snapshot of object instances with actual data at a specific point in time | Debugging documentation; showing concrete state examples; test data illustration | `@startuml` with `object`, field values |
-| **ER (Entity-Relationship)** | Database schemas, table relationships with cardinalities (1:N, M:N) | Database storage design; any database work | `@startuml` with `entity`, field definitions, `\|\|--o{` |
-| **Deployment** | Physical deployment topology: processes, threads, file system, cache, network | Architecture deployment docs; Web UI with server + WebSocket | `@startuml` with `node`, `artifact`, `database` |
-| **Network (nwdiag)** | Network topology, servers, subnets, ports | Infrastructure documentation; service communication topology | `@startuml` with `nwdiag { network ... }` |
+| Type | Format | When to use | When to suggest |
+|------|--------|-------------|-----------------|
+| **Component / Package** | PlantUML only | High-level system architecture, layers, module dependencies | Architecture docs; adding new modules; specs showing system composition |
+| **Class** | Both (prefer Mermaid) | Class hierarchies, interfaces, data models (dataclasses, Pydantic) | Adding new classes/models; refactoring class hierarchy |
+| **Object** | PlantUML only | Snapshot of object instances with actual data at a specific point in time | Debugging documentation; showing concrete state examples |
+| **ER (Entity-Relationship)** | Both (prefer Mermaid) | Database schemas, table relationships with cardinalities (1:N, M:N) | Database storage design; any database work |
+| **Deployment** | PlantUML only | Physical deployment topology: processes, threads, file system, cache, network | Architecture deployment docs; infrastructure topology |
+| **Network (nwdiag)** | PlantUML only | Network topology, servers, subnets, ports | Infrastructure documentation; service communication topology |
+| **Block** | Mermaid only | Block diagrams for system architecture, abstract layouts | High-level system overviews where component diagram is overkill |
+| **Requirement** | Mermaid only | Requirements traceability, element-requirement relationships | Requirements documentation; compliance tracing |
 
-## Data & Structure Visualization
+## Data and visualization
 
-| Type | When to use | When to suggest | Syntax |
-|------|-------------|-----------------|--------|
-| **JSON** | Visualize data structures, config files, API request/response formats | API contract documentation; config file structure | `@startjson` |
-| **YAML** | Same as JSON but for YAML-formatted configs | YAML config documentation | `@startyaml` |
+| Type | Format | When to use | When to suggest |
+|------|--------|-------------|-----------------|
+| **JSON** | PlantUML only | Visualize data structures, config files, API request/response formats | API contract documentation; config file structure |
+| **YAML** | PlantUML only | Same as JSON but for YAML-formatted configs | YAML config documentation |
+| **Pie** | Mermaid only | Distribution charts, percentage breakdowns | Usage statistics; resource allocation; survey results |
+| **XY Chart** | Mermaid only | Line/bar charts with numeric axes | Performance metrics; trend visualization |
+| **Sankey** | Mermaid only | Flow volume visualization between nodes | Data flow analysis; resource distribution |
+| **Quadrant** | Mermaid only | Four-quadrant prioritization charts | Priority matrices; risk assessment; effort-impact analysis |
 
-## Project Management & Planning
+## Project management and planning
 
-| Type | When to use | When to suggest | Syntax |
-|------|-------------|-----------------|--------|
-| **MindMap** | Brainstorming, idea hierarchies, feature categorization, project structure overview | Planning new phases; feature overview; backlog/roadmap organization | `@startmindmap` with `*`, `**`, `***` |
-| **Gantt** | Project timelines, phase planning, task dependencies, milestones | Roadmap documentation; sprint/phase planning | `@startgantt` with `[Task] lasts X days` |
-| **WBS** | Work decomposition, task hierarchy, scope visualization | Planning a new phase; breaking Epic into Stories/Tasks | `@startwbs` with `*`, `**` |
-| **Wireframe (Salt)** | UI mockups, interface layouts, form structures | UI design; UI-related PRDs | `@startsalt` with `{ }` layout blocks |
+| Type | Format | When to use | When to suggest |
+|------|--------|-------------|-----------------|
+| **MindMap** | Both (prefer Mermaid) | Brainstorming, idea hierarchies, feature categorization, project structure overview | Planning new phases; feature overview; backlog/roadmap organization |
+| **Gantt** | Both (prefer Mermaid) | Project timelines, phase planning, task dependencies, milestones | Roadmap documentation; sprint/phase planning |
+| **WBS** | PlantUML only | Work decomposition, task hierarchy, scope visualization | Planning a new phase; breaking Epic into Stories/Tasks |
+| **Wireframe (Salt)** | PlantUML only | UI mockups, interface layouts, form structures | UI design; UI-related PRDs |
+| **Timeline** | Mermaid only | Chronological event visualization, historical progressions | Milestone history; release timelines; incident postmortems |
+| **GitGraph** | Mermaid only | Git branch and merge visualization | Branching strategy documentation; release flow |
 
-## Quick Selection Guide
+## Terminal rendering reference
 
-- **"Who sends what to whom?"** → Sequence
-- **"What are the system parts?"** → Component / Package
-- **"What states can this be in?"** → State
-- **"What's the algorithm/flow?"** → Activity
-- **"What can users do?"** → Use Case
-- **"What do the classes look like?"** → Class
-- **"What's in the database?"** → ER Diagram
-- **"Where does it run?"** → Deployment
-- **"What's the config/data format?"** → JSON/YAML
-- **"How long does each step take?"** → Timing
-- **"What's the plan/scope?"** → MindMap, WBS, or Gantt
-- **"What will the UI look like?"** → Wireframe (Salt)
-- **"What's the network setup?"** → Network (nwdiag)
-- **"What does a concrete instance look like?"** → Object
+When showing diagrams in terminal/conversation (not writing to files):
+
+**Mermaid:** Draw a hand-drawn ASCII approximation directly from the source. Do NOT call any external API. Do NOT show the raw mermaid source before the ASCII.
+
+**PlantUML ASCII-friendly types** (sequence, activity, state, class, component, object, usecase): fetch ASCII via WebFetch from `https://www.plantuml.com/plantuml/txt/<encoded>`, display it, then show `[View SVG](https://www.plantuml.com/plantuml/svg/<encoded>)`. On failure: retry simpler, then fall back to box-drawing ASCII.
+
+**PlantUML link-only types** (timing, gantt, mindmap, WBS, wireframe, network, JSON, YAML, ER, deployment): show source in fenced `plantuml` block + SVG link.
+
+## Quick selection guide
+
+- **"Who sends what to whom?"** - Sequence (Mermaid)
+- **"What's the flow?"** - Flowchart (Mermaid) or Activity (PlantUML for complex branching)
+- **"What are the system parts?"** - Component (PlantUML) or Block (Mermaid)
+- **"What states can this be in?"** - State (Mermaid)
+- **"What can users do?"** - Use Case (PlantUML)
+- **"What do the classes look like?"** - Class (Mermaid)
+- **"What's in the database?"** - ER Diagram (Mermaid)
+- **"Where does it run?"** - Deployment (PlantUML)
+- **"What's the config/data format?"** - JSON/YAML (PlantUML)
+- **"How long does each step take?"** - Timing (PlantUML)
+- **"What's the plan/scope?"** - MindMap (Mermaid), WBS (PlantUML), or Gantt (Mermaid)
+- **"What will the UI look like?"** - Wireframe/Salt (PlantUML)
+- **"What's the network setup?"** - Network/nwdiag (PlantUML)
+- **"What does a concrete instance look like?"** - Object (PlantUML)
+- **"Show the distribution/percentage"** - Pie (Mermaid)
+- **"Show the git branching strategy"** - GitGraph (Mermaid)
+- **"Show the user journey"** - Journey (Mermaid)
+- **"Show trends or metrics"** - XY Chart (Mermaid)
+- **"Prioritize items in quadrants"** - Quadrant (Mermaid)

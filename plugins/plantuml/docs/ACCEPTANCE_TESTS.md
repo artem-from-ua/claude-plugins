@@ -1,16 +1,16 @@
-# PlantUML Plugin Acceptance Tests
+# Diagram Plugin Acceptance Tests (PlantUML + Mermaid)
 
 ## Purpose
 
-This document defines acceptance criteria and test scenarios for the PlantUML plugin. Use it to:
+This document defines acceptance criteria and test scenarios for the diagram plugin (PlantUML + Mermaid). Use it to:
 - Validate all components work correctly before releasing new versions
 - Perform regression testing after refactoring or bug fixes
 - Onboard new contributors by demonstrating expected behavior
 
-The PlantUML plugin provides automatic synchronization of PlantUML diagrams in markdown files through multiple integrated components:
-- **Hooks** (SessionStart, PostToolUse) for automatic rule injection and synchronization
-- **Scripts** (Python encoder, bash wrappers) for processing PlantUML code
-- **Commands/Skills** for manual validation and diagram type selection
+The plugin provides diagram automation in markdown files through multiple integrated components:
+- **Hooks** (SessionStart, PostToolUse) for automatic rule injection, URL synchronization, and syntax validation
+- **Scripts** (Python encoder/validator, bash wrappers) for processing PlantUML and Mermaid code
+- **Commands/Skills** for manual validation and diagram type selection (26 types across both formats)
 - **Templates** for git pre-commit hooks and CI/CD workflows
 
 ## Test Execution Order
@@ -2155,8 +2155,101 @@ Document any known test failures or limitations here:
 
 ---
 
+## Test 13: Mermaid Syntax Validation
+
+**Component:** `plantuml-encode.py --check-mermaid-only` and `--check`
+
+### 13.1: Valid mermaid blocks pass
+
+**Steps:**
+1. Create a `.md` file with valid mermaid blocks (sequenceDiagram, flowchart, erDiagram, etc.)
+2. Run `python3 plantuml-encode.py --check-mermaid-only <file>`
+3. Verify exit code 0 and success message
+
+### 13.2: Invalid mermaid type detected
+
+**Steps:**
+1. Create a `.md` file with `\`\`\`mermaid\nbadtype\n  content\n\`\`\``
+2. Run `python3 plantuml-encode.py --check-mermaid-only <file>`
+3. Verify exit code 1 and error message with "unrecognized diagram type"
+
+### 13.3: Empty mermaid block detected
+
+**Steps:**
+1. Create a `.md` file with `\`\`\`mermaid\n\`\`\``
+2. Run `python3 plantuml-encode.py --check-mermaid-only <file>`
+3. Verify exit code 1 and error message with "empty"
+
+### 13.4: Combined --check validates both formats
+
+**Steps:**
+1. Create a `.md` file with both a PlantUML block (no URL) and a valid mermaid block
+2. Run `python3 plantuml-encode.py --check <file>`
+3. Verify exit code 1 (PlantUML URL missing) but mermaid block passes
+4. Add an invalid mermaid block, re-run
+5. Verify both PlantUML and Mermaid errors reported
+
+## Test 14: Mermaid PostToolUse Validation
+
+**Component:** `sync-plantuml.sh`
+
+### 14.1: PostToolUse validates mermaid syntax
+
+**Steps:**
+1. Write a `.md` file with a valid mermaid block via Claude Code
+2. Verify PostToolUse hook runs without errors (mermaid validation pass)
+3. Write a `.md` file with an invalid mermaid block
+4. Verify PostToolUse outputs mermaid warning but does not block (non-blocking)
+
+### 14.2: PostToolUse does not add URLs to mermaid blocks
+
+**Steps:**
+1. Write a `.md` file with only mermaid blocks (no plantuml)
+2. Verify no image URLs are added after mermaid blocks
+3. File should contain only the `\`\`\`mermaid` code block, nothing else
+
+## Test 15: Mermaid Pre-commit Validation
+
+**Component:** `templates/pre-commit`
+
+### 15.1: Pre-commit blocks invalid mermaid
+
+**Steps:**
+1. Stage a `.md` file with an invalid mermaid block
+2. Attempt `git commit`
+3. Verify commit is blocked with "diagram validation failed" message
+
+### 15.2: Pre-commit passes valid mermaid
+
+**Steps:**
+1. Stage a `.md` file with only valid mermaid blocks
+2. Attempt `git commit`
+3. Verify commit succeeds
+
+## Test 16: Mermaid Terminal Rendering (Manual)
+
+**Component:** Behavioral — Claude's response in conversation
+
+### 16.1: ASCII approximation without API
+
+**Steps:**
+1. Ask Claude to draw a sequence diagram during conversation
+2. Verify Claude uses Mermaid format and draws ASCII approximation
+3. Verify no external API call is made (no WebFetch for mermaid)
+4. Verify raw mermaid source is NOT shown before the ASCII art
+
+### 16.2: Diagram guide recommends mermaid
+
+**Steps:**
+1. Ask Claude to create a sequence diagram
+2. Verify `plantuml-diagram-guide` skill is invoked
+3. Verify Mermaid is recommended as the default format for sequence diagrams
+
+---
+
 ## References
 
 - [Plugin Source Code](../README.md)
 - [agentskills.io Specification](https://agentskills.io/specification)
 - [PlantUML Official Documentation](https://plantuml.com/)
+- [Mermaid Official Documentation](https://mermaid.js.org/)

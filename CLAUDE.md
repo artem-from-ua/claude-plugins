@@ -37,7 +37,7 @@ A marketplace of reusable Claude Code plugins (`Tribe Coding`). Each plugin live
 ## Plugins
 
 - **ai-fortune** — Career direction analysis: interview + AI usage pattern mining
-- **plantuml** — Keeps PlantUML diagram URLs in sync; provides ASCII rendering in terminal
+- **plantuml** — Diagram automation (PlantUML + Mermaid): auto-sync URLs, syntax validation, type guide
 - **statusline** — Three-line statusline: rate limits, context/branch, extra usage
 - **statusline-compact** — Single-line statusline with brightness-coded API usage
 - **git-branch-naming** — Enforces branch naming conventions (prefix/kebab-case)
