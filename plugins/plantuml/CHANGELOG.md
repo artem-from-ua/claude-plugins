@@ -5,6 +5,25 @@ All notable changes to the PlantUML plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-03-29
+
+### Added
+- **Mermaid diagram support** across the entire plugin
+- Mermaid syntax validation in `plantuml-encode.py` (`--check` now validates both formats, `--check-mermaid-only` for mermaid-only)
+- 9 Mermaid-only diagram types in diagram guide: flowchart, pie, gitgraph, timeline, sankey, XY chart, quadrant, requirement, block, journey
+- `references/mermaid-syntax.md` — syntax examples for all Mermaid diagram types
+- PostToolUse hook validates Mermaid syntax on `.md` file edits (non-blocking warnings)
+- Pre-commit template validates both PlantUML URLs and Mermaid syntax
+
+### Changed
+- **BREAKING:** SessionStart rules restructured for dual-format (Mermaid + PlantUML)
+- **BREAKING:** `--check` flag now validates both PlantUML URLs AND Mermaid syntax (previously PlantUML only)
+- Diagram guide SKILL.md expanded from 17 to 26 diagram types with Format column and recommendations
+- Default format preference: Mermaid when both formats support a type
+- Terminal rendering for Mermaid: hand-drawn ASCII approximation (no API call, no raw source shown)
+- Pre-commit error messages updated for both formats
+- Validation command covers both PlantUML and Mermaid
+
 ## [1.8.0] - 2026-03-07
 
 ### Added

@@ -261,7 +261,7 @@ Add architecture or flow diagrams when:
 - The data flow is non-obvious
 - Onboarding without a diagram requires reading 3+ files
 
-Use PlantUML (integrate with the plantuml plugin if available).
+Use Mermaid (preferred for native rendering) or PlantUML (integrate with the plantuml plugin if available).
 
 ## Size Guidelines
 

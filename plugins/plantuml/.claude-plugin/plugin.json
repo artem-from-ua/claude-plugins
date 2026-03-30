@@ -1,7 +1,7 @@
 {
   "name": "plantuml",
-  "version": "1.8.1",
-  "description": "PlantUML diagram automation: auto-sync, validation, diagram type guide",
+  "version": "2.0.0",
+  "description": "Diagram automation (PlantUML + Mermaid): auto-sync, validation, diagram type guide",
   "author": {
     "name": "Tribe Coding"
   },

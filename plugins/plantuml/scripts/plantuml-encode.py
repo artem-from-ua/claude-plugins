@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Encode PlantUML text into a URL for https://www.plantuml.com/plantuml/
+Diagram tool: encode PlantUML URLs and validate Mermaid syntax in markdown.
 
 Usage:
-    # Encode from stdin
+    # Encode PlantUML from stdin
     echo '@startuml\nAlice -> Bob: Hello\n@enduml' | python3 plantuml-encode.py
 
     # Encode from file
@@ -18,8 +18,11 @@ Usage:
     # Sync all PlantUML blocks in a markdown file (auto-fix)
     python3 plantuml-encode.py --sync README.md
 
-    # Check for mismatches without modifying files (exit 1 if errors)
+    # Check both PlantUML URLs and Mermaid syntax (exit 1 if errors)
     python3 plantuml-encode.py --check README.md docs/*.md
+
+    # Check only Mermaid syntax (exit 1 if errors)
+    python3 plantuml-encode.py --check-mermaid-only README.md
 """
 
 import sys
@@ -93,6 +96,72 @@ def render_ascii(text):
     except Exception as e:
         print(f"Error: Unexpected error while rendering ASCII: {e}", file=sys.stderr)
         return None
+
+
+MERMAID_DIAGRAM_KEYWORDS = {
+    'sequenceDiagram', 'flowchart', 'graph', 'classDiagram', 'stateDiagram',
+    'stateDiagram-v2', 'erDiagram', 'gantt', 'pie', 'mindmap', 'gitGraph',
+    'timeline', 'sankey-beta', 'xychart-beta', 'quadrantChart',
+    'requirementDiagram', 'block-beta', 'journey', 'C4Context', 'C4Container',
+    'C4Component', 'C4Deployment', 'packet-beta', 'kanban', 'architecture-beta',
+}
+
+
+def validate_mermaid_block(source, block_num=1, line_num=1, filepath=""):
+    """
+    Validate a single mermaid code block using structural checks.
+    Returns a list of error dicts (empty = valid).
+    """
+    errors = []
+    stripped = source.strip()
+
+    if not stripped:
+        errors.append({
+            'file': filepath,
+            'block': block_num,
+            'line': line_num,
+            'type': 'mermaid_empty',
+            'message': f"Mermaid block #{block_num} (line {line_num}) is empty."
+        })
+        return errors
+
+    first_line = stripped.split('\n')[0].strip()
+    # Extract the keyword (first word, possibly with direction like "flowchart TD")
+    first_word = first_line.split()[0] if first_line.split() else ''
+
+    if first_word not in MERMAID_DIAGRAM_KEYWORDS:
+        errors.append({
+            'file': filepath,
+            'block': block_num,
+            'line': line_num,
+            'type': 'mermaid_unknown_type',
+            'message': (
+                f"Mermaid block #{block_num} (line {line_num}): "
+                f"unrecognized diagram type '{first_word}'. "
+                f"Expected one of: {', '.join(sorted(MERMAID_DIAGRAM_KEYWORDS))}"
+            )
+        })
+
+    return errors
+
+
+def check_markdown_mermaid(filepath):
+    """
+    Validate all Mermaid code blocks in a markdown file.
+    Returns a list of error dicts. Empty list = all OK.
+    """
+    with open(filepath, 'r') as f:
+        content = f.read()
+
+    errors = []
+    pattern = re.compile(r'```mermaid\s*\n(.*?)```', re.DOTALL)
+
+    for i, match in enumerate(pattern.finditer(content), 1):
+        source = match.group(1)
+        line_num = content[:match.start()].count('\n') + 1
+        errors.extend(validate_mermaid_block(source, i, line_num, filepath))
+
+    return errors
 
 
 def check_markdown(filepath):
@@ -195,36 +264,56 @@ def sync_markdown(filepath):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="PlantUML URL encoder")
+    parser = argparse.ArgumentParser(description="Diagram tool: PlantUML URL encoder + Mermaid validator")
     parser.add_argument('--format', '-f', default='svg', choices=['svg', 'png', 'txt'],
                         help='Output format (default: svg)')
     parser.add_argument('--sync', '-s', metavar='FILE', nargs='+',
                         help='Sync PlantUML image URLs in markdown file(s)')
     parser.add_argument('--check', '-c', metavar='FILE', nargs='+',
-                        help='Check PlantUML image URLs match source (exit 1 if mismatch)')
+                        help='Check PlantUML URLs and Mermaid syntax (exit 1 if errors)')
+    parser.add_argument('--check-mermaid-only', metavar='FILE', nargs='+',
+                        help='Check only Mermaid syntax in markdown file(s)')
     parser.add_argument('--encode-only', '-e', action='store_true',
                         help='Output only the encoded string, not full URL')
     parser.add_argument('--render-ascii', '-r', action='store_true',
                         help='Render ASCII diagram directly from PlantUML API (reads from stdin)')
     args = parser.parse_args()
 
-    if args.check:
+    if args.check_mermaid_only:
         all_errors = []
-        for filepath in args.check:
-            errors = check_markdown(filepath)
-            all_errors.extend(errors)
+        for filepath in args.check_mermaid_only:
+            all_errors.extend(check_markdown_mermaid(filepath))
         if all_errors:
             print(f"\n{'='*60}", file=sys.stderr)
-            print(f"PLANTUML SYNC ERRORS: {len(all_errors)} issue(s) found", file=sys.stderr)
+            print(f"MERMAID SYNTAX ERRORS: {len(all_errors)} issue(s) found", file=sys.stderr)
             print(f"{'='*60}\n", file=sys.stderr)
             for err in all_errors:
                 print(f"  ✗ {err['file']}: {err['message']}\n", file=sys.stderr)
-            print(f"Fix all issues by running:", file=sys.stderr)
-            files = ' '.join(sorted(set(e['file'] for e in all_errors)))
-            print(f"  plantuml-encode.py --sync {files}\n", file=sys.stderr)
             sys.exit(1)
         else:
-            print(f"All PlantUML diagrams are in sync across {len(args.check)} file(s).")
+            print(f"All Mermaid diagrams valid across {len(args.check_mermaid_only)} file(s).")
+    elif args.check:
+        all_errors = []
+        for filepath in args.check:
+            all_errors.extend(check_markdown(filepath))
+            all_errors.extend(check_markdown_mermaid(filepath))
+        if all_errors:
+            plantuml_errors = [e for e in all_errors if not e['type'].startswith('mermaid_')]
+            mermaid_errors = [e for e in all_errors if e['type'].startswith('mermaid_')]
+            print(f"\n{'='*60}", file=sys.stderr)
+            print(f"DIAGRAM VALIDATION ERRORS: {len(all_errors)} issue(s) found", file=sys.stderr)
+            print(f"{'='*60}\n", file=sys.stderr)
+            for err in all_errors:
+                print(f"  ✗ {err['file']}: {err['message']}\n", file=sys.stderr)
+            if plantuml_errors:
+                files = ' '.join(sorted(set(e['file'] for e in plantuml_errors)))
+                print(f"Fix PlantUML issues: plantuml-encode.py --sync {files}", file=sys.stderr)
+            if mermaid_errors:
+                print(f"Fix Mermaid issues: check diagram type keywords in source blocks", file=sys.stderr)
+            print("", file=sys.stderr)
+            sys.exit(1)
+        else:
+            print(f"All diagrams valid across {len(args.check)} file(s).")
     elif args.sync:
         for filepath in args.sync:
             sync_markdown(filepath)
