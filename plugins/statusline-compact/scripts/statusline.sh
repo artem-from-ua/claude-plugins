@@ -11,7 +11,7 @@
 # Brightness-coded values: dim at low usage, brighter as they climb,
 # yellow >90%, red at 100%. Text indicators: !! warning, XX exhausted.
 #
-# Data source: Anthropic OAuth usage API, cached for 60s
+# Data source: rate_limits from Claude Code statusline input JSON (v2.1.80+)
 
 input=$(cat)
 
@@ -81,29 +81,11 @@ colorize_model() {
   fi
 }
 
-# Parse reset timestamp to epoch seconds
-parse_reset_epoch() {
-  local resets_at="$1"
-  if [ -z "$resets_at" ] || [ "$resets_at" = "null" ]; then
-    echo ""
-    return
-  fi
-  local normalized
-  normalized=$(echo "$resets_at" | sed 's/\.[0-9]*+00:00$//' | sed 's/+00:00$//')
-  if [ "$(uname)" = "Darwin" ]; then
-    date -juf "%Y-%m-%dT%H:%M:%S" "$normalized" +%s 2>/dev/null
-  else
-    date -ud "$normalized" +%s 2>/dev/null
-  fi
-}
-
-# Format time remaining
+# Format time remaining from epoch seconds
 format_time_remaining() {
-  local resets_at="$1"
+  local reset_epoch="$1"
   local threshold_hours="$2"
-  local reset_epoch
-  reset_epoch=$(parse_reset_epoch "$resets_at")
-  if [ -z "$reset_epoch" ]; then
+  if [ -z "$reset_epoch" ] || [ "$reset_epoch" = "null" ]; then
     echo ""
     return
   fi
@@ -176,61 +158,17 @@ fi
 
 short_dir=$(basename "$cwd")
 
-# Fetch usage data from Anthropic API (cached for 60 seconds)
-cache_file="/tmp/claude-statusline-usage-cache-${UID}"
-cache_max_age=60
-now=$(date +%s)
-use_cache=false
-
-if [ -f "$cache_file" ]; then
-  if [ "$(uname)" = "Darwin" ]; then
-    cache_mtime=$(stat -f %m "$cache_file" 2>/dev/null || echo 0)
-  else
-    cache_mtime=$(stat -c %Y "$cache_file" 2>/dev/null || echo 0)
-  fi
-  cache_age=$(( now - cache_mtime ))
-  if [ "$cache_age" -lt "$cache_max_age" ]; then
-    use_cache=true
-  fi
-fi
-
-usage_json=""
-if [ "$use_cache" = true ]; then
-  usage_json=$(cat "$cache_file" 2>/dev/null)
-else
-  token=""
-  if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
-    token="$CLAUDE_CODE_OAUTH_TOKEN"
-  elif [ "$(uname)" = "Darwin" ]; then
-    token=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['claudeAiOauth']['accessToken'])" 2>/dev/null)
-  elif [ -f "${HOME}/.claude/.credentials.json" ]; then
-    token=$(jq -r '.claudeAiOauth.accessToken' "${HOME}/.claude/.credentials.json" 2>/dev/null)
-  fi
-  if [ -n "$token" ]; then
-    usage_json=$(curl -s --connect-timeout 2 --max-time 3 \
-      -H "Authorization: Bearer $token" \
-      -H "anthropic-beta: oauth-2025-04-20" \
-      "https://api.anthropic.com/api/oauth/usage" 2>/dev/null)
-    if echo "$usage_json" | jq -e '.five_hour' > /dev/null 2>&1; then
-      echo "$usage_json" > "$cache_file"
-    else
-      usage_json=""
-      if [ -f "$cache_file" ]; then
-        usage_json=$(cat "$cache_file" 2>/dev/null)
-      fi
-    fi
-  fi
-fi
+# Rate limits from Claude Code statusline input (available since v2.1.80)
+five_hour_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
+five_hour_resets=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
+seven_day_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+seven_day_resets=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
 
 # ===== BUILD COMPACT SEGMENTS =====
 
 # 5h segment
 compact_5h=""
-if [ -n "$usage_json" ]; then
-  five_hour_pct=$(echo "$usage_json" | jq -r '.five_hour.utilization // empty')
-  five_hour_resets=$(echo "$usage_json" | jq -r '.five_hour.resets_at // empty')
-
-  if [ -n "$five_hour_pct" ]; then
+if [ -n "$five_hour_pct" ]; then
     five_int=${five_hour_pct%.*}
     five_remaining=$(format_time_remaining "$five_hour_resets" 2)
     five_time_with_dim=$(dim_time_units "$five_remaining")
@@ -245,16 +183,11 @@ if [ -n "$usage_json" ]; then
       c5_time=" ${five_time_with_dim}"
     fi
     compact_5h="${dim}5h${rst} ${c5_pct}${c5_time}${c5_suffix}"
-  fi
 fi
 
 # 7d segment
 compact_7d=""
-if [ -n "$usage_json" ]; then
-  seven_day_pct=$(echo "$usage_json" | jq -r '.seven_day.utilization // empty')
-  seven_day_resets=$(echo "$usage_json" | jq -r '.seven_day.resets_at // empty')
-
-  if [ -n "$seven_day_pct" ]; then
+if [ -n "$seven_day_pct" ]; then
     seven_int=${seven_day_pct%.*}
     seven_remaining=$(format_time_remaining "$seven_day_resets" 48)
     seven_time_with_dim=$(dim_time_units "$seven_remaining")
@@ -269,7 +202,6 @@ if [ -n "$usage_json" ]; then
       c7_time=" ${seven_time_with_dim}"
     fi
     compact_7d="${dim}7d${rst} ${c7_pct}${c7_time}${c7_suffix}"
-  fi
 fi
 
 # Session cost segment: "$0.42"
