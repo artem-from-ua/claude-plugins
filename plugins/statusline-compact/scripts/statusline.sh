@@ -3,7 +3,7 @@
 # Reads JSON from stdin (piped by Claude Code)
 #
 # Layout:
-#   5h 12% ~2h14m   7d 45% ~3d5h   $0.42   Sonnet 4.5   context 52%   my-project/   main
+#   5h 12% ~2h14m  7d 45% ~3d5h  $0.42  Sonnet 4.5  52%  my-project/  main
 #
 # Progressive hiding: when terminal is narrow, drops segments to leave room
 # for Claude Code system notifications. Drop order: dir, cost.
@@ -29,13 +29,13 @@ visual_width() {
   printf '%s' "$1" | sed $'s/\x1b\\[[0-9;]*m//g' | wc -m | tr -d ' '
 }
 
-# Join non-empty segments with 3-space gaps
+# Join non-empty segments with 2-space gaps
 assemble_line() {
   local line=""
   for seg in "$@"; do
     if [ -n "$seg" ]; then
       if [ -n "$line" ]; then
-        line="${line}   ${seg}"
+        line="${line}  ${seg}"
       else
         line="${seg}"
       fi
@@ -241,7 +241,7 @@ if [ -n "$usage_json" ]; then
     [ "$five_int" -ge 100 ] 2>/dev/null && c5_suffix=" ${bright_red}XX${rst}"
     [ "$five_int" -gt 90 ] 2>/dev/null && [ "$five_int" -lt 100 ] 2>/dev/null && c5_suffix=" ${yellow}!!${rst}"
     c5_time=""
-    if [ -n "$five_remaining" ]; then
+    if [ -n "$five_remaining" ] && [ "$five_int" -ge 60 ] 2>/dev/null; then
       c5_time=" ${five_time_with_dim}"
     fi
     compact_5h="${dim}5h${rst} ${c5_pct}${c5_time}${c5_suffix}"
@@ -265,7 +265,7 @@ if [ -n "$usage_json" ]; then
     [ "$seven_int" -ge 100 ] 2>/dev/null && c7_suffix=" ${bright_red}XX${rst}"
     [ "$seven_int" -gt 90 ] 2>/dev/null && [ "$seven_int" -lt 100 ] 2>/dev/null && c7_suffix=" ${yellow}!!${rst}"
     c7_time=""
-    if [ -n "$seven_remaining" ]; then
+    if [ -n "$seven_remaining" ] && [ "$seven_int" -ge 60 ] 2>/dev/null; then
       c7_time=" ${seven_time_with_dim}"
     fi
     compact_7d="${dim}7d${rst} ${c7_pct}${c7_time}${c7_suffix}"
@@ -284,17 +284,17 @@ if [ -n "$session_cost_usd" ] && [ "$session_cost_usd" != "null" ]; then
   compact_cost="${dim}${DOLLAR}${rst}${cost_int}${dim}${cost_frac}${rst}"
 fi
 
-# Model segment: strip "Claude " prefix and " context" suffix for compactness
-compact_model_name=$(echo "$model" | sed 's/^Claude //; s/ context)/)/g')
+# Model segment: strip "Claude " prefix and parenthetical suffix (e.g. "(1M context)")
+compact_model_name=$(echo "$model" | sed 's/^Claude //; s/ ([^)]*)$//g')
 compact_model_colored=$(colorize_model "$compact_model_name")
 compact_model=$(echo "$compact_model_colored" | sed -E "s/([0-9]+\.[0-9]+)/${dim}\1${rst}/g")
 
-# Context segment
+# Context segment: bare percentage (distinguishable from 5h/7d by lack of prefix)
 compact_ctx=""
 if [ -n "$used_pct" ]; then
   context_int=${used_pct%.*}
   ctx_c=$(pct_color "$context_int")
-  compact_ctx="${dim}context${rst} ${ctx_c}${used_pct}%${rst}"
+  compact_ctx="${ctx_c}${used_pct}%${rst}"
   [ "$context_int" -ge 80 ] 2>/dev/null && compact_ctx="${compact_ctx} ${bright_red}!!${rst}"
 fi
 
@@ -333,9 +333,9 @@ fi
 
 # ===== PROGRESSIVE HIDING =====
 # Claude Code appends system notifications to the right of the last statusline line.
-# Reserve space so notifications aren't truncated. 20 chars fits most short alerts.
+# Reserve: 0 because notifications are rare and the statusline is already tight.
 
-NOTIFICATION_RESERVE=10
+NOTIFICATION_RESERVE=0
 
 term_width=$(tput cols 2>/dev/null)
 if ! [ "$term_width" -ge 40 ] 2>/dev/null; then
