@@ -3,10 +3,10 @@
 # Reads JSON from stdin (piped by Claude Code)
 #
 # Layout:
-#   5h 12% ~2h14m   7d 45% ~3d5h   extra $4.79   $0.42   Sonnet 4.5   context 52%   my-project/   main
+#   5h 12% ~2h14m   7d 45% ~3d5h   $0.42   Sonnet 4.5   context 52%   my-project/   main
 #
 # Progressive hiding: when terminal is narrow, drops segments to leave room
-# for Claude Code system notifications. Drop order: dir, cost, extra usage.
+# for Claude Code system notifications. Drop order: dir, cost.
 #
 # Brightness-coded values: dim at low usage, brighter as they climb,
 # yellow >90%, red at 100%. Text indicators: !! warning, XX exhausted.
@@ -272,35 +272,6 @@ if [ -n "$usage_json" ]; then
   fi
 fi
 
-# Extra usage segment: "extra $4.79" or "extra>> $13.87"
-compact_mo=""
-if [ -n "$usage_json" ]; then
-  extra_enabled=$(echo "$usage_json" | jq -r '.extra_usage.is_enabled // empty')
-  if [ "$extra_enabled" = "true" ]; then
-    used_credits=$(echo "$usage_json" | jq -r '.extra_usage.used_credits // empty')
-    if [ -n "$used_credits" ]; then
-      money_raw=$(echo "$used_credits" | awk '{printf "%.2f", $1/100}')
-      money_int=$(echo "$money_raw" | sed 's/[.,].*//')
-      money_frac=$(echo "$money_raw" | grep -o '[.,][0-9]*$')
-
-      # Determine play/pause status
-      mo_suffix=""
-      extra_utilization=$(echo "$usage_json" | jq -r '.extra_usage.utilization // empty')
-      if [ -n "$extra_utilization" ] && [ "$extra_utilization" != "null" ]; then
-        extra_int=${extra_utilization%.*}
-        if [ "$extra_int" -lt 100 ] 2>/dev/null; then
-          if [ -n "$five_int" ] && [ "$five_int" -eq 100 ] 2>/dev/null; then
-            mo_suffix="${bright_red}>>${rst}"
-          elif [ -n "$seven_int" ] && [ "$seven_int" -eq 100 ] 2>/dev/null; then
-            mo_suffix="${bright_red}>>${rst}"
-          fi
-        fi
-      fi
-      compact_mo="${dim}extra${rst}${mo_suffix} ${dim}${DOLLAR}${rst}${money_int}${dim}${money_frac}${rst}"
-    fi
-  fi
-fi
-
 # Session cost segment: "$0.42"
 compact_cost=""
 session_cost_usd=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
@@ -331,20 +302,40 @@ fi
 compact_dir="${short_dir}${dim}/${rst}"
 
 # Branch segment: "main" or "main*" (yellow if dirty)
+# Truncate long branches: "chore/statusline-compact-model-label" -> "chore/sta..label"
+MAX_BRANCH=20
 compact_branch=""
 if [ -n "$branch" ]; then
+  display_branch="$branch"
+  if [ "${#branch}" -gt "$MAX_BRANCH" ]; then
+    prefix="${branch%%/*}"
+    suffix="${branch##*/}"
+    if [ "$prefix" != "$branch" ]; then
+      # Has a prefix/ - truncate the description part
+      budget=$(( MAX_BRANCH - ${#prefix} - 1 - 2 ))  # -1 for /, -2 for ..
+      if [ "$budget" -gt 4 ]; then
+        keep_start=$(( budget / 2 ))
+        keep_end=$(( budget - keep_start ))
+        display_branch="${prefix}/${suffix:0:$keep_start}..${suffix: -$keep_end}"
+      else
+        display_branch="${branch:0:$(( MAX_BRANCH - 2 ))}.."
+      fi
+    else
+      display_branch="${branch:0:$(( MAX_BRANCH - 2 ))}.."
+    fi
+  fi
   if [ -n "$dirty" ]; then
-    compact_branch="${yellow}${branch}*${rst}"
+    compact_branch="${yellow}${display_branch}*${rst}"
   else
-    compact_branch="${branch}"
+    compact_branch="${display_branch}"
   fi
 fi
 
 # ===== PROGRESSIVE HIDING =====
 # Claude Code appends system notifications to the right of the last statusline line.
-# Reserve space so notifications (e.g. "auto mode is unavailable for your plan") aren't truncated.
+# Reserve space so notifications aren't truncated. 20 chars fits most short alerts.
 
-NOTIFICATION_RESERVE=45
+NOTIFICATION_RESERVE=10
 
 term_width=$(tput cols 2>/dev/null)
 if ! [ "$term_width" -ge 40 ] 2>/dev/null; then
@@ -355,25 +346,20 @@ if [ -n "$term_width" ]; then
   available=$(( term_width - NOTIFICATION_RESERVE ))
 
   # Level 0: all segments
-  compact_line=$(assemble_line "$compact_5h" "$compact_7d" "$compact_mo" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch")
+  compact_line=$(assemble_line "$compact_5h" "$compact_7d" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch")
 
   if [ "$(visual_width "$compact_line")" -gt "$available" ]; then
     # Level 1: drop directory
-    compact_line=$(assemble_line "$compact_5h" "$compact_7d" "$compact_mo" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_branch")
+    compact_line=$(assemble_line "$compact_5h" "$compact_7d" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_branch")
   fi
 
   if [ "$(visual_width "$compact_line")" -gt "$available" ]; then
     # Level 2: drop session cost
-    compact_line=$(assemble_line "$compact_5h" "$compact_7d" "$compact_mo" "$compact_model" "$compact_ctx" "$compact_branch")
-  fi
-
-  if [ "$(visual_width "$compact_line")" -gt "$available" ]; then
-    # Level 3: drop extra usage (only required segments remain)
     compact_line=$(assemble_line "$compact_5h" "$compact_7d" "$compact_model" "$compact_ctx" "$compact_branch")
   fi
 else
   # Fallback: no terminal width detected, show everything
-  compact_line=$(assemble_line "$compact_5h" "$compact_7d" "$compact_mo" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch")
+  compact_line=$(assemble_line "$compact_5h" "$compact_7d" "$compact_cost" "$compact_model" "$compact_ctx" "$compact_dir" "$compact_branch")
 fi
 
 echo "$compact_line"
