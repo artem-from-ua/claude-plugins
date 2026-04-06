@@ -55,6 +55,27 @@ elif [[ -f "$CONFIG_FILE" ]]; then
   echo "warning: git-branch-naming config file '$CONFIG_FILE' exists but 'jq' is not installed; using built-in defaults instead." >&2
 fi
 
+# ─── Check for delete-only push ──────────────────────────────────────────────
+
+# Git pre-push hook receives refspec info on stdin:
+#   <local ref> <local sha> <remote ref> <remote sha>
+# For delete operations, local_sha is the zero SHA (40 zeros).
+# If all refs are deletes, skip all checks — no code is being pushed.
+
+ZERO_SHA="0000000000000000000000000000000000000000"
+IS_DELETE_ONLY=true
+
+while IFS=' ' read -r _local_ref local_sha _remote_ref _remote_sha; do
+  if [[ "$local_sha" != "$ZERO_SHA" ]]; then
+    IS_DELETE_ONLY=false
+    break
+  fi
+done
+
+if [[ "$IS_DELETE_ONLY" == "true" ]]; then
+  exit 0
+fi
+
 # ─── Get current branch ───────────────────────────────────────────────────────
 
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)

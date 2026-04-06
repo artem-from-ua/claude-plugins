@@ -342,6 +342,11 @@ fi
 
 # git push — check protected branch + content mismatch
 if echo "$CMD" | grep -qE '^git\s+push(\s|$)'; then
+  # Skip checks for branch deletion operations (--delete, -d, :refspec)
+  if echo "$CMD" | grep -qE '\s(--delete|-d)\s' || echo "$CMD" | grep -qE '\s:[^[:space:]]'; then
+    exit 0
+  fi
+
   # Get current branch
   CURRENT_BRANCH=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
 
