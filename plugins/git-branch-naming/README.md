@@ -140,20 +140,16 @@ Examples:
 
 ## 📦 Installation <a name="installation"></a>
 
-### 1. Add to `enabledPlugins`
-
-In your project's `.claude/settings.json`:
-```json
-{
-  "enabledPlugins": {
-    "git-branch-naming@tribe-coding": true
-  }
-}
+```bash
+/plugin marketplace add Tribe-Coding/claude-plugins
+/plugin install git-branch-naming@tribe-coding
+/plugin
 ```
 
-### 2. (Optional) Run setup wizard
+Select **git-branch-naming** → enable **auto-update**.
 
-In a Claude Code session:
+Then run the setup wizard to configure your branch naming conventions:
+
 ```
 /git-branch-naming:setup
 ```

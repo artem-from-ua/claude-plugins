@@ -33,7 +33,7 @@ Bump version now, or commit anyway?
 
 **Trigger strategies:**
 
-| Strategy | Behaviour |
+| Strategy | Behavior |
 |----------|-----------|
 | `auto` (default) | Evaluate each commit: feature → MINOR, fix → PATCH, breaking → MAJOR, docs/config only → skip |
 | `always` | Every commit with source changes requires a bump — no exceptions |
@@ -78,7 +78,7 @@ Config lives at `.claude-plugin/semver.json` (project, committed to git) and `~/
 
 **Enforcement levels:**
 
-| `missingBump` | Behaviour |
+| `missingBump` | Behavior |
 |---------------|-----------|
 | `ask` (default) | Prompt the user before proceeding |
 | `warn` | Log a warning, continue anyway |
