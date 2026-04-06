@@ -105,14 +105,33 @@ if [ "$CHECK_BROKEN_LINKS" = "true" ]; then
     [ -z "$file" ] && continue
     local_dir=$(dirname "$file")
 
-    # Collect links into temp file to avoid grep|while pipefail issues
+    # Extract markdown links excluding fenced code blocks
     LINKS_TMP="/tmp/kb-links-${TIMESTAMP}-${UID}.txt"
-    grep -noE '\[([^]]*)\]\(([^)]+)\)' "$file" 2>/dev/null > "$LINKS_TMP" || true
+    PYTHONPATH="" python3 -c "
+import re, sys
+
+with open(sys.argv[1], 'r', encoding='utf-8', errors='replace') as f:
+    lines = f.readlines()
+
+in_code_block = False
+link_re = re.compile(r'\[([^\]]*)\]\(([^)]+)\)')
+
+for i, line in enumerate(lines, 1):
+    stripped = line.strip()
+    if stripped.startswith('\`\`\`'):
+        in_code_block = not in_code_block
+        continue
+    if in_code_block:
+        continue
+    for m in link_re.finditer(line):
+        target = m.group(2)
+        print(f'{i}:{target}')
+" "$file" > "$LINKS_TMP" 2>/dev/null || true
 
     while IFS= read -r match; do
       [ -z "$match" ] && continue
       line_num=$(echo "$match" | cut -d: -f1)
-      target=$(echo "$match" | sed 's/.*](\([^)]*\)).*/\1/')
+      target=$(echo "$match" | cut -d: -f2-)
 
       # Skip external URLs, anchors, mailto
       case "$target" in
@@ -148,8 +167,35 @@ fi
 if [ "$CHECK_ORPHAN_DOCS" = "true" ]; then
   CHECKS_RUN+=("orphanDocs")
 
-  # Entry points (never orphans): README.md, CLAUDE.md at project root
-  ENTRY_POINTS=("${PROJECT_DIR}/README.md" "${PROJECT_DIR}/CLAUDE.md")
+  # Entry points (never orphans): README.md, CLAUDE.md, CONTRIBUTING.md, CHANGELOG.md at project root
+  ENTRY_POINTS=("${PROJECT_DIR}/README.md" "${PROJECT_DIR}/CLAUDE.md" "${PROJECT_DIR}/CONTRIBUTING.md" "${PROJECT_DIR}/CHANGELOG.md")
+
+  # Check if a file is a SKILL.md reference (lives in references/ next to a SKILL.md)
+  is_skill_reference() {
+    local file_path="$1"
+    local dir
+    dir=$(dirname "$file_path")
+    local dir_name
+    dir_name=$(basename "$dir")
+    if [ "$dir_name" = "references" ]; then
+      local parent_dir
+      parent_dir=$(dirname "$dir")
+      # Check for SKILL.md in the parent directory
+      if [ -f "${parent_dir}/SKILL.md" ]; then
+        return 0
+      fi
+    fi
+    return 1
+  }
+
+  # Check if a file is a GitHub community file (.github/*.md)
+  is_github_community_file() {
+    local rel_path="$1"
+    case "$rel_path" in
+      .github/*.md) return 0 ;;
+    esac
+    return 1
+  }
 
   while IFS= read -r file; do
     [ -z "$file" ] && continue
@@ -165,6 +211,16 @@ if [ "$CHECK_ORPHAN_DOCS" = "true" ]; then
       fi
     done
     [ "$is_entry" = "true" ] && continue
+
+    # Skip SKILL.md reference files (loaded dynamically, not via markdown links)
+    if is_skill_reference "$file"; then
+      continue
+    fi
+
+    # Skip GitHub community files (rendered by GitHub automatically)
+    if is_github_community_file "$rel_file"; then
+      continue
+    fi
 
     # Check if any other .md file references this file
     referenced=false
