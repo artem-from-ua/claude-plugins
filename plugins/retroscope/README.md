@@ -6,7 +6,7 @@
 A Claude Code plugin that generates retrospective summary reports from your Claude Code sessions. Review what you accomplished, track open questions, and get insights into your productivity and communication patterns.
 
 > [!NOTE]
-> [📦 Installation](#installation) · [🔧 Setup](#setup) · [📄 Report Format](#report-format) · [📂 Storage](#storage-structure) · [⚙️ Configuration](#configuration) · [⚙️ How it works](#how-it-works) · [💲 Cost](#cost-estimates) · [🗺️ Roadmap](#future-roadmap) · [🔧 Troubleshooting](#troubleshooting) · [📚 Reference](#reference)
+> [📦 Installation](#installation) · [🔧 Setup](#setup) · [📄 Report Format](#report-format) · [📂 Storage](#storage-structure) · [⚙️ Configuration](#configuration) · [🔄 How it works](#how-it-works) · [💲 Cost](#cost-estimates) · [🗺️ Roadmap](#future-roadmap) · [🔧 Troubleshooting](#troubleshooting) · [📚 Reference](#reference)
 
 ## ✅ What it does <a name="what-it-does"></a>
 
@@ -112,7 +112,7 @@ Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude-plugin
 | `suggestRetroOnExit` | `true` | Show `/retro` reminder on session exit |
 | `autoPush` | `false` | Auto-push after each report commit |
 
-## ⚙️ How it works <a name="how-it-works"></a>
+## 🔄 How it works <a name="how-it-works"></a>
 
 1. **Session discovery** — `find-sessions.py` locates JSONL session files in `~/.claude/projects/` for the target date
 2. **Content extraction** — Filters user prompts and assistant responses (skips tool inputs/outputs when extract mode is on)
@@ -130,7 +130,7 @@ Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude-plugin
 | Sonnet + extract mode ON | 2 avg sessions | ~$0.05–0.15 |
 | Sonnet + extract mode OFF | 2 avg sessions | ~$0.20–0.60 |
 
-## 🗺️ Future Roadmap (v0.2.0+) <a name="future-roadmap"></a>
+## 🗺️ Future Roadmap <a name="future-roadmap"></a>
 
 - `/retro this-week` — aggregate daily reports Mon–today
 - `/retro last-week` — Mon–Sun of previous week

@@ -10,7 +10,7 @@ tags: [docs, readme]
 MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "what is this?" and "why would I use it?".
 
 - When creating/editing README.md → first 5 lines: project name, one-line description, problem it solves, target audience
-- After header block (motto + intro paragraph) → add a nav line as `> [!NOTE]` GitHub Alert. **NEVER include the first H2 section** — it is always visible above the fold. This is a hard rule: do not add it "for completeness", do not add it when there are few sections, do not add it for any reason. Also **exclude GitHub community files** (GitHub surfaces these automatically — see Navigation Line reference section). Include all other H2 sections. Use ` · ` as separator. No "Scroll to:" prefix. Add explicit `<a name="...">` anchor to each emoji heading: `## ⚙️ How it works <a name="how-it-works"></a>`. Then nav links use the explicit anchor: `[⚙️ How it works](#how-it-works)`
+- After header block (motto + intro paragraph) → add a nav line as `> [!NOTE]` GitHub Alert. **NEVER include the first H2 section** — it is always visible above the fold. This is a hard rule: do not add it "for completeness", do not add it when there are few sections, do not add it for any reason. Do NOT include GitHub community files in nav (see Navigation Line reference section) but DO reference them in a section at the bottom. Include all other H2 sections. Use ` · ` as separator. No "Scroll to:" prefix. Add explicit `<a name="...">` anchor to each emoji heading: `## ⚙️ How it works <a name="how-it-works"></a>`. Then nav links use the explicit anchor: `[⚙️ How it works](#how-it-works)`
 - Use emoji in headings (🚀 📦 ⚡ ⚙️) unless user explicitly forbids it
 - For tools/CLIs/plugins → lead with a concrete demo (real input → real output), NOT a feature list
 - Installation: official method only — no workarounds; merge Quick Start + Installation into one section
@@ -30,7 +30,7 @@ MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "w
 <!-- REFERENCE -->
 ## Navigation Line
 
-Add a nav line after the header block (tagline + intro paragraph) using a `[!NOTE]` GitHub Alert. **NEVER include the first H2 section** — no exceptions, regardless of how few sections the README has. Also exclude GitHub community files (see table below). Include all other H2 sections. Use ` · ` as separator:
+Add a nav line after the header block (tagline + intro paragraph) using a `[!NOTE]` GitHub Alert. **NEVER include the first H2 section** — no exceptions, regardless of how few sections the README has. Include all other H2 sections. Use ` · ` as separator:
 
 ```markdown
 > [!NOTE]
@@ -39,16 +39,7 @@ Add a nav line after the header block (tagline + intro paragraph) using a `[!NOT
 
 This gives regulars instant access to any section without scrolling. Keep it on one line — no bullets, no numbering, no "Scroll to:" prefix.
 
-**Do NOT include links to GitHub community files** — GitHub surfaces these automatically in the repository sidebar, tab, or right panel, making README links redundant:
-
-| File | Where GitHub shows it |
-|------|-----------------------|
-| `CONTRIBUTING.md` | Sidebar link + Contributing tab |
-| `LICENSE` / `LICENSE.md` | Right panel (license type) |
-| `CODE_OF_CONDUCT.md` | Community Standards panel |
-| `SECURITY.md` | Security tab |
-| `SUPPORT.md` | Community Standards panel |
-| `GOVERNANCE.md` | Community Standards panel |
+**GitHub community files** (`CONTRIBUTING.md`, `LICENSE`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `SUPPORT.md`, `GOVERNANCE.md`) — do NOT include in the nav line (GitHub surfaces them in sidebar/tabs), but DO reference them in a `## References` or `## Contributing` section at the bottom of the README to maintain markdown link connectivity.
 
 **GitHub anchor rules for emoji headings:** GitHub's anchor generation for emoji headings is unreliable — the resulting anchor depends on the specific emoji and may include leading dashes or other artifacts. The only reliable approach is explicit `<a name>` anchors:
 
