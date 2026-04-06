@@ -51,6 +51,7 @@ Config fields used:
 - `model` — report generation model: `haiku`, `sonnet`, or `inherit` (default: `haiku`)
 - `extractMode` — pre-filter sessions to text-only (default: `true`)
 - `sessionSource` — data source for `/retro session`: `logs` (default) or `context`
+- `scope` — report scope: `project` (default, current project only) or `all` (cross-project daily reports)
 - `autoPush` — git push after commit (default: `false`)
 - `timezone` — timezone for date calculations (default: system)
 

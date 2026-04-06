@@ -7,6 +7,8 @@ Use this template when generating retrospective reports. Fill in all sections ba
 ```markdown
 # 📋 Retroscope: {Project} — {Date}
 
+_(For cross-project reports, use `Cross-Project` as {Project}.)_
+
 ## 📊 Overview
 
 | Metric | Value |
@@ -16,6 +18,13 @@ Use this template when generating retrospective reports. Fill in all sections ba
 | 🤖 Model | {model name} |
 | 🌿 Branch(es) | {comma-separated branches} |
 
+_(For cross-project reports, add a per-project breakdown table:)_
+
+| Project | Sessions | Duration | Est. Cost |
+|---------|----------|----------|-----------|
+| {project_name} | {count} | {duration} | ${cost} |
+| **Total** | **{total}** | **{total_duration}** | **${total_cost}** |
+
 ## 🎯 Performance Assessment
 
 {2–3 sentences on productivity, focus, and efficiency based on the session flow.}
@@ -24,18 +33,18 @@ Use this template when generating retrospective reports. Fill in all sections ba
 
 ## 📝 Tasks & Outcomes
 
-| Status | Task | Links |
-|--------|------|-------|
-| ✅ Done | {completed task} | 📌 PR #N · 🔀 `branch` |
-| 🚧 In progress | {ongoing work} | 🔀 `feature/foo` |
-| ❓ Open | {unresolved question} | 🐛 Issue #N |
-| 🔬 Research | {topic investigated} | 💬 `uuid-short` |
-| ✔️ Decision | {what was decided} | 📋 `plan-file.md` |
-| ❌ Abandoned | {abandoned task and reason} | — |
-| 💡 Idea | {idea for future} | — |
-| ⚠️ Blocked | {what is blocked and why} | 🐛 Issue #N |
+| Status | Task | Project | Links |
+|--------|------|---------|-------|
+| ✅ Done | {completed task} | {project} | 📌 PR #N · 🔀 `branch` |
+| 🚧 In progress | {ongoing work} | {project} | 🔀 `feature/foo` |
+| ❓ Open | {unresolved question} | {project} | 🐛 Issue #N |
+| 🔬 Research | {topic investigated} | {project} | 💬 `uuid-short` |
+| ✔️ Decision | {what was decided} | {project} | 📋 `plan-file.md` |
+| ❌ Abandoned | {abandoned task and reason} | {project} | — |
+| 💡 Idea | {idea for future} | {project} | — |
+| ⚠️ Blocked | {what is blocked and why} | {project} | 🐛 Issue #N |
 
-_(Include only rows that apply. Remove unused status rows.)_
+_(Include only rows that apply. Remove unused status rows. For single-project reports, the Project column may be omitted.)_
 
 **Link icons:** 📌 PR · 🔀 Branch · 💬 Session · 📋 Plan · 🐛 Issue/Discussion
 Use `·` (middle dot) to separate multiple links in one cell.

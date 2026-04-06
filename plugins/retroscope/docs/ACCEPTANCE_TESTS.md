@@ -239,10 +239,11 @@ python3 -c "
 import json
 with open('$PLUGIN/templates/retroscope.json') as f:
     cfg = json.load(f)
-required = ['storageDir', 'language', 'model', 'extractMode', 'suggestRetroOnExit', 'autoPush']
+required = ['storageDir', 'language', 'model', 'extractMode', 'scope', 'suggestRetroOnExit', 'autoPush']
 for key in required:
     assert key in cfg, f'Missing key: {key}'
 assert cfg['model'] in ('haiku', 'sonnet', 'inherit'), f'Invalid model: {cfg[\"model\"]}'
+assert cfg['scope'] in ('project', 'all'), f'Invalid scope: {cfg[\"scope\"]}'
 assert isinstance(cfg['extractMode'], bool), 'extractMode must be bool'
 assert isinstance(cfg['suggestRetroOnExit'], bool), 'suggestRetroOnExit must be bool'
 assert isinstance(cfg['autoPush'], bool), 'autoPush must be bool'
@@ -387,6 +388,49 @@ grep -A3 "Productivity Metrics" "$STORAGE_DIR/reports/$PROJECT/daily/$DATE/summa
 - ✅ Shows actual cost with `(with cache discounts)` label
 - ✅ Shows naive cost with `(without cache discounts` or `as shown in Claude Code UI)` label
 - ✅ Naive cost ≥ actual cost
+
+---
+
+### 5b. Cross-Project Daily Report
+
+**Objective:** Verify `--all-projects` flag and cross-project report generation.
+
+**Automation:** 🟡 (script output automated, report quality requires human review)
+
+#### 5b.1 find-sessions.py --all-projects
+
+```bash
+SCRIPT="${CLAUDE_PLUGIN_ROOT}/scripts/find-sessions.py"
+PYTHONPATH="" python3 "$SCRIPT" today --all-projects 2>&1
+```
+
+**Expected result:**
+- ✅ Tab-separated output: `project_name\tfile_path`
+- ✅ Multiple project names present (if user has sessions in multiple projects)
+- ✅ Each file path exists and is a valid `.jsonl` file
+- ✅ No output when `--all-projects` used with `--project-dir` (mutual exclusion error)
+
+#### 5b.2 Cross-Project Report Generation
+
+Set `"scope": "all"` in retroscope config, then run `/retro today`.
+
+**Expected result:**
+- ✅ Report saved to `{storageDir}/reports/_cross-project/daily/{YYYY}/{MM}/{DD}/summary.md`
+- ✅ Overview contains per-project breakdown table (Project, Sessions, Duration, Est. Cost)
+- ✅ Tasks & Outcomes table has Project column
+- ✅ Title is `📋 Retroscope: Cross-Project — {Date}`
+- ✅ Git commit message: `retro(cross-project): {YYYY-MM-DD} daily summary`
+- ✅ Stats are aggregated correctly across all projects
+
+#### 5b.3 Backwards Compatibility
+
+With default config (`"scope": "project"` or field absent), run `/retro today`.
+
+**Expected result:**
+- ✅ Behaves identically to pre-0.3.0: report at `{project_name}/daily/...`
+- ✅ No Project column in Tasks & Outcomes
+- ✅ No per-project breakdown table in Overview
+- ✅ Commit message uses single project name
 
 ---
 

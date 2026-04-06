@@ -37,6 +37,7 @@ Use `AskUserQuestion` to collect settings in this order:
 6. **Session data source** — `logs` (default, reads full JSONL, reliable even after `/compact` or `/clear`) or `context` (current conversation, faster but may be incomplete).
 7. **Suggest /retro on exit?** — Yes (default) or No.
 8. **Auto-push reports?** — No (default, commit locally only) or Yes.
+9. **Report scope** — `project` (default, reports cover current project only) or `all` (cross-project daily reports aggregating sessions from all projects).
 
 For full field descriptions and defaults, see `${SKILL_DIR}/references/config-schema.md`.
 
@@ -53,6 +54,7 @@ For full field descriptions and defaults, see `${SKILL_DIR}/references/config-sc
   "model": "{haiku|sonnet|inherit}",
   "extractMode": true,
   "sessionSource": "logs",
+  "scope": "{project|all}",
   "suggestRetroOnExit": true,
   "autoPush": false
 }

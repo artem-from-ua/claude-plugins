@@ -55,6 +55,42 @@ def get_claude_projects_dir() -> Path:
     return Path.home() / ".claude" / "projects"
 
 
+def decode_project_name(session_dir: Path) -> str:
+    """
+    Extract project name from a session directory.
+    Reads cwd from the first JSONL file for accuracy (encoded path is lossy
+    when directory names contain hyphens). Falls back to encoded dir name.
+    """
+    # Try to read cwd from the first JSONL file
+    jsonl_files = sorted(session_dir.glob("*.jsonl"))
+    for jsonl_file in jsonl_files[:1]:
+        try:
+            with open(jsonl_file, errors="ignore") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        obj = json.loads(line)
+                        cwd = obj.get("cwd")
+                        if cwd:
+                            return Path(cwd).name
+                    except json.JSONDecodeError:
+                        continue
+        except OSError:
+            pass  # Fall back to encoded dir name below
+
+    # Fallback: use the last segment of the encoded dir name
+    # This is lossy for names with hyphens but better than nothing
+    name = session_dir.name
+    if name.startswith("-"):
+        name = name[1:]
+    # Take everything after the last known path separator pattern
+    # Common pattern: -Users-username-devel-projectname
+    parts = name.rsplit("-", 1)
+    return parts[-1] if parts else name
+
+
 def parse_date_arg(date_str: str, tz) -> tuple[date, date]:
     """
     Parse date argument. Returns (start_date, end_date) tuple (inclusive).
@@ -149,6 +185,51 @@ def find_sessions(date_str: str, project_dir: str | None, tz_name: str | None):
 
         if effective_start <= end_dt and effective_end >= start_dt:
             print(str(jsonl_file))
+
+
+def find_sessions_all_projects(date_str: str, tz_name: str | None):
+    """
+    Find session files matching the given date range across ALL projects.
+    Prints tab-separated project_name\\tfile_path lines.
+    """
+    tz = get_timezone(tz_name)
+    start_date, end_date = parse_date_arg(date_str, tz)
+    projects_base = get_claude_projects_dir()
+
+    if not projects_base.exists():
+        sys.stderr.write(f"No projects directory: {projects_base}\n")
+        return
+
+    # Date window
+    start_dt = datetime(start_date.year, start_date.month, start_date.day, 0, 0, 0, tzinfo=tz)
+    end_dt = datetime(end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, tzinfo=tz)
+
+    for subdir in sorted(projects_base.iterdir()):
+        if not subdir.is_dir():
+            continue
+
+        project_name = decode_project_name(subdir)
+
+        jsonl_files = sorted(subdir.glob("*.jsonl"))
+        if not jsonl_files:
+            continue
+
+        for jsonl_file in jsonl_files:
+            # Quick filter: check file mtime
+            mtime = jsonl_file.stat().st_mtime
+            mtime_dt = datetime.fromtimestamp(mtime, tz=timezone.utc).astimezone(tz)
+            if mtime_dt < start_dt:
+                continue
+
+            session_start, session_end = get_session_time_range(jsonl_file, tz)
+            if session_start is None and session_end is None:
+                continue
+
+            effective_start = session_start or mtime_dt
+            effective_end = session_end or mtime_dt
+
+            if effective_start <= end_dt and effective_end >= start_dt:
+                print(f"{project_name}\t{jsonl_file}")
 
 
 def get_session_time_range(jsonl_file: Path, tz) -> tuple:
@@ -658,17 +739,25 @@ def main():
 
     # Common options
     parser.add_argument("--project-dir", help="Project directory (default: cwd)")
+    parser.add_argument("--all-projects", action="store_true",
+                        help="Search all projects (mutually exclusive with --project-dir)")
     parser.add_argument("--tz", help="Timezone name (default: system timezone)")
     parser.add_argument("--date", dest="date_filter", help="Date filter for --extract mode (YYYY-MM-DD)")
 
     args = parser.parse_args()
+
+    if args.all_projects and args.project_dir:
+        parser.error("--all-projects and --project-dir are mutually exclusive")
 
     if args.extract:
         extract_session(args.extract, args.date_filter)
     elif args.stats:
         get_stats(args.stats)
     elif args.date:
-        find_sessions(args.date, args.project_dir, args.tz)
+        if args.all_projects:
+            find_sessions_all_projects(args.date, args.tz)
+        else:
+            find_sessions(args.date, args.project_dir, args.tz)
     else:
         parser.print_help()
         sys.exit(1)

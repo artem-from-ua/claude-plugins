@@ -6,6 +6,7 @@
   "model": "haiku",
   "extractMode": true,
   "sessionSource": "logs",
+  "scope": "project",
   "suggestRetroOnExit": true,
   "autoPush": false
 }
