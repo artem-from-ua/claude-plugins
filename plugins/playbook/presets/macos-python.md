@@ -15,6 +15,7 @@ MANDATORY: Target Python 3.12 exclusively. System Python 3.9 will break modern s
 - Modern type syntax is valid: `str | None`, `X | Y`, `tuple[X, Y]`, `list[str]`
 - When running Python from Bash tool: ALWAYS prefix with `PYTHONPATH=""` to isolate from CWD
 - If CWD has `__init__.py` or `__main__.py`, Python may treat it as a package — `PYTHONPATH=""` prevents this
+- NEVER use bare `except: pass` or `except SomeError: pass` without an explanatory comment — if the exception is intentionally suppressed, add a comment explaining why
 - **ALWAYS invoke the `playbook-browse macos-python` skill BEFORE writing Python scripts** to load full guidelines. This is MANDATORY — do not skip this step.
 <!-- /RULES -->
 
@@ -96,4 +97,30 @@ def fetch(url: str, timeout: float | None = None) -> bytes:
 ```
 
 No `from typing import List, Dict, Tuple, Optional, Union` needed.
+
+## Empty Except Clauses
+
+Bare `pass` in `except` blocks is a common anti-pattern that silently swallows errors and gets flagged by linters (CodeQL, pylint, ruff). Always add a comment explaining why the exception is suppressed:
+
+```python
+# Wrong — silently swallows errors
+try:
+    os.remove(path)
+except OSError:
+    pass
+
+# Correct — intent is documented
+try:
+    os.remove(path)
+except OSError:
+    pass  # File may not exist yet; safe to ignore
+
+# Also correct — use explicit logging or fallback
+try:
+    data = cache.load(key)
+except CacheError:
+    data = None  # Cache miss is expected; fall back to fresh fetch
+```
+
+This applies to all `except` clauses with bare `pass`, regardless of the exception type — including `except Exception: pass` and bare `except: pass`.
 <!-- /REFERENCE -->
