@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## PR Merge
 
-`allow_auto_merge` is **disabled** in this repo — `gh pr merge --auto` will fail. Always use:
+`allow_auto_merge` is **disabled** in this repo — `gh pr merge --auto` will fail. Branch protection requires `--admin` for immediate merge. Always use:
 ```bash
-gh pr merge <N> --squash
+gh pr merge <N> --squash --admin
 ```
 
 ## ⚠️ CRITICAL: Version Bump Requirement
