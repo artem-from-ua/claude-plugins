@@ -278,7 +278,7 @@ Also extract sections that are short but cover edge cases, advanced workflows, o
 **Requirements:** merge short requirements into the Installation section as a single inline line rather than a separate section:
 
 ```markdown
-**Requirements:** Python 3.6+
+**Requirements:** Python 3.x
 ```
 
 ## CLAUDE.md ↔ README Relationship

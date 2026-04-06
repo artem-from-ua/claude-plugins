@@ -1,6 +1,6 @@
 {
   "name": "kb-grooming",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Documentation health analysis: structural checks, semantic compliance, and GitHub issue creation",
   "author": {
     "name": "Tribe Coding"

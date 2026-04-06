@@ -2,7 +2,7 @@
   "model": "inherit",
   "scope": {
     "include": ["*.md"],
-    "exclude": []
+    "exclude": [".git/**"]
   },
   "checks": {
     "brokenLinks": true,

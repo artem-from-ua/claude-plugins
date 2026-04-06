@@ -6,7 +6,7 @@
 A Claude Code plugin that generates retrospective summary reports from your Claude Code sessions. Review what you accomplished, track open questions, and get insights into your productivity and communication patterns.
 
 > [!NOTE]
-> [📦 Installation](#installation) · [🔧 Setup](#setup) · [📄 Report Format](#report-format) · [📂 Storage](#storage-structure) · [⚙️ Configuration](#configuration) · [⚙️ How it works](#how-it-works) · [💲 Cost](#cost-estimates) · [🗺️ Roadmap](#future-roadmap) · [🔧 Troubleshooting](#troubleshooting)
+> [📦 Installation](#installation) · [🔧 Setup](#setup) · [📄 Report Format](#report-format) · [📂 Storage](#storage-structure) · [⚙️ Configuration](#configuration) · [⚙️ How it works](#how-it-works) · [💲 Cost](#cost-estimates) · [🗺️ Roadmap](#future-roadmap) · [🔧 Troubleshooting](#troubleshooting) · [📚 Reference](#reference)
 
 ## ✅ What it does <a name="what-it-does"></a>
 
@@ -163,3 +163,8 @@ Config is stored at `~/.claude/retroscope.json` (user-level) and `.claude-plugin
 **Plugin not loading:**
 - Verify `retroscope` is in your enabled plugins in `~/.claude/settings.json`
 - Restart Claude Code
+
+## 📚 Reference <a name="reference"></a>
+
+- [`docs/ACCEPTANCE_TESTS.md`](docs/ACCEPTANCE_TESTS.md) — test suite
+- [`docs/INITIAL_PLAN.md`](docs/INITIAL_PLAN.md) — original design decisions (historical, from v0.1.0 planning session)
