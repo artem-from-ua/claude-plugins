@@ -19,6 +19,25 @@ Plugins that need project-level configuration store config files in `.claude-plu
 
 **Setup wizards** (e.g., `/playbook-setup`, `/semver-setup`, `/git-branch-naming-setup`, `/kb-grooming-setup`, `/retroscope-setup`, `/technology-explainer-setup`) write to `.claude-plugin/<name>.json` by default. The statusline plugins (`/statusline-setup`, `/statusline-compact:statusline-setup`) configure `~/.claude/settings.json` instead.
 
+### Settings Hierarchy (Claude Code)
+
+Claude Code resolves settings in priority order: **Managed > Project > User > Local**.
+
+| Scope | Location | Use case |
+|-------|----------|----------|
+| Managed | `managed-settings.d/` | Enterprise policies (read-only for plugins) |
+| Project | `{project}/.claude/settings.json` | Project-specific settings |
+| User | `~/.claude/settings.json` | User preferences |
+| Local | `{project}/.claude/settings.local.json` | Untracked local overrides |
+
+Plugin config (`.claude-plugin/<name>.json`) is separate from settings and follows its own resolution (project > global, see above).
+
+**Guidance for setup wizards** that modify `settings.json`:
+- Write to **User** scope (`~/.claude/settings.json`) by default
+- Write to **Project** scope only for project-specific settings
+- NEVER write to Managed scope — reserved for enterprise admins
+- NEVER write to Local scope automatically — it's for manual user overrides
+
 ---
 
 ## Skills & plugin.json
@@ -83,6 +102,36 @@ bash "${SKILL_DIR}/../../scripts/ctx-show.sh"
 
 `${SKILL_DIR}` is safe only for co-located references (e.g., `${SKILL_DIR}/references/catalog.md`). See [`docs/AUTHORING.md`](AUTHORING.md) — §5 "Path references in SKILL.md" for the full convention.
 
+### Available Hook Events
+
+Beyond the three events used by most plugins (`SessionStart`, `PreToolUse`, `PostToolUse`), Claude Code supports additional events:
+
+| Event | When it fires | Plugin use case |
+|-------|--------------|-----------------|
+| `SessionStart` | Session begins | Inject rules, configure environment |
+| `PreToolUse` | Before a tool executes | Validate, auto-allow, block |
+| `PostToolUse` | After a tool executes | Sync artifacts, validate output |
+| `PostCompact` | After context compaction | Re-inject critical state lost during compaction |
+| `SubagentStart` | Subagent session begins | Configure subagent environment |
+| `SubagentStop` | Subagent session ends | Collect/validate subagent results |
+| `WorktreeCreate` | Git worktree created | Initialize plugin state in worktree |
+| `WorktreeRemove` | Git worktree removed | Clean up plugin state |
+
+Additional events exist (`TaskCreated`, `TaskCompleted`, `StopFailure`, `PermissionDenied`) but are less relevant to plugin development. See the [Claude Code hooks documentation](https://docs.anthropic.com/en/docs/claude-code/hooks) for the complete list.
+
+### Hook Types
+
+The `type` field in hooks.json determines how the hook executes:
+
+| Type | Description | When to use |
+|------|-------------|-------------|
+| `command` | Run a shell command | Default for all plugins. Fast, deterministic. |
+| `http` | POST JSON to a URL endpoint | Webhook integrations, external service notifications |
+| `prompt` | Single-turn LLM evaluation | Content validation requiring judgment |
+| `agent` | Subagent-based validation | Complex multi-step validation |
+
+**Guidance:** Most plugins should use `command`. The `http`, `prompt`, and `agent` types add latency and complexity — use only when shell scripts are insufficient.
+
 ### SessionStart Script Naming
 
 SessionStart scripts follow a naming convention based on their purpose. The `context` plugin (`/ctx-show`) derives a display ID from the **script basename** (minus `.sh`), so consistent naming produces uniform, scannable output.
@@ -96,6 +145,31 @@ SessionStart scripts follow a naming convention based on their purpose. The `con
 - Rule-injection scripts MUST be named `inject-rules.sh` — no qualifiers (`inject-base-rules.sh`, `inject-core-rules.sh`).
 - Setup scripts use `setup-<descriptive-noun>.sh` (e.g., `setup-statusline.sh`, `setup-project.sh`).
 - If a plugin has both types, use separate entries in the SessionStart hooks array.
+
+---
+
+### Hook Conditional Execution
+
+Hooks support an optional `if` field. The value is evaluated as a shell expression; the hook runs only when it exits 0.
+
+```json
+{
+  "type": "command",
+  "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/validate.sh\"",
+  "if": "test -f .claude-plugin/my-config.json",
+  "timeout": 10
+}
+```
+
+**Use cases for plugins:**
+- Skip hooks when the plugin config file is absent (project doesn't use the plugin)
+- Platform-specific hooks: `test "$(uname)" = "Darwin"`
+- Git-dependent hooks: `git rev-parse --is-inside-work-tree 2>/dev/null`
+
+**Rules:**
+- Keep `if` expressions fast (<100ms) and deterministic
+- Slow or non-deterministic conditions (network calls, API queries) violate the same caching principle as non-deterministic SessionStart output (see Cache Determinism below)
+- `if` failures (non-zero exit) silently skip the hook — no error is shown
 
 ---
 
@@ -127,14 +201,14 @@ Every source injected at session start costs context tokens. The `context` plugi
 | Playbook preset RULES zone | ≤150 tokens | Per preset. Standard ~100-120, critical up to ~200. |
 | Skill description (plugin.json) | ≤50 tokens | Per skill. Lead with trigger signal. |
 
-**Aggregate cap:** ~10,000 tokens (5% of 200K context window).
+**Aggregate cap:** ~20,000–30,000 tokens (2–3% of context window). Per-component budgets above remain unchanged regardless of context window size — the aggregate cap scales, individual discipline does not.
 
 **Environment variables** (override defaults in `ctx-show.sh`):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CTX_CONTEXT_WINDOW` | `200000` | Total context window size in tokens |
-| `CTX_WARN_THRESHOLD` | `CTX_CONTEXT_WINDOW * 5 / 100` | Warning fires when total tokens exceed this |
+| `CTX_CONTEXT_WINDOW` | Auto-detected (fallback `200000`) | Total context window size in tokens. The script attempts to detect the actual context window; override manually if detection fails. |
+| `CTX_WARN_THRESHOLD` | `CTX_CONTEXT_WINDOW * 3 / 100` | Warning fires when total tokens exceed this |
 
 ## Token Estimation
 
@@ -172,11 +246,13 @@ Plugins that delegate work to subagents must make the model configurable in thei
 | Single subagent | `"model": "<value>"` | `{ "model": "sonnet" }` |
 | Multi-subagent (phases) | `"models": { "<phase>": "<value>" }` | `{ "models": { "dataCollection": "haiku", "analysis": "sonnet" } }` |
 
-**Valid values:** `"haiku"`, `"sonnet"`, `"opus"`, `"inherit"` (use parent session model).
+**Valid values:** `"haiku"`, `"sonnet"`, `"opus"`, `"best"`, `"inherit"` (use parent session model).
+
+**Model resolution:** Values are aliases resolved by Claude Code at runtime. `"best"` resolves to the latest flagship model — convenient for future-proofing but makes behavior less reproducible across model releases. The `CLAUDE_CODE_SUBAGENT_MODEL` environment variable overrides the configured model for all subagents in the session.
 
 **Setup wizard requirement:** The model selection question must include a plugin-specific recommendation explaining WHY that model fits the task (e.g., "Haiku (Recommended) — Mechanical task, no reasoning needed").
 
-See [`docs/plugin-behavior.md`](plugin-behavior.md) — §5 Subagent Design Guidelines for the full default selection table and opus usage criteria.
+See [`docs/plugin-behavior.md`](plugin-behavior.md) — §5 Subagent Design Guidelines for the full default selection table, opus usage criteria, and [Reasoning Effort](plugin-behavior.md#reasoning-effort-for-subagents) configuration.
 
 ---
 

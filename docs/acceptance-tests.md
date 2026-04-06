@@ -152,13 +152,15 @@ Tests in `ACCEPTANCE_TESTS.md` are run by Claude Code's Bash tool (zsh on macOS)
 
 ## Testing SessionStart Hooks and Proactive Behavior
 
+> **Note:** While this section focuses on SessionStart hooks (the most common), the same testing principles apply to all hook events: PostCompact, SubagentStart/Stop, WorktreeCreate/Remove, etc. For event-specific hooks, design tests that trigger the specific event (e.g., fill context to trigger compaction for PostCompact hooks, use `--worktree` for WorktreeCreate hooks).
+
 **Critical insight from [issue #28](https://github.com/Tribe-Coding/claude-plugins/issues/28):** SessionStart hooks that inject MANDATORY instructions work correctly, but testing them requires understanding environmental failure modes.
 
 ### Test Design Recommendations
 
 1. **Always test in fresh sessions** — SessionStart hooks only execute on session start. Tests within an existing session are invalid for verifying hook behavior.
 
-2. **Test across multiple models** — Different models (Opus 4.6, Sonnet 4.5) may have different compliance levels with MANDATORY instructions. Test on at least two models.
+2. **Test across multiple models and effort levels** — Different models (Opus 4.6, Sonnet 4.5) may have different compliance levels with MANDATORY instructions. Test on at least two models. Also test at different effort levels (`/effort low` vs default) — lower effort may skip steps that aren't marked as MANDATORY.
 
 3. **Document environmental failure modes** — Not all test failures indicate bugs. Common environmental causes:
    - **API timeouts** (32K token limit) — Claude may skip "optional" steps to finish before timeout
@@ -244,5 +246,6 @@ See `plugins/plantuml/docs/ACCEPTANCE_TESTS.md`. This document demonstrates:
 - User interaction flows (keyboard shortcuts, UI responses)
 - Cross-machine scenarios (OAuth, credentials, platform differences)
 - Time-dependent behavior (cache expiry, rate limits)
+- Worktree-based testing (requires `--worktree` flag, separate working tree lifecycle, plugin state initialization/cleanup)
 
 For these cases, provide **step-by-step manual procedures** with clear expected outcomes at each step.
