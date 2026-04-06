@@ -78,7 +78,7 @@ def decode_project_name(session_dir: Path) -> str:
                     except json.JSONDecodeError:
                         continue
         except OSError:
-            pass
+            pass  # Fall back to encoded dir name below
 
     # Fallback: use the last segment of the encoded dir name
     # This is lossy for names with hyphens but better than nothing
