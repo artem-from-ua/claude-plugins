@@ -18,6 +18,7 @@ MANDATORY: Follow these rules for all PR and branch operations.
 - After committing on a branch with no open PR → offer to create a PR
 - When creating PR without linked issue → ask user to create one first
 - "Not mergeable" after another PR merged → `git fetch origin main && git rebase origin/main && git push --force-with-lease`
+- When using `gh` commands (issue, pr, api) — NEVER specify `--repo` manually if CWD is inside the target repository; let `gh` auto-detect from git remote. If you need a different repo, run `gh repo view --json nameWithOwner` first to get the correct owner/name
 - **ALWAYS invoke the `playbook-browse github-workflow` skill BEFORE performing PR or branch operations** to load full guidelines. This is MANDATORY — do not skip this step.
 <!-- /RULES -->
 
@@ -126,4 +127,26 @@ git branch -d <branch-name>
 ```
 
 If GitHub has "Automatically delete head branches" enabled, skip the remote delete step.
+
+## Repository auto-detection with `gh`
+
+The `gh` CLI automatically resolves the repository from the git remote of the current directory. Specifying `--repo` manually is error-prone — you may guess the wrong owner or org name.
+
+```bash
+# Wrong — guessing the owner
+gh issue view 268 --repo some-user/my-repo
+
+# Wrong — hardcoding a different repo by mistake
+gh issue view 268 --repo anthropics/claude-code
+
+# Correct — let gh detect from CWD's git remote
+gh issue view 268
+
+# If you genuinely need a different repo, confirm first
+gh repo view --json nameWithOwner --jq '.nameWithOwner'
+# Then use the result
+gh issue view 268 --repo Org/actual-repo-name
+```
+
+Common failure mode: running `gh issue view N` and getting an issue from the wrong repository because `--repo` was specified with a guessed owner name. This wastes time and can lead to acting on the wrong issue.
 <!-- /REFERENCE -->
