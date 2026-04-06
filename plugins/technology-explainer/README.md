@@ -10,6 +10,8 @@ Configure your proficiency level per technology and Claude automatically adjusts
 
 ## 🎬 Demo <a name="demo"></a>
 
+Categorize technologies by experience level:
+
 ```markdown
 > /technology-explainer-update git expert
 
@@ -20,7 +22,7 @@ Updated **git** → **expert**.
 Updated **terraform** → **learning**.
 ```
 
-After restarting:
+Expert-level explanation:
 
 ```markdown
 > How does git stash work?
@@ -28,7 +30,11 @@ After restarting:
 ✦ Using skill: proficiency-guide-expert
 
 `git stash` / `git stash pop`. List: `git stash list`. Keep stash after apply: `git stash apply`.
+```
 
+Learning-level explanation:
+
+```markdown
 > How do Terraform modules work?
 
 ✦ Using skill: proficiency-guide-learning
@@ -51,7 +57,11 @@ Terraform Registry address. Variables go in `variables.tf`, outputs in `outputs.
 Terraform needs to download the module source before it can plan.
 
 See: HashiCorp docs on modules → https://developer.hashicorp.com/terraform/docs
+```
 
+Uncategorized technology:
+
+```markdown
 > How do Claude Code hooks work?
 
 ? Which proficiency level should I use for **Claude Code**?
