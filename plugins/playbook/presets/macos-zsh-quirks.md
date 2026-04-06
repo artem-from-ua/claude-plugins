@@ -13,6 +13,7 @@ MANDATORY: Shell is `/bin/zsh` 5.9. CWD does NOT persist between Bash tool calls
 - NEVER use `cd` to set working directory — use `git -C /path` for git, absolute paths for everything else
 - NEVER use `echo` for JSON strings — `echo` interprets `\n` in zsh; use `printf '%s'` instead
 - ALWAYS use `env VAR=val command` for environment variable injection (not `VAR=val command`)
+- When testing scripts that use `git` internally (hooks, CI scripts) → wrap in `(cd /target/repo && bash /abs/path/script.sh)` so the script's own `git rev-parse` etc. resolve to the correct repo
 - Root cause of most "No such file" errors: CWD not set + relative path — fix with absolute paths
 - When running Python scripts: ALWAYS prefix with `PYTHONPATH=""` (see macos-python preset)
 - **ALWAYS invoke the `playbook-browse macos-zsh-quirks` skill BEFORE writing Bash tool commands** to load full guidelines. This is MANDATORY — do not skip this step.
@@ -55,6 +56,16 @@ git -C /path/to/repo log --oneline -5
 git -C /path/to/repo diff HEAD
 ```
 
+When testing scripts that call `git` internally (hooks, CI), the script's own `git` calls use CWD — you must set it:
+
+```bash
+# WRONG — script's `git rev-parse` sees the agent's repo, not the test repo
+bash /tmp/test-repo/.githooks/pre-push
+
+# CORRECT — subshell sets CWD for the script's internal git calls
+(cd /tmp/test-repo && bash .githooks/pre-push)
+```
+
 ## Echo vs Printf
 
 Zsh's built-in `echo` interprets escape sequences (`\n`, `\t`, `\\`) by default, unlike bash. This silently corrupts JSON strings:
@@ -91,6 +102,7 @@ env CLAUDE_PROJECT_DIR=/tmp/test bash /path/to/script.sh
 | JSON output has unexpected newlines | `echo` interpreting `\n` | Use `printf '%s'` |
 | Script works manually but fails in Bash tool | CWD assumption wrong | Add absolute path prefix |
 | Python import errors in Bash tool | CWD is a Python package dir | Prefix with `PYTHONPATH=""` |
+| Git hook test sees wrong branch/repo | Script runs `git` without `-C`, CWD is another repo | Wrap in `(cd /target/repo && bash /abs/path/hook)` |
 
 ## Debugging Checklist
 
