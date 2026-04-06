@@ -19,8 +19,15 @@ MODE="${1:---file}"
 CLAUDE_DIR="${HOME}/.claude"
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 OUTPUT=""
-CTX_CONTEXT_WINDOW="${CTX_CONTEXT_WINDOW:-200000}"
-CTX_WARN_THRESHOLD="${CTX_WARN_THRESHOLD:-$(( CTX_CONTEXT_WINDOW * 5 / 100 ))}"
+# Auto-detect context window: 1M for known 1M-capable models, 200K fallback
+if [ -z "${CTX_CONTEXT_WINDOW:-}" ]; then
+  _model="${CLAUDE_MODEL:-${ANTHROPIC_MODEL:-}}"
+  case "$_model" in
+    *"[1m]"*|*"-1m-"*) CTX_CONTEXT_WINDOW=1000000 ;;
+    *) CTX_CONTEXT_WINDOW=200000 ;;
+  esac
+fi
+CTX_WARN_THRESHOLD="${CTX_WARN_THRESHOLD:-$(( CTX_CONTEXT_WINDOW * 3 / 100 ))}"
 
 # ── API token counting ──────────────────────────────────────────────────────
 USE_API=0

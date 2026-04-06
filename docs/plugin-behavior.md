@@ -72,7 +72,7 @@ Use for: on-demand reference data, catalogs, guides that are useful in specific 
      timing, mindmap, gantt, WBS, JSON, YAML, network, object, usecase, wireframe.
    ```
 
-5. **Keep it concise** — Description budget is 2% of context window (~16K chars total for ALL skills). Aim for 60-100 tokens per skill. Use the combined pattern below for maximum effectiveness without bloat.
+5. **Keep it concise** — Description budget is 2% of context window (~80K chars with 1M context, though per-skill limits of 60-100 tokens are the practical constraint). Aim for 60-100 tokens per skill. Use the combined pattern below for maximum effectiveness without bloat.
 
 **Recommended combined pattern** (90 tokens, +30 over minimal):
 
@@ -116,16 +116,19 @@ Example (plantuml `sync-plantuml.sh`): runs after every Write/Edit on `.md` file
 
 ### §1 Mechanism Overview
 
-Six delivery mechanisms, each suited for different autonomy levels and cost profiles:
+Seven delivery mechanisms, each suited for different autonomy levels and cost profiles:
 
 | Mechanism | What it delivers | Fired by | Per-session cost | Examples |
 |-----------|-----------------|----------|-----------------|---------|
 | Playbook preset | ~100–150 token RULES block | Playbook SessionStart | RULES zone tokens | `action-over-planning`, `git-safety` |
 | Skill description trigger | SKILL.md body on-demand | Claude's skill selection | Description only (~60–100 tokens) | `plantuml-diagram-guide`, `semver-guide` |
 | SessionStart hook | Config-dependent rules block | Session init | Hook output tokens (≤300) | `plantuml`, `semver`, `technology-explainer` |
-| Pre/PostToolUse hook | Shell script on tool calls | Tool matcher | Zero (external) | `plantuml` (PostToolUse sync), `git-branch-naming` (PreToolUse validate) |
+| Event hooks (Pre/Post/other) | Shell script on hook events | Tool matcher or event name | Zero (external) | `plantuml` (PostToolUse sync), `git-branch-naming` (PreToolUse validate) |
+| HTTP/Prompt/Agent hook | Webhook POST, LLM judgment, or subagent validation | Hook event + type field | Per-invocation (network/model cost) | External CI notification, content policy check |
 | Subagent | Heavy analysis delegated to cheaper model | SKILL.md orchestration | Per-invocation model cost | `kb-grooming` (semantic analysis) |
 | Pure script | All logic in bash/python | User-invoked command | Zero | `statusline`, `context` |
+
+See [Available Hook Events](conventions.md#available-hook-events) and [Hook Types](conventions.md#hook-types) for the full list of events and type options.
 
 ### §2 Decision Factors
 
@@ -151,9 +154,11 @@ Use this branching logic to pick a mechanism:
    - Yes, but config-dependent → **SessionStart hook**
    - No → continue ↓
 
-3. **Does it react to a specific tool call?**
+3. **Does it react to a specific tool call or event?**
    - Yes, validation (<1s, must block) → **PreToolUse hook** (bash only, no LLM)
    - Yes, sync/transform (<30s) → **PostToolUse hook**
+   - Yes, reacts to context compaction → **PostCompact hook** (re-inject lost state)
+   - Yes, reacts to worktree/subagent lifecycle → corresponding event hook
    - No → continue ↓
 
 4. **Is it data-heavy, separable work?**
@@ -171,6 +176,9 @@ Use this branching logic to pick a mechanism:
 | Auto-fix artifacts after Write/Edit | PostToolUse hook |
 | Run heavy analysis on a codebase | Subagent |
 | Display computed data to the user | Pure script |
+| Re-inject critical state after context compaction | PostCompact hook |
+| Notify external service on events | HTTP hook |
+| Validate content requiring LLM judgment | Prompt hook |
 | Combine mandatory rules with optional deep reference | SessionStart hook + Skill |
 
 ### §4 Cost Profile
@@ -180,7 +188,8 @@ Use this branching logic to pick a mechanism:
 | Playbook preset | RULES zone tokens (~100–150) | — | Loaded every session via playbook SessionStart |
 | Skill description trigger | Description tokens (~60–100) | Full SKILL.md when invoked | On-demand — no cost when unused |
 | SessionStart hook | Hook output tokens (≤300) | — | Budget enforced by convention (see [Token Budget](conventions.md#token-budget)) |
-| Pre/PostToolUse hook | Zero | Zero (external script) | No context cost; runs outside the model |
+| Event hooks (command type) | Zero | Zero (external script) | No context cost; runs outside the model |
+| HTTP/Prompt/Agent hook | Zero | Network/model cost per invocation | Use sparingly — adds latency |
 | Subagent | Zero | Model cost per invocation | e.g., kb-grooming semantic scan: ~$0.004/invocation with haiku |
 | Pure script | Zero | Zero | All logic in bash/python, no model involvement |
 
@@ -208,7 +217,9 @@ For multi-subagent plugins — named model fields per phase:
 }
 ```
 
-Valid values: `"haiku"`, `"sonnet"`, `"opus"`, `"inherit"` (use parent session model).
+Valid values: `"haiku"`, `"sonnet"`, `"opus"`, `"best"`, `"inherit"` (use parent session model).
+
+**Model resolution:** `"best"` resolves to the latest flagship model at runtime — convenient for future-proofing but makes behavior less reproducible across model releases. The `CLAUDE_CODE_SUBAGENT_MODEL` environment variable overrides the configured model for all subagents in the session.
 
 Cross-ref: [Subagent Model Configuration](conventions.md#subagent-model-configuration) for the config field convention.
 
@@ -230,6 +241,7 @@ Each subagent's model selection should include a plugin-specific recommendation 
 | Semantic analysis, compliance checking | `sonnet` | Requires nuanced judgment |
 | Web research, synthesis | `sonnet` | Needs to evaluate and integrate diverse sources |
 | Multi-step reasoning with large context (architecture analysis, security audit) | `opus` | Complex interdependencies, high cost of error |
+| Future-proof default (no specific task constraint) | `best` | Always resolves to newest flagship; avoids hardcoding model names |
 | User-facing conversational phases | `inherit` | Must match parent session quality |
 
 **When to use opus in subagents:**
@@ -250,7 +262,85 @@ If only conditions 1–2 apply but context is small — sonnet is sufficient. If
 - PreToolUse hooks — subagent latency (2–10s) is unacceptable for validation that blocks tool execution
 - The plugin fires on every tool call — per-invocation cost adds up fast
 
-### §6 Anti-Patterns
+### §6 Reasoning Effort for Subagents
+
+Claude Code supports effort levels that control reasoning depth before generating a response.
+
+**Effort levels:**
+
+| Level | Behavior | Token cost | Latency |
+|-------|----------|-----------|---------|
+| `low` | Minimal reasoning, pattern-matching | Lowest | Fastest |
+| `medium` | Moderate reasoning, handles routine tasks | Medium | Medium |
+| `high` | Deep reasoning, handles complex analysis | High | Slower |
+| `max` | Unconstrained reasoning (Opus 4.6 only) | Highest | Slowest |
+
+**Plugin config format:**
+
+Single-subagent plugin:
+```json
+{
+  "model": "sonnet",
+  "effort": "medium"
+}
+```
+
+Multi-subagent plugin:
+```json
+{
+  "models": {
+    "dataCollection": "haiku",
+    "analysis": "sonnet"
+  },
+  "efforts": {
+    "dataCollection": "low",
+    "analysis": "high"
+  }
+}
+```
+
+**Default effort recommendations by task type:**
+
+| Subagent task type | Model | Effort | Rationale |
+|-------------------|-------|--------|-----------|
+| Classification, extraction, counting | `haiku` | `low` | Mechanical — pattern matching, no deep reasoning |
+| Template-based generation (reports, issues) | `haiku` | `medium` | Needs some judgment for natural phrasing |
+| Linting, format validation | `haiku` | `low` | Rule-based checks, deterministic |
+| Documentation analysis, compliance checking | `sonnet` | `high` | Requires nuanced judgment across multiple criteria |
+| Web research, synthesis | `sonnet` | `medium` | Needs evaluation but well-structured task |
+| Architecture analysis, security audit | `opus` | `high` | Complex interdependencies, high cost of error |
+| Multi-step reasoning with ambiguous inputs | `opus` | `max` | Unconstrained reasoning for highest quality |
+
+**Effort + model interaction:**
+
+Effort and model are independent knobs. The model determines *capability ceiling*; effort determines *how much of that ceiling is used*.
+
+| Combination | Result | When to use |
+|-------------|--------|-------------|
+| `haiku` + `low` | Cheapest, fastest, least capable | Trivial extraction |
+| `haiku` + `high` | Diminishing returns — haiku's ceiling is lower | Rarely useful |
+| `sonnet` + `low` | Fast with decent capability | Quick summaries |
+| `sonnet` + `high` | Best quality-to-cost ratio for most tasks | Default recommendation |
+| `opus` + `low` | Wastes opus pricing for shallow work | Avoid |
+| `opus` + `max` | Maximum quality, maximum cost | Security audits, architecture |
+
+**Rule of thumb:** Match effort to task complexity, not to model tier. Using `opus` + `low` wastes money; using `haiku` + `max` hits capability ceiling. The sweet spot is usually `sonnet` + `high` or `haiku` + `low`.
+
+**Setup wizard integration:**
+
+When a plugin's setup wizard asks about model selection, also ask about effort:
+
+```
+Select reasoning effort for semantic analysis:
+  1. Low — faster, cheaper, less thorough
+  2. Medium — balanced (Recommended)
+  3. High — slower, more thorough
+  4. Max — deepest reasoning (Opus only, highest cost)
+```
+
+Default to the recommended level from the task-type table above. Show cost/quality trade-off in the option label — users care about both.
+
+### §7 Anti-Patterns
 
 | Anti-pattern | Why it fails | Fix |
 |---|---|---|
@@ -262,8 +352,9 @@ If only conditions 1–2 apply but context is small — sonnet is sufficient. If
 | Subagent for every common action | Per-invocation cost adds up; most actions don't need a separate model call | Reserve subagents for on-demand, data-heavy analysis |
 | Pure script pretending to be a skill | No description trigger — Claude never discovers it automatically | Add proper SKILL.md with description frontmatter |
 | Hardcoded subagent model | Users can't optimize cost/quality tradeoff for their use case | Always make model configurable with plugin-specific recommendation |
+| Hardcoded subagent effort | Users can't tune cost/quality per-task | Make effort configurable alongside model (see §6) |
 
-### §7 Combining Mechanisms
+### §8 Combining Mechanisms
 
 Most plugins combine multiple mechanisms. Five named patterns:
 
