@@ -10,16 +10,9 @@
 
 ## Plugin(s) Affected
 
-<!-- Check all that apply -->
-- [ ] plantuml
-- [ ] statusline
-- [ ] statusline-compact
-- [ ] git-branch-naming
-- [ ] playbook
-- [ ] semver
-- [ ] retroscope
-- [ ] context
-- [ ] None (only root-level files changed)
+<!-- List affected plugins, or "None" if only root-level files changed -->
+<!-- Example: plantuml, semver -->
+
 
 ## Version Bump Required
 

@@ -37,16 +37,16 @@ A marketplace of reusable Claude Code plugins (`Tribe Coding`). Each plugin live
 ## Plugins
 
 - **ai-fortune** — Career direction analysis: interview + AI usage pattern mining
-- **plantuml** — Keeps PlantUML diagram URLs in sync; provides ASCII rendering in terminal
-- **statusline** — Three-line statusline: rate limits, context/branch, extra usage
-- **statusline-compact** — Single-line statusline with brightness-coded API usage
+- **context** — Inspects full session context in load order
 - **git-branch-naming** — Enforces branch naming conventions (prefix/kebab-case)
 - **kb-grooming** — Documentation health analysis: structural checks, semantic compliance, GitHub issues
+- **plantuml** — Keeps PlantUML diagram URLs in sync; provides ASCII rendering in terminal
 - **playbook** — Injects curated coding guideline presets into sessions
-- **semver** — Enforces semantic versioning on commit/push/PR
 - **retroscope** — Generates retrospective reports summarizing sessions
+- **semver** — Enforces semantic versioning on commit/push/PR
+- **statusline** — Three-line statusline: rate limits, context/branch, extra usage
+- **statusline-compact** — Single-line statusline with brightness-coded API usage
 - **technology-explainer** — Adapts explanation depth based on user proficiency per technology
-- **context** — Inspects full session context in load order
 
 See [`docs/plugin-behavior.md`](docs/plugin-behavior.md) for how plugins use hooks, skills, and PostToolUse to work proactively.
 
