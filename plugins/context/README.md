@@ -37,7 +37,7 @@
 | Project | Skill           | context@tribe-coding (v0.6.3) · ctx-show                      |     1 |      95 |       0% |
 |         | **TOTAL**       |                                                    |   933 |  11,808 |     100% |
 
-⚠️  Context load (11808 tokens) exceeds threshold (10000 tokens = 5% of 200k context window)
+⚠️  Context load (11808 tokens) exceeds threshold (6000 tokens = 3% of 200k context window)
 
 Skills: names + descriptions loaded at session start (full SKILL.md on-demand)
 
@@ -100,7 +100,7 @@ Collected in load order:
 
 Playbook presets appear as individual rows when using playbook plugin v0.3.1+.
 
-**Threshold Warning:** When total tokens exceed 5% of the context window (default 10,000 of 200K), a ⚠️ warning is printed after the TOTAL row. Override with `CTX_CONTEXT_WINDOW` and `CTX_WARN_THRESHOLD` env vars.
+**Threshold Warning:** When total tokens exceed 3% of the context window, a ⚠️ warning is printed after the TOTAL row. The context window is auto-detected (1M for `[1m]` models, 200K fallback). Override with `CTX_CONTEXT_WINDOW` and `CTX_WARN_THRESHOLD` env vars.
 
 ## ⚡ Commands <a name="commands"></a>
 
