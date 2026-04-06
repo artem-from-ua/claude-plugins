@@ -149,6 +149,21 @@ echo "Exit: $?"  # Expected: 0
 printf '%s' '{"tool_input":{"command":"git push origin main"}}' \
   | env CLAUDE_PROJECT_DIR=/tmp/test-commit-protect bash "$SCRIPT"
 # Expected: JSON with permissionDecision: "ask"
+
+# Test: git push --delete → passthrough (no branch check)
+printf '%s' '{"tool_input":{"command":"git push origin --delete feature/old-branch"}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-commit-protect bash "$SCRIPT"
+echo "Exit: $?"  # Expected: 0, no output
+
+# Test: git push -d → passthrough
+printf '%s' '{"tool_input":{"command":"git push origin -d feature/old-branch"}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-commit-protect bash "$SCRIPT"
+echo "Exit: $?"  # Expected: 0, no output
+
+# Test: git push origin :branch-name → passthrough
+printf '%s' '{"tool_input":{"command":"git push origin :feature/old-branch"}}' \
+  | env CLAUDE_PROJECT_DIR=/tmp/test-commit-protect bash "$SCRIPT"
+echo "Exit: $?"  # Expected: 0, no output
 ```
 
 **Acceptance criteria:**
@@ -156,6 +171,9 @@ printf '%s' '{"tool_input":{"command":"git push origin main"}}' \
 - ✅ `git commit` on `master` → same warning
 - ✅ `git commit` on feature branch → silent passthrough (exit 0, no output)
 - ✅ `git push` to protected branch → `permissionDecision: "ask"` response
+- ✅ `git push --delete` → silent passthrough (exit 0, no output)
+- ✅ `git push -d` → silent passthrough
+- ✅ `git push origin :branch` → silent passthrough
 - ✅ Scripts don't crash with missing git repo
 
 ---
@@ -385,6 +403,17 @@ EOF
 git checkout -q -b my-bad-branch2
 bash .githooks/pre-push
 echo "Exit: $?"  # Expected: 1 (deny = block)
+
+# Test: branch deletion (zero SHA) on main → allowed (exit 0, no warning)
+git checkout -q main
+echo "refs/heads/feature/old 0000000000000000000000000000000000000000 refs/heads/feature/old abc1234abc1234abc1234abc1234abc1234abc1234" \
+  | bash .githooks/pre-push
+echo "Exit: $?"  # Expected: 0
+
+# Test: mixed push (delete + update) → still checks branch name
+echo -e "refs/heads/feature/old 0000000000000000000000000000000000000000 refs/heads/feature/old abc1234abc1234abc1234abc1234abc1234abc1234\nrefs/heads/main abc1234abc1234abc1234abc1234abc1234abc1234 refs/heads/main def5678def5678def5678def5678def5678def5678" \
+  | bash .githooks/pre-push
+echo "Exit: $?"  # Expected: depends on enforcement (may warn about protected branch)
 ```
 
 **Acceptance criteria:**
@@ -392,6 +421,8 @@ echo "Exit: $?"  # Expected: 1 (deny = block)
 - ✅ Invalid name + `ask` enforcement: exit 0, warning to stderr
 - ✅ Invalid name + `deny` enforcement: exit 1, error to stderr
 - ✅ Works without jq installed (falls back to defaults)
+- ✅ Delete operation (zero SHA): exit 0, no output regardless of current branch
+- ✅ Mixed push (delete + non-delete): normal validation still runs
 
 ---
 
