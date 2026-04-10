@@ -2,9 +2,9 @@
 name: fresh-guides-verify
 description: >
   Invoked automatically when discussing a technology on the fresh-guides watchlist.
-  Provides verification procedure: fetch official docs, compare with training data,
-  cite sources. Do NOT give version-specific advice for watched technologies
-  without consulting this skill first.
+  Provides verification procedure: detect version, fetch official docs for that version,
+  compare with training data, cite sources. Do NOT give version-specific advice for
+  watched technologies without consulting this skill first.
   Keywords: fresh-guides verify, check docs, fast-changing technology, outdated knowledge, version check.
 ---
 
@@ -19,7 +19,6 @@ A technology on the user's fresh-guides watchlist was detected in the conversati
 Find the matching entry in the watchlist (injected by SessionStart). Note:
 - The technology `name` from the watchlist
 - The configured `docs` URLs
-- The `version` constraint (usually "latest")
 
 ### 2. Determine the current version
 
@@ -44,34 +43,41 @@ Identify the specific claim, API, behavior, config syntax, or default that could
 Use `WebFetch` on the configured doc URLs to find information about the specific topic:
 
 1. Try the most specific doc URL first (e.g., API reference > general docs)
-2. If the page is too large or doesn't contain the answer, use `WebSearch` with a targeted query:
-   `"<technology> <specific feature/API> official documentation <current year>"`
-3. For release notes / changelogs, search for the specific version or recent changes
+2. When the official docs have versioned URLs (e.g., `/v1.6.x/`, `/latest/`), target the URL for the user's specific version — not "latest"
+3. If the page is too large or doesn't contain the answer, use `WebSearch` with a targeted query:
+   `"<technology> <version> <specific feature/API> official documentation"`
+4. For release notes / changelogs, search for the specific version or recent changes
 
 **Fallback chain:** configured docs URL → WebSearch official docs → WebSearch general → state "could not verify"
 
-### 5. Compare and respond
+### 5. Compare with user's version and respond
 
-Based on what you found:
+After verification, explicitly compare the feature/behavior with the user's version:
+
+- **Feature available in user's version:** State it clearly: "Supported in your version (vX.Y.Z, added in vA.B)."
+- **Feature NOT available in user's version:** Warn explicitly: "Requires vA.B+. Your vX.Y.Z does not support it." Suggest a workaround if one exists for their version.
+- **Behavior changed between versions:** Note what differs: "In your vX.Y.Z, the default is A. In vA.B+ it changed to B."
+
+Based on what you found from docs:
 
 **Docs confirm your knowledge:**
-> Verified against official docs ([source](url), fetched YYYY-MM-DD).
+> Include the answer with inline citation.
 
 **Docs contradict your knowledge:**
-> **Note:** My training data may be outdated here. According to the official docs as of YYYY-MM-DD: [corrected information]. Source: [url]
+> **Note:** My training data may be outdated here. According to the official docs: [corrected information]. [Source: url]
 
 **Could not verify:**
-> **Note:** I could not verify this against official docs. My answer is based on training data (cutoff: [date]). Please double-check at: [configured doc URLs]
+> **Note:** I could not verify this against official docs. My answer is based on training data. Please double-check at: [configured doc URLs]
 
 ### 6. Citation format
 
 Always include inline citations when providing verified information:
 
 ```
-[Source: domain.com/path, YYYY-MM-DD]
+[Source: domain.com/path/to/versioned/page]
 ```
 
-Place the citation after the specific claim it supports, not at the end of the entire response.
+Place the citation after the specific claim it supports, not at the end of the entire response. Use version-specific URLs when the documentation site supports them.
 
 ## Important
 

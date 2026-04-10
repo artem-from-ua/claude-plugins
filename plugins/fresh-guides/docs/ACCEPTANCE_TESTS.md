@@ -36,7 +36,7 @@ jq -e '.name, .version, .commands, .skills' "$PLUGIN/.claude-plugin/plugin.json"
 jq -e '.hooks.SessionStart' "$PLUGIN/hooks/hooks.json"
 
 # Template is valid JSON with required structure
-jq -e '.watchlist, .checkMode' "$PLUGIN/templates/fresh-guides.json"
+jq -e '.watchlist' "$PLUGIN/templates/fresh-guides.json"
 
 # SKILL.md files have YAML frontmatter
 for f in "$PLUGIN"/commands/*/SKILL.md "$PLUGIN"/skills/*/SKILL.md; do
@@ -74,25 +74,21 @@ cat > "$FAKE_HOME/.claude/fresh-guides.json" <<'JSON'
   "watchlist": [
     {
       "name": "terraform",
-      "docs": ["https://developer.hashicorp.com/terraform/docs", "https://github.com/hashicorp/terraform/releases"],
-      "version": "latest"
+      "docs": ["https://developer.hashicorp.com/terraform/docs", "https://github.com/hashicorp/terraform/releases"]
     },
     {
-      "name": "aws-lambda",
-      "docs": ["https://docs.aws.amazon.com/lambda/"],
-      "version": "latest"
+      "name": "aws terraform provider",
+      "docs": ["https://registry.terraform.io/providers/hashicorp/aws/latest/docs"]
     }
-  ],
-  "checkMode": "alert-and-verify"
+  ]
 }
 JSON
 output=$(env HOME="$FAKE_HOME" CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="/tmp/nonexistent" bash "$SCRIPT")
 echo "$output" | grep -q '## Fresh Guides' && echo "OK 2.1: Header present" || echo "FAIL 2.1: Header missing"
 echo "$output" | grep -q 'terraform' && echo "OK 2.1: Terraform entry" || echo "FAIL 2.1: Terraform missing"
-echo "$output" | grep -q 'aws-lambda' && echo "OK 2.1: AWS Lambda entry" || echo "FAIL 2.1: AWS Lambda missing"
+echo "$output" | grep -q 'aws terraform provider' && echo "OK 2.1: AWS provider entry" || echo "FAIL 2.1: AWS provider missing"
 echo "$output" | grep -q 'fresh-guides-verify' && echo "OK 2.1: Skill pointer" || echo "FAIL 2.1: Skill pointer missing"
 echo "$output" | grep -q '<!-- Source: Plugin fresh-guides@tribe-coding' && echo "OK 2.1: Source marker" || echo "FAIL 2.1: Source marker missing"
-echo "$output" | grep -q 'Cite' && echo "OK 2.1: Cite instruction" || echo "FAIL 2.1: Cite instruction missing"
 
 # Test 2.2: Silent exit with no config
 output=$(env HOME=/tmp/nonexistent CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="/tmp/nonexistent" bash "$SCRIPT")
@@ -103,52 +99,28 @@ FAKE_HOME2="/tmp/fg-test-3"
 mkdir -p "$FAKE_HOME2/.claude"
 cat > "$FAKE_HOME2/.claude/fresh-guides.json" <<'JSON'
 {
-  "watchlist": [],
-  "checkMode": "alert-and-verify"
+  "watchlist": []
 }
 JSON
 output=$(env HOME="$FAKE_HOME2" CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="/tmp/nonexistent" bash "$SCRIPT")
 [[ -z "$output" ]] && echo "OK 2.3: Silent exit (empty watchlist)" || echo "FAIL 2.3: Unexpected output: $output"
 
-# Test 2.4: alert-only mode
+# Test 2.4: Project config overrides global
 FAKE_HOME3="/tmp/fg-test-4"
-mkdir -p "$FAKE_HOME3/.claude"
+FAKE_PROJECT="/tmp/fg-test-4-proj"
+mkdir -p "$FAKE_HOME3/.claude" "$FAKE_PROJECT/.claude-plugin"
 cat > "$FAKE_HOME3/.claude/fresh-guides.json" <<'JSON'
 {
   "watchlist": [
     {
-      "name": "kubernetes",
-      "docs": ["https://kubernetes.io/docs/"],
-      "version": "latest"
-    }
-  ],
-  "checkMode": "alert-only"
-}
-JSON
-output=$(env HOME="$FAKE_HOME3" CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="/tmp/nonexistent" bash "$SCRIPT")
-echo "$output" | grep -q 'kubernetes' && echo "OK 2.4: K8s entry" || echo "FAIL 2.4: K8s missing"
-echo "$output" | grep -q 'verify before relying' && echo "OK 2.4: Alert-only mode" || echo "FAIL 2.4: Alert-only missing"
-echo "$output" | grep -qv 'fresh-guides-verify' && echo "OK 2.4: No verify skill pointer" || echo "FAIL 2.4: Unexpected verify pointer"
-
-# Test 2.5: Project config overrides global
-FAKE_HOME4="/tmp/fg-test-5"
-FAKE_PROJECT="/tmp/fg-test-5-proj"
-mkdir -p "$FAKE_HOME4/.claude" "$FAKE_PROJECT/.claude-plugin"
-cat > "$FAKE_HOME4/.claude/fresh-guides.json" <<'JSON'
-{
-  "watchlist": [
-    {
       "name": "terraform",
-      "docs": ["https://global.example.com"],
-      "version": "latest"
+      "docs": ["https://global.example.com"]
     },
     {
       "name": "ansible",
-      "docs": ["https://docs.ansible.com"],
-      "version": "latest"
+      "docs": ["https://docs.ansible.com"]
     }
-  ],
-  "checkMode": "alert-and-verify"
+  ]
 }
 JSON
 cat > "$FAKE_PROJECT/.claude-plugin/fresh-guides.json" <<'JSON'
@@ -156,33 +128,30 @@ cat > "$FAKE_PROJECT/.claude-plugin/fresh-guides.json" <<'JSON'
   "watchlist": [
     {
       "name": "terraform",
-      "docs": ["https://project.example.com"],
-      "version": "latest"
+      "docs": ["https://project.example.com"]
     }
-  ],
-  "checkMode": "alert-and-verify"
+  ]
 }
 JSON
-output=$(env HOME="$FAKE_HOME4" CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="$FAKE_PROJECT" bash "$SCRIPT")
-echo "$output" | grep -q 'project.example.com' && echo "OK 2.5: Project terraform overrides global" || echo "FAIL 2.5: Project override failed"
-echo "$output" | grep -q 'ansible' && echo "OK 2.5: Global-only ansible preserved" || echo "FAIL 2.5: Global ansible lost"
-echo "$output" | grep -qv 'global.example.com' && echo "OK 2.5: Global terraform URL not present" || echo "FAIL 2.5: Global terraform URL leaked"
+output=$(env HOME="$FAKE_HOME3" CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="$FAKE_PROJECT" bash "$SCRIPT")
+echo "$output" | grep -q 'project.example.com' && echo "OK 2.4: Project terraform overrides global" || echo "FAIL 2.4: Project override failed"
+echo "$output" | grep -q 'ansible' && echo "OK 2.4: Global-only ansible preserved" || echo "FAIL 2.4: Global ansible lost"
+echo "$output" | grep -qv 'global.example.com' && echo "OK 2.4: Global terraform URL not present" || echo "FAIL 2.4: Global terraform URL leaked"
 
-# Test 2.6: Source marker includes version
+# Test 2.5: Source marker includes version
 output=$(env HOME="$FAKE_HOME" CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="/tmp/nonexistent" bash "$SCRIPT")
-echo "$output" | grep -q 'v0.1.0' && echo "OK 2.6: Version in source marker" || echo "FAIL 2.6: Version missing"
+echo "$output" | grep -q 'v0.1.0' && echo "OK 2.5: Version in source marker" || echo "FAIL 2.5: Version missing"
 
 # Cleanup
-rm -rf /tmp/fg-test-1 /tmp/fg-test-3 /tmp/fg-test-4 /tmp/fg-test-5 /tmp/fg-test-5-proj
+rm -rf /tmp/fg-test-1 /tmp/fg-test-3 /tmp/fg-test-4 /tmp/fg-test-4-proj
 ```
 
 **Expected result:**
-- 2.1: Full output with header, entries, skill pointer, source marker, cite instruction
+- 2.1: Full output with header, entries, skill pointer, source marker
 - 2.2: Zero output when no config exists
 - 2.3: Zero output when watchlist is empty
-- 2.4: Alert-only mode shows alert text, no verify skill pointer
-- 2.5: Project entries override global entries with same name; global-only entries preserved
-- 2.6: Version number present in source marker
+- 2.4: Project entries override global entries with same name; global-only entries preserved
+- 2.5: Version number present in source marker
 
 ---
 
@@ -202,11 +171,9 @@ cat > ~/.claude/fresh-guides.json <<'JSON'
   "watchlist": [
     {
       "name": "terraform",
-      "docs": ["https://developer.hashicorp.com/terraform/docs", "https://github.com/hashicorp/terraform/releases"],
-      "version": "latest"
+      "docs": ["https://developer.hashicorp.com/terraform/docs", "https://github.com/hashicorp/terraform/releases"]
     }
-  ],
-  "checkMode": "alert-and-verify"
+  ]
 }
 JSON
 ```
@@ -216,14 +183,14 @@ JSON
 **Step 3:** Ask Claude: "What's the syntax for terraform import block?"
 
 **Expected:**
-- Claude alerts: "fresh-guides: terraform is on your fast-changing tech watchlist."
 - Claude invokes `fresh-guides-verify` skill
+- Claude detects terraform version from project or runtime
 - Claude fetches official Terraform docs
-- Response includes inline citation with URL and date
+- Response includes version-specific inline citations
 
 **Step 4:** Ask Claude a general question: "What is infrastructure as code?"
 
-**Expected:** No fresh-guides alert (general concept, not version-specific).
+**Expected:** No fresh-guides verification (general concept, not version-specific).
 
 **Step 5:** Clean up:
 ```bash
@@ -245,19 +212,18 @@ rm ~/.claude/fresh-guides.json
 **Expected:**
 - Explains what fresh-guides does
 - Asks for technologies to watch
-- For each technology, asks for doc URLs (with sensible suggestions)
-- Asks for check mode
+- For each technology, probes candidate doc URLs via WebFetch
+- Presents working URLs as checkboxes with pre-selected defaults + "Other" option
 - Asks for config scope (global vs project)
 - Writes config file
-- Shows confirmation summary
+- Shows summary table and restart reminder
 
 ### Test 4.2: /fresh-guides-show
 
 **Step 1:** After setup, run `/fresh-guides-show`
 
 **Expected:**
-- Displays watchlist as a table with technology, docs, version
-- Shows check mode
+- Displays watchlist as a table with technology and docs
 - Lists available update commands
 
 ### Test 4.3: /fresh-guides-update
@@ -274,13 +240,7 @@ rm ~/.claude/fresh-guides.json
 - URL added to terraform's docs array
 - Confirmation message shown
 
-**Step 3:** Run `/fresh-guides-update mode alert-only`
-
-**Expected:**
-- Check mode changed to alert-only
-- Confirmation message shown
-
-**Step 4:** Run `/fresh-guides-update remove kubernetes`
+**Step 3:** Run `/fresh-guides-update remove kubernetes`
 
 **Expected:**
 - Kubernetes removed from watchlist
@@ -290,21 +250,26 @@ rm ~/.claude/fresh-guides.json
 
 ## 5. Verification Behavior
 
-**Objective:** Verify that the `fresh-guides-verify` skill correctly fetches and cites official docs.
+**Objective:** Verify that the `fresh-guides-verify` skill correctly detects version, fetches docs, and cites sources.
 
 **Automation:** Manual only (requires fresh session with WebFetch access)
 
-### Test 5.1: Docs confirm training data
+### Test 5.1: Version detection and doc verification
 
-**Step 1:** Configure terraform on watchlist, ask about a well-established Terraform feature.
+**Step 1:** Configure terraform on watchlist, ensure terraform is installed locally.
 
-**Expected:** Claude verifies and says "Verified against official docs" with citation.
+**Step 2:** Ask about a terraform feature.
 
-### Test 5.2: Docs contradict or extend training data
+**Expected:**
+- Claude runs `terraform version` to detect current version
+- Claude fetches version-specific docs
+- Response includes version-aware advice with inline citations
 
-**Step 1:** Ask about a very recent Terraform feature or changed behavior.
+### Test 5.2: Feature not available in user's version
 
-**Expected:** Claude notes the discrepancy: "My training data may be outdated here. According to official docs as of [date]: ..."
+**Step 1:** Ask about a feature introduced in a version newer than the user's.
+
+**Expected:** Claude warns: "Requires vX.Y+. Your vA.B does not support it." and suggests workaround if available.
 
 ### Test 5.3: Verification fails
 

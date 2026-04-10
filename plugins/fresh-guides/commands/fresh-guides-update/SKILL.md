@@ -4,9 +4,8 @@ description: >
   Quick-update the fresh-guides watchlist. Usage:
   /fresh-guides-update add <name> <url> — add a technology,
   /fresh-guides-update remove <name> — remove a technology,
-  /fresh-guides-update url <name> <url> — add URL to existing technology,
-  /fresh-guides-update mode <mode> — change check mode.
-  Keywords: update watchlist, add technology, remove technology, change mode.
+  /fresh-guides-update url <name> <url> — add URL to existing technology.
+  Keywords: update watchlist, add technology, remove technology.
 ---
 
 # Fresh Guides Update
@@ -29,7 +28,7 @@ Determine which config file to update:
 **Steps:**
 1. Read config file.
 2. Check if `<name>` already exists in watchlist (case-insensitive). If so, add the URL to its `docs` array instead.
-3. If new, append `{ "name": "<name>", "docs": ["<url>"], "version": "latest" }` to watchlist.
+3. If new, append `{ "name": "<name>", "docs": ["<url>"] }` to watchlist.
 4. Write the updated config.
 5. Confirm: "Added **<name>** to watchlist with doc URL: <url>. Restart session for changes to take effect."
 
@@ -56,18 +55,7 @@ Determine which config file to update:
 5. Confirm: "Added doc URL for **<name>**: <url>."
 6. If not found: "**<name>** is not on the watchlist. Use `/fresh-guides-update add <name> <url>` to add it."
 
-### Change check mode
-
-**Usage:** `/fresh-guides-update mode <alert-and-verify|alert-only>`
-
-**Steps:**
-1. Read config file.
-2. Set `checkMode` to the specified value.
-3. Write the updated config.
-4. Confirm: "Check mode set to **<mode>**."
-
 ## Error Handling
 
-- Invalid mode → show valid options: `alert-and-verify`, `alert-only`
 - No arguments → show usage examples for all operations
 - Config file missing → create from template, then apply update

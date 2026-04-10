@@ -18,9 +18,9 @@ Configure which technologies Claude should verify against official docs before g
 Explain to the user:
 
 > **Fresh Guides** keeps a watchlist of technologies that change frequently — where model training data may be outdated. When you ask about a watched technology, Claude will:
-> 1. Alert you that this tech is on the watchlist
-> 2. Fetch the latest official docs to verify its answer
-> 3. Cite sources with URLs and dates
+> 1. Detect which version you're running
+> 2. Fetch the official docs for that version to verify its answer
+> 3. Cite sources and warn about version-specific limitations
 
 Give examples: AWS services (new features every week), Terraform providers (breaking changes between versions), Kubernetes (deprecation cycles), CI/CD tools (frequent major releases).
 
@@ -28,10 +28,9 @@ Give examples: AWS services (new features every week), Terraform providers (brea
 
 Read `~/.claude/fresh-guides.json` and `.claude-plugin/fresh-guides.json` (if in a project). If either exists, display the current watchlist as a table:
 
-| Technology | Official Docs | Version |
-|------------|--------------|---------|
-| terraform | developer.hashicorp.com/terraform/docs | latest |
-| aws-lambda | docs.aws.amazon.com/lambda/ | latest |
+| Technology | Official Docs |
+|------------|--------------|
+| terraform | developer.hashicorp.com/terraform/docs |
 
 If neither exists, say "No watchlist configured yet — let's create one."
 
@@ -43,23 +42,23 @@ Use `AskUserQuestion` with a free-text option. Ask:
 
 Suggest categories: cloud providers (AWS, GCP, Azure), IaC tools (Terraform, Pulumi), container orchestration (Kubernetes, ECS), CI/CD platforms, rapidly-evolving frameworks.
 
-### 4. For each technology, ask for doc URLs
+### 4. For each technology, discover and propose doc URLs
 
-For each technology the user listed, use `AskUserQuestion` to collect official documentation URLs. Suggest sensible defaults based on the technology name:
+For each technology the user listed:
 
-- terraform → `https://developer.hashicorp.com/terraform/docs`, `https://github.com/hashicorp/terraform/releases`
-- aws-* → `https://docs.aws.amazon.com/<service>/`
-- kubernetes → `https://kubernetes.io/docs/`, `https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/`
+1. **Generate candidate URLs** based on the technology name. Use well-known patterns:
+   - terraform → `https://developer.hashicorp.com/terraform/docs`, `https://github.com/hashicorp/terraform/releases`
+   - aws terraform provider → `https://registry.terraform.io/providers/hashicorp/aws/latest/docs`, `https://github.com/hashicorp/terraform-provider-aws/releases`
+   - kubernetes → `https://kubernetes.io/docs/`, `https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/`
+   - For other technologies, construct likely official doc URLs
 
-Accept multiple URLs per technology (docs, release notes, changelog).
+2. **Probe each candidate** with `WebFetch` to verify it resolves successfully. Only include URLs that actually work.
 
-### 5. Ask for check mode
+3. **Present as checkboxes** via `AskUserQuestion`: list the working URLs as `[*]` pre-selected options, plus an `[ ] Other (enter URL)` option for the user to add custom URLs.
 
-Use `AskUserQuestion`:
-- **alert-and-verify** (Recommended) — Claude alerts AND fetches official docs to verify
-- **alert-only** — Claude alerts but does not automatically fetch docs
+4. If no candidate URLs resolve, ask the user to provide URLs manually.
 
-### 6. Ask for config scope
+### 5. Ask for config scope
 
 Use `AskUserQuestion`:
 - **Global** (`~/.claude/fresh-guides.json`) — applies to all projects
@@ -67,18 +66,17 @@ Use `AskUserQuestion`:
 
 If the user chooses project scope, check that `.claude-plugin/` directory exists (create if needed).
 
-### 7. Write config and confirm
+### 6. Write config and confirm
 
-Write the config file with the collected data. Display a summary:
+Write the config file with the collected data. Display a summary table with all configured technologies and their doc URLs:
+
+| Technology | Official Docs |
+|------------|--------------|
+| terraform | developer.hashicorp.com/terraform/docs, github.com/.../releases |
+| aws terraform provider | registry.terraform.io/..., github.com/.../releases |
+
+Then confirm:
 
 ```
-Watchlist saved to ~/.claude/fresh-guides.json
-
-| Technology | Docs | Version |
-|------------|------|---------|
-| terraform  | developer.hashicorp.com/..., github.com/... | latest |
-
-Check mode: alert-and-verify
-
 Restart your session or run /clear for changes to take effect.
 ```

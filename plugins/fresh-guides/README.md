@@ -37,7 +37,7 @@ frequently — where model training data may be outdated.
 
 ? Config scope?
     Global (~/.claude/fresh-guides.json)
-  ❯ **Project** (.claude-plugin/fresh-guides.json)
+  ❯ Project (.claude-plugin/fresh-guides.json)
 
 Restart your session or run /clear for changes to take effect.
 ```
@@ -47,32 +47,24 @@ Claude verifies before answering:
 ```markdown
 > What's the syntax for terraform import block?
 
-fresh-guides: **terraform** is on your fast-changing tech watchlist.
-
 ✦ Using skill: fresh-guides-verify
 
-The `import` block was introduced in Terraform v1.5. Syntax:
+● Bash(terraform version)
+  Terraform v1.6.6
+
+The `import` block is supported in your version (v1.6.6, added in v1.5).
+[Source: developer.hashicorp.com/terraform/language/v1.6.x/import]
+
+Syntax:
 
     import {
       to = aws_instance.example
       id = "i-abcd1234"
     }
 
-As of v1.7+, you can also use `for_each` inside import blocks for
-bulk imports. [Source: developer.hashicorp.com/terraform/docs, 2026-04-10]
-```
-
-View your watchlist:
-
-```markdown
-> /fresh-guides-show
-
-| Technology | Official Docs | Version |
-|------------|--------------|---------|
-| terraform | developer.hashicorp.com/..., github.com/.../releases | latest |
-| aws terraform provider | registry.terraform.io/..., github.com/.../releases | latest |
-
-**Check mode:** alert-and-verify
+**Note:** `for_each` inside import blocks requires v1.7+. Your v1.6.6
+does not support it — you'll need to write a separate `import` block
+per resource. [Source: developer.hashicorp.com/terraform/language/v1.7.x/import]
 ```
 
 ## 📦 Installation <a name="installation"></a>
@@ -93,19 +85,13 @@ Restart your session for changes to take effect.
 
 ## ⚙️ How it works <a name="how-it-works"></a>
 
-Two check modes control Claude's behavior:
-
-| Mode | Behavior |
-|------|----------|
-| **alert-and-verify** | Alert + fetch official docs + cite sources |
-| **alert-only** | Alert the user, skip automatic verification |
-
 | Trigger | What happens |
 |---------|-------------|
-| SessionStart | Injects compact watchlist + rules into context |
-| Watched tech detected | `fresh-guides-verify` skill invoked — fetches docs, compares, cites |
-| Docs confirm knowledge | Response includes "Verified against official docs" with citation |
-| Docs contradict knowledge | Explicit callout: "My training data may be outdated here" |
+| SessionStart | Injects compact watchlist into context |
+| Watched tech detected | `fresh-guides-verify` skill invoked |
+| Version detection | Checks project files and runtime for current version |
+| Doc verification | Fetches version-specific official docs via WebFetch/WebSearch |
+| Version mismatch | Warns about features unavailable in user's version |
 | Verification fails | States "could not verify" with links for manual check |
 
 **Scope:** Verification triggers only for version-specific advice (API signatures, config syntax, defaults, deprecations). General concepts and design patterns are answered normally.
@@ -116,12 +102,11 @@ Two check modes control Claude's behavior:
 
 | Command | Description |
 |---------|-------------|
-| `/fresh-guides-setup` | Interactive wizard — configure watchlist, doc URLs, check mode |
+| `/fresh-guides-setup` | Interactive wizard — configure watchlist and doc URLs |
 | `/fresh-guides-show` | Display current watchlist configuration |
 | `/fresh-guides-update add <name> <url>` | Add a technology with a doc URL |
 | `/fresh-guides-update remove <name>` | Remove a technology from watchlist |
 | `/fresh-guides-update url <name> <url>` | Add another URL to an existing technology |
-| `/fresh-guides-update mode <mode>` | Change check mode (alert-and-verify / alert-only) |
 
 ## 📝 Config <a name="config"></a>
 
@@ -136,25 +121,20 @@ Project config: `.claude-plugin/fresh-guides.json` (overrides global)
       "docs": [
         "https://developer.hashicorp.com/terraform/docs",
         "https://github.com/hashicorp/terraform/releases"
-      ],
-      "version": "latest"
+      ]
     },
     {
       "name": "aws terraform provider",
       "docs": [
         "https://registry.terraform.io/providers/hashicorp/aws/latest/docs",
         "https://github.com/hashicorp/terraform-provider-aws/releases"
-      ],
-      "version": "latest"
+      ]
     }
-  ],
-  "checkMode": "alert-and-verify"
+  ]
 }
 ```
 
 | Field | Description | Default |
 |-------|-------------|---------|
-| `watchlist[].name` | Technology identifier (matched case-insensitively) | — |
+| `watchlist[].name` | Technology identifier (matched case-insensitive) | — |
 | `watchlist[].docs` | Official doc / changelog / release note URLs | — |
-| `watchlist[].version` | Version constraint (`"latest"` for now) | `"latest"` |
-| `checkMode` | `"alert-and-verify"` or `"alert-only"` | `"alert-and-verify"` |
