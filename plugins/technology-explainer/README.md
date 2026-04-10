@@ -5,6 +5,8 @@
 
 Configure your proficiency level per technology and Claude automatically adjusts its explanation depth: expert gets terse answers, learning gets theory and examples.
 
+Pair with [`fresh-guides`](../fresh-guides/README.md) plugin for full coverage: `technology-explainer` controls *how much* Claude explains (depth), `fresh-guides` controls *how reliably* — by verifying against official docs before answering about fast-changing technologies.
+
 > [!NOTE]
 > [📦 Installation](#installation) · [⚙️ How it works](#how-it-works) · [🎮 Commands](#commands) · [📝 Config](#config)
 

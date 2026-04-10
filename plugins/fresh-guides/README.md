@@ -5,6 +5,8 @@
 
 Configure a watchlist of fast-changing technologies and Claude automatically verifies advice against official documentation before responding.
 
+Pair with [`technology-explainer`](../technology-explainer/README.md) plugin for full coverage: `fresh-guides` controls *how reliably* Claude answers (checking official docs), `technology-explainer` controls *how much* it explains (depth based on your proficiency).
+
 > [!NOTE]
 > [📦 Installation](#installation) · [⚙️ How it works](#how-it-works) · [🎮 Commands](#commands) · [📝 Config](#config)
 
@@ -96,7 +98,6 @@ Restart your session for changes to take effect.
 
 **Scope:** Verification triggers only for version-specific advice (API signatures, config syntax, defaults, deprecations). General concepts and design patterns are answered normally.
 
-**Complements [technology-explainer](../technology-explainer/README.md):** Technology-explainer controls explanation *depth* (brief vs detailed). Fresh-guides controls *accuracy verification* (check docs vs trust weights). A technology can be in both configs.
 
 ## 🎮 Commands <a name="commands"></a>
 
