@@ -10,19 +10,36 @@ Configure a watchlist of fast-changing technologies and Claude automatically ver
 
 ## 🎬 Demo <a name="demo"></a>
 
-Add technologies to your watchlist:
+Configure your watchlist:
 
 ```markdown
-> /fresh-guides-update add terraform https://developer.hashicorp.com/terraform/docs
+> /fresh-guides-setup
 
-Added **terraform** to watchlist with doc URL:
-https://developer.hashicorp.com/terraform/docs.
-Restart session for changes to take effect.
+Welcome! **Fresh Guides** keeps a watchlist of technologies that change
+frequently — where model training data may be outdated.
 
-> /fresh-guides-update url terraform https://github.com/hashicorp/terraform/releases
+? Which technologies should be on your watchlist?
+  terraform, aws terraform provider
 
-Added doc URL for **terraform**:
-https://github.com/hashicorp/terraform/releases.
+? Official doc URLs for **terraform**?
+  [*] https://developer.hashicorp.com/terraform/docs
+  [*] https://github.com/hashicorp/terraform/releases
+  [ ] Other (enter URL)
+
+? Official doc URLs for **aws terraform provider**?
+  [*] https://registry.terraform.io/providers/hashicorp/aws/latest/docs
+  [*] https://github.com/hashicorp/terraform-provider-aws/releases
+  [ ] Other (enter URL)
+
+? Check mode?
+  ❯ alert-and-verify (Recommended)
+    alert-only
+
+? Config scope?
+    Global (~/.claude/fresh-guides.json)
+  ❯ **Project** (.claude-plugin/fresh-guides.json)
+
+Restart your session or run /clear for changes to take effect.
 ```
 
 Claude verifies before answering:
@@ -53,7 +70,7 @@ View your watchlist:
 | Technology | Official Docs | Version |
 |------------|--------------|---------|
 | terraform | developer.hashicorp.com/..., github.com/.../releases | latest |
-| aws-lambda | docs.aws.amazon.com/lambda/ | latest |
+| aws terraform provider | registry.terraform.io/..., github.com/.../releases | latest |
 
 **Check mode:** alert-and-verify
 ```
@@ -123,9 +140,10 @@ Project config: `.claude-plugin/fresh-guides.json` (overrides global)
       "version": "latest"
     },
     {
-      "name": "aws-lambda",
+      "name": "aws terraform provider",
       "docs": [
-        "https://docs.aws.amazon.com/lambda/"
+        "https://registry.terraform.io/providers/hashicorp/aws/latest/docs",
+        "https://github.com/hashicorp/terraform-provider-aws/releases"
       ],
       "version": "latest"
     }
