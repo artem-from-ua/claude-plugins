@@ -57,6 +57,11 @@
       "name": "technology-explainer",
       "source": "./plugins/technology-explainer",
       "description": "Adapts explanation depth based on user proficiency per technology: expert, intermediate, or learning"
+    },
+    {
+      "name": "fresh-guides",
+      "source": "./plugins/fresh-guides",
+      "description": "Watchlist for fast-changing technologies: verifies advice against official docs before responding"
     }
   ]
 }

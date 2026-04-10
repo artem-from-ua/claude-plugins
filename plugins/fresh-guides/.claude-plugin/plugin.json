@@ -1,0 +1,9 @@
+{
+  "name": "fresh-guides",
+  "version": "0.1.0",
+  "description": "Watchlist for fast-changing technologies: verifies advice against official docs before responding",
+  "author": { "name": "Tribe Coding" },
+  "license": "MIT",
+  "commands": ["./commands/"],
+  "skills": ["./skills/"]
+}
