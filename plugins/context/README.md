@@ -8,7 +8,7 @@
 `/ctx-dump` takes the complementary approach: it dumps the **verbatim context from Claude's memory** — exactly what Claude received at session start, including gitStatus and currentDate that `/ctx-show` cannot access.
 
 > [!NOTE]
-> [⚙️ How it works](#how-it-works) · [🔀 ctx-show vs ctx-dump](#ctx-show-vs-ctx-dump) · [📋 Sources](#sources) · [📊 Summary Table Columns](#summary-table-columns) · [⚡ Commands](#commands) · [📦 Installation](#installation)
+> [📦 Installation](#installation) · [⚙️ How it works](#how-it-works) · [🔀 ctx-show vs ctx-dump](#ctx-show-vs-ctx-dump) · [📋 Sources](#sources) · [📊 Summary Table Columns](#summary-table-columns) · [⚡ Commands](#commands)
 
 ## 🎬 Demo <a name="demo"></a>
 
@@ -47,6 +47,18 @@ Summary:
 - Active Playbook presets: 5 presets from playbook@tribe-coding (v0.5.5)
 - Total context load: ~11,800 tokens
 ```
+
+## 📦 Installation <a name="installation"></a>
+
+```bash
+/plugin marketplace add Tribe-Coding/claude-plugins
+/plugin install context@tribe-coding
+/plugin
+```
+
+Select **context** → enable **auto-update**.
+
+**Requirements:** `bash`, `jq` (static sources are shown even without `jq`)
 
 ## 🔀 ctx-show vs ctx-dump <a name="ctx-show-vs-ctx-dump"></a>
 
@@ -110,15 +122,3 @@ Playbook presets appear as individual rows when using playbook plugin v0.3.1+.
 | `/ctx-show` | `--stdout` | Print full context content to terminal |
 | `/ctx-dump` | `--file` (default) | Write in-memory context to `/tmp/claude-context-dump-{timestamp}.md` |
 | `/ctx-dump` | `--stdout` | Print in-memory context to terminal |
-
-## 📦 Installation <a name="installation"></a>
-
-```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-/plugin install context@tribe-coding
-/plugin
-```
-
-Select **context** → enable **auto-update**.
-
-**Requirements:** `bash`, `jq` (static sources are shown even without `jq`)

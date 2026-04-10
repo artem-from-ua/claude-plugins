@@ -6,7 +6,7 @@
 Configure a watchlist of fast-changing technologies and Claude automatically verifies advice against official documentation before responding.
 
 > [!NOTE]
-> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [🎮 Commands](#commands) · [📝 Config](#config)
+> [📦 Installation](#installation) · [⚙️ How it works](#how-it-works) · [🎮 Commands](#commands) · [📝 Config](#config)
 
 ## 🎬 Demo <a name="demo"></a>
 
@@ -58,6 +58,22 @@ View your watchlist:
 **Check mode:** alert-and-verify
 ```
 
+## 📦 Installation <a name="installation"></a>
+
+```bash
+/plugin marketplace add Tribe-Coding/claude-plugins
+/plugin install fresh-guides@tribe-coding
+/plugin
+```
+
+Select **fresh-guides** → enable **auto-update**. Then run the setup wizard:
+
+```
+/fresh-guides-setup
+```
+
+Restart your session for changes to take effect.
+
 ## ⚙️ How it works <a name="how-it-works"></a>
 
 Two check modes control Claude's behavior:
@@ -78,22 +94,6 @@ Two check modes control Claude's behavior:
 **Scope:** Verification triggers only for version-specific advice (API signatures, config syntax, defaults, deprecations). General concepts and design patterns are answered normally.
 
 **Complements [technology-explainer](../technology-explainer/README.md):** Technology-explainer controls explanation *depth* (brief vs detailed). Fresh-guides controls *accuracy verification* (check docs vs trust weights). A technology can be in both configs.
-
-## 📦 Installation <a name="installation"></a>
-
-```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-/plugin install fresh-guides@tribe-coding
-/plugin
-```
-
-Select **fresh-guides** → enable **auto-update**. Then run the setup wizard:
-
-```
-/fresh-guides-setup
-```
-
-Restart your session for changes to take effect.
 
 ## 🎮 Commands <a name="commands"></a>
 

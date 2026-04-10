@@ -13,6 +13,7 @@ MANDATORY: README.md is the project's landing page. First 5 lines MUST answer "w
 - After header block (motto + intro paragraph) → add a nav line as `> [!NOTE]` GitHub Alert. **NEVER include the first H2 section** — it is always visible above the fold. This is a hard rule: do not add it "for completeness", do not add it when there are few sections, do not add it for any reason. Do NOT include GitHub community files in nav (see Navigation Line reference section) but DO reference them in a section at the bottom. Include all other H2 sections. Use ` · ` as separator. No "Scroll to:" prefix. Add explicit `<a name="...">` anchor to each emoji heading: `## ⚙️ How it works <a name="how-it-works"></a>`. Then nav links use the explicit anchor: `[⚙️ How it works](#how-it-works)`
 - Use emoji in headings (🚀 📦 ⚡ ⚙️) unless user explicitly forbids it
 - For tools/CLIs/plugins → lead with a concrete demo (real input → real output), NOT a feature list
+- Installation MUST be the first section after Demo (or after the first introductory section if no Demo). Never bury it behind How it works, Commands, or other sections — the reader who liked the demo wants to install next
 - Installation: official method only — no workarounds; merge Quick Start + Installation into one section
 - Every install/usage instruction MUST include a copy-pasteable command block — no placeholder-only steps
 - When a README section exceeds 20 lines → extract to `docs/<topic>.md` and replace with a one-line summary + link

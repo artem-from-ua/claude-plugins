@@ -6,7 +6,7 @@
 A Claude Code plugin that enforces git branch naming conventions. Validates branch names before creation, warns when staged/pushed files don't match the branch type, and protects against direct pushes to main branches.
 
 > [!NOTE]
-> [💡 Why](#why-this-plugin-exists) · [🎬 Usage Examples](#usage-examples) · [📐 Format](#branch-name-format) · [📦 Installation](#installation) · [⚙️ Configuration](#configuration) · [👥 Team Setup](#team-setup-workflow) · [🔍 Mismatch](#content-mismatch) · [🪝 Pre-push](#pre-push-hook) · [🏗️ Architecture](#architecture) · [💰 Token Cost](#token-cost) · [🧪 Testing](#testing) · [📚 References](#references)
+> [💡 Why](#why-this-plugin-exists) · [🎬 Usage Examples](#usage-examples) · [📦 Installation](#installation) · [📐 Format](#branch-name-format) · [⚙️ Configuration](#configuration) · [👥 Team Setup](#team-setup-workflow) · [🔍 Mismatch](#content-mismatch) · [🪝 Pre-push](#pre-push-hook) · [🏗️ Architecture](#architecture) · [💰 Token Cost](#token-cost) · [🧪 Testing](#testing) · [📚 References](#references)
 
 ## ✅ What It Does <a name="what-it-does"></a>
 
@@ -122,22 +122,6 @@ This is usually done via a pull request instead of a direct push. Are you sure?
 
 Your team uses JIRA and wants strict enforcement. One dev runs `/git-branch-naming:setup`, commits `.claude-plugin/git-branch-naming.json`, and from that point every teammate's Claude Code session enforces the same rules — no onboarding docs required.
 
-## 📐 Branch Name Format <a name="branch-name-format"></a>
-
-```
-<prefix>/<kebab-case-description>
-```
-
-Valid prefixes: `feature`, `bugfix`, `hotfix`, `release`, `docs`, `test`, `chore`, `refactor`
-
-Examples:
-- ✅ `feature/user-auth`
-- ✅ `bugfix/fix-login-redirect`
-- ✅ `docs/update-readme`
-- ❌ `my-feature` — missing prefix
-- ❌ `Feature/UserAuth` — wrong case
-- ❌ `feature/user_auth` — underscore not allowed
-
 ## 📦 Installation <a name="installation"></a>
 
 ```bash
@@ -157,6 +141,22 @@ Then run the setup wizard to configure your branch naming conventions:
 This creates `.claude-plugin/git-branch-naming.json` with your project's conventions. Commit it to git to share with your team.
 
 **Requirements:** bash 3.2+, git, jq (scripts fall back to defaults if jq is unavailable)
+
+## 📐 Branch Name Format <a name="branch-name-format"></a>
+
+```
+<prefix>/<kebab-case-description>
+```
+
+Valid prefixes: `feature`, `bugfix`, `hotfix`, `release`, `docs`, `test`, `chore`, `refactor`
+
+Examples:
+- ✅ `feature/user-auth`
+- ✅ `bugfix/fix-login-redirect`
+- ✅ `docs/update-readme`
+- ❌ `my-feature` — missing prefix
+- ❌ `Feature/UserAuth` — wrong case
+- ❌ `feature/user_auth` — underscore not allowed
 
 ## ⚙️ Configuration <a name="configuration"></a>
 
