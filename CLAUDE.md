@@ -38,6 +38,7 @@ A marketplace of reusable Claude Code plugins (`Tribe Coding`). Each plugin live
 
 - **ai-fortune** — Career direction analysis: interview + AI usage pattern mining
 - **context** — Inspects full session context in load order
+- **fresh-guides** — Watchlist for fast-changing technologies: verifies advice against official docs
 - **git-branch-naming** — Enforces branch naming conventions (prefix/kebab-case)
 - **kb-grooming** — Documentation health analysis: structural checks, semantic compliance, GitHub issues
 - **plantuml** — Keeps PlantUML diagram URLs in sync; provides ASCII rendering in terminal

@@ -14,6 +14,7 @@ A curated collection of plugins for [Claude Code](https://docs.anthropic.com/en/
 |--------|-------------|
 | [**ai-fortune**](plugins/ai-fortune/README.md) | Analyze your AI usage patterns, run a career interview, and get a personalized career direction report |
 | [**context**](plugins/context/README.md) | Show everything loaded into your session — CLAUDE.md files, memory, hooks — with a per-source token breakdown |
+| [**fresh-guides**](plugins/fresh-guides/README.md) | Watchlist for fast-changing technologies — verify advice against official docs before responding |
 | [**git-branch-naming**](plugins/git-branch-naming/README.md) | Enforce branch naming conventions automatically; warns before push if the name or staged content doesn't match |
 | [**kb-grooming**](plugins/kb-grooming/README.md) | Audit documentation health — broken links, orphan files, README compliance — then create a GitHub epic with linked issues |
 | [**plantuml**](plugins/plantuml/README.md) | Proactively add rendered diagrams to docs (image URLs auto-synced); draw ASCII diagrams inline during terminal conversations |

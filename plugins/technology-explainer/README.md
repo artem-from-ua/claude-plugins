@@ -6,7 +6,7 @@
 Configure your proficiency level per technology and Claude automatically adjusts its explanation depth: expert gets terse answers, learning gets theory and examples.
 
 > [!NOTE]
-> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [🎮 Commands](#commands) · [📝 Config](#config)
+> [📦 Installation](#installation) · [⚙️ How it works](#how-it-works) · [🎮 Commands](#commands) · [📝 Config](#config)
 
 ## 🎬 Demo <a name="demo"></a>
 
@@ -85,6 +85,22 @@ persistent rules. `PostToolUse` hooks can match specific tools via the
 `matcher` field (e.g., `Edit`, `Write`) — leave it empty to match all tools.
 ```
 
+## 📦 Installation <a name="installation"></a>
+
+```bash
+/plugin marketplace add Tribe-Coding/claude-plugins
+/plugin install technology-explainer@tribe-coding
+/plugin
+```
+
+Select **technology-explainer** → enable **auto-update**. Then run the setup wizard:
+
+```
+/technology-explainer-setup
+```
+
+Restart your session for changes to take effect.
+
 ## ⚙️ How it works <a name="how-it-works"></a>
 
 Three proficiency levels control Claude's explanation depth:
@@ -104,22 +120,6 @@ Three proficiency levels control Claude's explanation depth:
 | Unlisted technology | Asks for proficiency level, saves choice, then explains |
 
 **Scope:** Rules apply ONLY to conversational explanations in the terminal. Code comments, docstrings, and project documentation follow project conventions.
-
-## 📦 Installation <a name="installation"></a>
-
-```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-/plugin install technology-explainer@tribe-coding
-/plugin
-```
-
-Select **technology-explainer** → enable **auto-update**. Then run the setup wizard:
-
-```
-/technology-explainer-setup
-```
-
-Restart your session for changes to take effect.
 
 ## 🎮 Commands <a name="commands"></a>
 

@@ -6,7 +6,7 @@
 Documentation health analysis for Claude Code projects. Scans all markdown files for structural problems and semantic compliance, then creates a GitHub epic with linked issues for each finding group.
 
 > [!NOTE]
-> [⚙️ How it works](#how-it-works) · [⚡ Commands](#commands) · [📦 Installation](#installation) · [⚙️ Setup](#setup) · [📝 Config](#config) · [🔗 Dependencies](#dependencies)
+> [📦 Installation](#installation) · [⚙️ How it works](#how-it-works) · [⚡ Commands](#commands) · [⚙️ Setup](#setup) · [📝 Config](#config) · [🔗 Dependencies](#dependencies)
 
 ## 🎬 Demo <a name="demo"></a>
 
@@ -42,6 +42,12 @@ Created issues:
 
 If you decline issue creation, the full report is saved to `docs/audit/kb-grooming-report-2026-02-28.md`.
 
+## 📦 Installation <a name="installation"></a>
+
+```bash
+/plugin install kb-grooming@tribe-coding
+```
+
 ## ⚙️ How it works <a name="how-it-works"></a>
 
 ```
@@ -73,12 +79,6 @@ If you decline issue creation, the full report is saved to `docs/audit/kb-groomi
 |---------|-------------|
 | `/kb-groom` | Run full documentation health analysis |
 | `/kb-grooming-setup` | Interactive configuration wizard |
-
-## 📦 Installation <a name="installation"></a>
-
-```bash
-/plugin install kb-grooming@tribe-coding
-```
 
 ## ⚙️ Setup <a name="setup"></a>
 
