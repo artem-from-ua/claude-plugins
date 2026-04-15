@@ -107,7 +107,8 @@ def validate_block(source: str) -> tuple[bool, str]:
             try:
                 body = e.read().decode("utf-8", errors="replace").strip()
             except Exception:
-                pass
+                # Body read/decode is best-effort — we still have e.code to report.
+                body = ""
             return False, _extract_error(body) or f"HTTP {e.code}"
         except urllib.error.URLError as e:
             if isinstance(e.reason, ssl.SSLError):
