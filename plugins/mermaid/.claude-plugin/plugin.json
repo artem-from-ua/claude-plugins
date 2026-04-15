@@ -1,0 +1,15 @@
+{
+  "name": "mermaid",
+  "version": "0.1.0",
+  "description": "Mermaid diagram automation: proactive diagrams in markdown, syntax validation, diagram type guide",
+  "author": {
+    "name": "Tribe Coding"
+  },
+  "license": "MIT",
+  "commands": [
+    "./commands/"
+  ],
+  "skills": [
+    "./skills/"
+  ]
+}
