@@ -19,8 +19,10 @@ Proactive usage:
 
 Diagram conventions:
 - Every diagram MUST include a title where the type supports it: `title: ...` for sequence, class, state; `title ...` for gantt; first-line comment `%% Title: ...` otherwise. Self-documenting diagrams only.
-- Supported types in v0.1.0 guide: flowchart, sequence, state, class, ER, gantt. For other Mermaid types (pie, journey, mindmap, timeline, etc.), consult upstream docs at https://mermaid.js.org.
-- **ALWAYS invoke the `mermaid-diagram-guide` skill BEFORE creating any Mermaid diagram** to choose the correct diagram type. This is MANDATORY — do not skip this step even if you think you know which type to use.
+- Every diagram MUST include `accTitle: ...` and `accDescr: ...` where supported (flowchart, sequence, class, state, ER) — screen readers rely on these.
+- For flowcharts, use shapes *semantically* (cylinder = storage, hexagon = orchestrator, stadium = actor, rhombus = decision) and apply `linkStyle` colors for meaning (blue = data, orange = control, green = storage, purple = feedback). Define reusable `classDef` entries instead of styling nodes inline.
+- Supported types in guide: flowchart, sequence, state, class, ER, gantt. For other Mermaid types (pie, journey, mindmap, timeline, architecture-beta), consult upstream docs at https://mermaid.js.org.
+- **ALWAYS invoke the `mermaid-diagram-guide` skill BEFORE creating any Mermaid diagram** to choose the correct diagram type AND review the Styling & Semantics section. This is MANDATORY — do not skip this step even if you think you know which type to use.
 
 Validation:
 - The PostToolUse hook validates every `mermaid` block after Write/Edit on `.md` files by POSTing to Kroki (https://kroki.io). Syntax errors are surfaced to stderr (non-blocking).
