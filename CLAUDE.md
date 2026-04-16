@@ -41,6 +41,7 @@ A marketplace of reusable Claude Code plugins (`Tribe Coding`). Each plugin live
 - **fresh-guides** — Watchlist for fast-changing technologies: verifies advice against official docs
 - **git-branch-naming** — Enforces branch naming conventions (prefix/kebab-case)
 - **kb-grooming** — Documentation health analysis: structural checks, semantic compliance, GitHub issues
+- **mermaid** — Proactive Mermaid diagrams in markdown; Kroki-backed syntax validation on save
 - **plantuml** — Keeps PlantUML diagram URLs in sync; provides ASCII rendering in terminal
 - **playbook** — Injects curated coding guideline presets into sessions
 - **retroscope** — Generates retrospective reports summarizing sessions
