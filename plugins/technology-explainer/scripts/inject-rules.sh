@@ -37,7 +37,7 @@ sources=$(jq -r '
 ' "$CONFIG" 2>/dev/null || true)
 
 # Emit compact output
-printf '<!-- Source: Plugin technology-explainer@tribe-coding (v%s) -->\n' "$VERSION"
+printf '<!-- Source: Plugin technology-explainer@artem-from-ua (v%s) -->\n' "$VERSION"
 printf '## Technology Explainer\n\n'
 printf 'Adapt explanation depth to user proficiency. Applies ONLY to terminal dialogue — NOT to code comments, docstrings, or project documentation.\n\n'
 

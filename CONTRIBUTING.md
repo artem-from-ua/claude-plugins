@@ -1,6 +1,6 @@
 # Contributing to Claude Code Plugins Marketplace
 
-Thank you for contributing to the Tribe Coding plugin marketplace! This guide will help you understand our contribution workflow.
+Thank you for contributing to this Claude Code plugin marketplace! This guide will help you understand our contribution workflow.
 
 ## Quick Links
 

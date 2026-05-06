@@ -5,7 +5,7 @@
 
 ## Context
 
-Create a `retroscope` plugin for the Tribe Coding marketplace that generates retrospective summary reports from Claude Code session data. The plugin reads JSONL session logs from `~/.claude/projects/` and produces structured markdown reports with status emoji, links, and productivity insights.
+Create a `retroscope` plugin for the artem-from-ua marketplace that generates retrospective summary reports from Claude Code session data. The plugin reads JSONL session logs from `~/.claude/projects/` and produces structured markdown reports with status emoji, links, and productivity insights.
 
 **Problem:** No built-in way to review what was accomplished in Claude Code sessions, track open questions, or analyze communication effectiveness.
 
@@ -93,7 +93,7 @@ Extract mode pre-processes JSONL via Python script, outputting only user text + 
   "name": "retroscope",
   "version": "0.1.0",
   "description": "Retrospective session reports: summarize tasks, decisions, open questions from Claude Code sessions",
-  "author": { "name": "Tribe Coding" },
+  "author": { "name": "Artem Naluzhnyy" },
   "license": "MIT",
   "commands": ["./commands/"]
 }

@@ -88,7 +88,7 @@ echo "$output" | grep -q '## Fresh Guides' && echo "OK 2.1: Header present" || e
 echo "$output" | grep -q 'terraform' && echo "OK 2.1: Terraform entry" || echo "FAIL 2.1: Terraform missing"
 echo "$output" | grep -q 'aws terraform provider' && echo "OK 2.1: AWS provider entry" || echo "FAIL 2.1: AWS provider missing"
 echo "$output" | grep -q 'fresh-guides-verify' && echo "OK 2.1: Skill pointer" || echo "FAIL 2.1: Skill pointer missing"
-echo "$output" | grep -q '<!-- Source: Plugin fresh-guides@tribe-coding' && echo "OK 2.1: Source marker" || echo "FAIL 2.1: Source marker missing"
+echo "$output" | grep -q '<!-- Source: Plugin fresh-guides@artem-from-ua' && echo "OK 2.1: Source marker" || echo "FAIL 2.1: Source marker missing"
 
 # Test 2.2: Silent exit with no config
 output=$(env HOME=/tmp/nonexistent CLAUDE_PLUGIN_ROOT="$PLUGIN" CLAUDE_PROJECT_DIR="/tmp/nonexistent" bash "$SCRIPT")

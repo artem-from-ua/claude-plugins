@@ -1,7 +1,6 @@
 {
   "versionFiles": [
     { "path": "plugins/statusline/.claude-plugin/plugin.json", "field": "version", "format": "json" },
-    { "path": "plugins/statusline-compact/.claude-plugin/plugin.json", "field": "version", "format": "json" },
     { "path": "plugins/plantuml/.claude-plugin/plugin.json", "field": "version", "format": "json" },
     { "path": "plugins/git-branch-naming/.claude-plugin/plugin.json", "field": "version", "format": "json" },
     { "path": "plugins/playbook/.claude-plugin/plugin.json", "field": "version", "format": "json" },

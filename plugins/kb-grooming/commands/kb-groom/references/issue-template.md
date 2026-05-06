@@ -21,4 +21,4 @@
 - **Findings:** {{findingCount}}
 
 ---
-*Created by [kb-grooming](https://github.com/Tribe-Coding/claude-plugins) plugin*
+*Created by [kb-grooming](https://github.com/artem-from-ua/claude-plugins) plugin*

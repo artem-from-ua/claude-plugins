@@ -125,8 +125,8 @@ Your team uses JIRA and wants strict enforcement. One dev runs `/git-branch-nami
 ## 📦 Installation <a name="installation"></a>
 
 ```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-/plugin install git-branch-naming@tribe-coding
+/plugin marketplace add artem-from-ua/claude-plugins
+/plugin install git-branch-naming@artem-from-ua
 /plugin
 ```
 

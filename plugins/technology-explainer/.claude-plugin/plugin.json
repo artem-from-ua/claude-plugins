@@ -1,9 +1,15 @@
 {
   "name": "technology-explainer",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Adapts explanation depth based on user proficiency per technology: expert, intermediate, or learning",
-  "author": { "name": "Tribe Coding" },
+  "author": {
+    "name": "Artem Naluzhnyy"
+  },
   "license": "MIT",
-  "commands": ["./commands/"],
-  "skills": ["./skills/"]
+  "commands": [
+    "./commands/"
+  ],
+  "skills": [
+    "./skills/"
+  ]
 }

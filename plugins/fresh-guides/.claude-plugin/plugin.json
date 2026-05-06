@@ -1,9 +1,15 @@
 {
   "name": "fresh-guides",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Watchlist for fast-changing technologies: verifies advice against official docs before responding",
-  "author": { "name": "Tribe Coding" },
+  "author": {
+    "name": "Artem Naluzhnyy"
+  },
   "license": "MIT",
-  "commands": ["./commands/"],
-  "skills": ["./skills/"]
+  "commands": [
+    "./commands/"
+  ],
+  "skills": [
+    "./skills/"
+  ]
 }

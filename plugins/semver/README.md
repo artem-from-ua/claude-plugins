@@ -43,8 +43,8 @@ Bump version now, or commit anyway?
 ## 📦 Installation <a name="installation"></a>
 
 ```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-/plugin install semver@tribe-coding
+/plugin marketplace add artem-from-ua/claude-plugins
+/plugin install semver@artem-from-ua
 ```
 
 Then run the setup wizard to configure your version files and trigger strategy:

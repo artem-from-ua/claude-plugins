@@ -20,8 +20,8 @@ Claude sees the active rules in every session and follows them without being ask
 ## 📦 Installation <a name="installation"></a>
 
 ```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-/plugin install playbook@tribe-coding
+/plugin marketplace add artem-from-ua/claude-plugins
+/plugin install playbook@artem-from-ua
 /plugin
 ```
 
@@ -35,16 +35,16 @@ Then in the next session, run `/playbook-setup` to choose which presets to enabl
 
 | Preset | What it enforces |
 |--------|-----------------|
-| [`action-over-planning`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/action-over-planning.md) | Bias toward implementation: max 1 planning round, then code |
-| [`debugging-discipline`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/debugging-discipline.md) | gather→diagnose→confirm→fix; never modify live state during debugging |
-| [`documentation-principles`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/documentation-principles.md) | Doc hierarchy, commit checklist, ADR policy, ripple analysis, automation reflection |
-| [`git-safety`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/git-safety.md) | force-with-lease, confirm before destructive ops, no --no-verify bypass |
-| [`github-workflow`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/github-workflow.md) | Squash merge, post-merge cleanup, PR description updates, issue linking |
-| [`macos-python`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/macos-python.md) | Python 3.12 targeting, no system Python, CWD isolation |
-| [`macos-zsh-quirks`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/macos-zsh-quirks.md) | Zsh/Bash tool quirks: CWD, `echo` escapes, absolute paths |
-| [`readme`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/readme.md) | README as landing page: 5-second test, compact structure, cross-links |
-| [`shell-scripting-safety`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/shell-scripting-safety.md) | Prevent common pitfalls in generated shell scripts |
-| [`verify-before-relay`](https://github.com/Tribe-Coding/claude-plugins/blob/main/plugins/playbook/presets/verify-before-relay.md) | Verify subagent URLs before relaying to user |
+| [`action-over-planning`](https://github.com/artem-from-ua/claude-plugins/blob/main/plugins/playbook/presets/action-over-planning.md) | Bias toward implementation: max 1 planning round, then code |
+| [`debugging-discipline`](https://github.com/artem-from-ua/claude-plugins/blob/main/plugins/playbook/presets/debugging-discipline.md) | gather→diagnose→confirm→fix; never modify live state during debugging |
+| [`documentation-principles`](https://github.com/artem-from-ua/claude-plugins/blob/main/plugins/playbook/presets/documentation-principles.md) | Doc hierarchy, commit checklist, ADR policy, ripple analysis, automation reflection |
+| [`git-safety`](https://github.com/artem-from-ua/claude-plugins/blob/main/plugins/playbook/presets/git-safety.md) | force-with-lease, confirm before destructive ops, no --no-verify bypass |
+| [`github-workflow`](https://github.com/artem-from-ua/claude-plugins/blob/main/plugins/playbook/presets/github-workflow.md) | Squash merge, post-merge cleanup, PR description updates, issue linking |
+| [`macos-python`](https://github.com/artem-from-ua/claude-plugins/blob/main/plugins/playbook/presets/macos-python.md) | Python 3.12 targeting, no system Python, CWD isolation |
+| [`macos-zsh-quirks`](https://github.com/artem-from-ua/claude-plugins/blob/main/plugins/playbook/presets/macos-zsh-quirks.md) | Zsh/Bash tool quirks: CWD, `echo` escapes, absolute paths |
+| [`readme`](https://github.com/artem-from-ua/claude-plugins/blob/main/plugins/playbook/presets/readme.md) | README as landing page: 5-second test, compact structure, cross-links |
+| [`shell-scripting-safety`](https://github.com/artem-from-ua/claude-plugins/blob/main/plugins/playbook/presets/shell-scripting-safety.md) | Prevent common pitfalls in generated shell scripts |
+| [`verify-before-relay`](https://github.com/artem-from-ua/claude-plugins/blob/main/plugins/playbook/presets/verify-before-relay.md) | Verify subagent URLs before relaying to user |
 
 Use `/playbook-browse` to read the full reference for any preset.
 

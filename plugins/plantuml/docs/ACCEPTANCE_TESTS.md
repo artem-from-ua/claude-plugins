@@ -350,15 +350,15 @@ test -f /tmp/plantuml-test-repo/.githooks/pre-commit && echo "✓ Hook file crea
 test -x /tmp/plantuml-test-repo/.githooks/pre-commit && echo "✓ Hook is executable"
 test "$(git -C /tmp/plantuml-test-repo config core.hooksPath)" = ".githooks" && echo "✓ Git config set"
 head -1 /tmp/plantuml-test-repo/.githooks/pre-commit | grep -q '#!/bin/bash' && echo "✓ Has shebang"
-grep -q '# >>> tribe-coding/plantuml >>>' /tmp/plantuml-test-repo/.githooks/pre-commit && echo "✓ Has begin marker"
-grep -q '# <<< tribe-coding/plantuml <<<' /tmp/plantuml-test-repo/.githooks/pre-commit && echo "✓ Has end marker"
+grep -q '# >>> artem-from-ua/plantuml >>>' /tmp/plantuml-test-repo/.githooks/pre-commit && echo "✓ Has begin marker"
+grep -q '# <<< artem-from-ua/plantuml <<<' /tmp/plantuml-test-repo/.githooks/pre-commit && echo "✓ Has end marker"
 ```
 
 **Expected result:**
 - ✅ `.githooks/pre-commit` file created with `#!/bin/bash` shebang
 - ✅ File is executable (chmod +x)
 - ✅ Git config `core.hooksPath` set to `.githooks`
-- ✅ Plantuml section wrapped in `# >>> tribe-coding/plantuml >>>` / `# <<< tribe-coding/plantuml <<<` markers
+- ✅ Plantuml section wrapped in `# >>> artem-from-ua/plantuml >>>` / `# <<< artem-from-ua/plantuml <<<` markers
 
 **Test case 2:** Marker idempotency
 
@@ -373,7 +373,7 @@ AFTER=$(cat /tmp/plantuml-test-repo/.githooks/pre-commit)
 
 [ "$BEFORE" = "$AFTER" ] && echo "✓ Content identical"
 echo "Exit code: $?"
-grep -c '# >>> tribe-coding/plantuml >>>' /tmp/plantuml-test-repo/.githooks/pre-commit
+grep -c '# >>> artem-from-ua/plantuml >>>' /tmp/plantuml-test-repo/.githooks/pre-commit
 ```
 
 **Expected result:**
@@ -419,7 +419,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
 
 grep -q 'My custom pre-commit hook' /tmp/plantuml-test-existing/.githooks/pre-commit && echo "✓ Original content preserved"
 grep -q 'eslint --fix' /tmp/plantuml-test-existing/.githooks/pre-commit && echo "✓ eslint line preserved"
-grep -q '# >>> tribe-coding/plantuml >>>' /tmp/plantuml-test-existing/.githooks/pre-commit && echo "✓ Plantuml section appended"
+grep -q '# >>> artem-from-ua/plantuml >>>' /tmp/plantuml-test-existing/.githooks/pre-commit && echo "✓ Plantuml section appended"
 ```
 
 **Expected result:**
@@ -471,7 +471,7 @@ CLAUDE_PLUGIN_ROOT="/path/to/plugins/plantuml" \
 CLAUDE_PROJECT_DIR="/tmp/plantuml-test-migration" \
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
 
-grep -q '# >>> tribe-coding/plantuml >>>' /tmp/plantuml-test-migration/.githooks/pre-commit && echo "✓ Markers added"
+grep -q '# >>> artem-from-ua/plantuml >>>' /tmp/plantuml-test-migration/.githooks/pre-commit && echo "✓ Markers added"
 grep -q 'PLANTUML_STAGED_MD' /tmp/plantuml-test-migration/.githooks/pre-commit && echo "✓ New namespaced variables"
 grep -q 'PLANTUML_ENCODER' /tmp/plantuml-test-migration/.githooks/pre-commit && echo "✓ New encoder lookup"
 ```
@@ -494,7 +494,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup-project.sh"
 AFTER=$(cat /tmp/plantuml-test-existing/.githooks/pre-commit)
 
 [ "$BEFORE" = "$AFTER" ] && echo "✓ Content identical (idempotent)"
-grep -c '# >>> tribe-coding/plantuml >>>' /tmp/plantuml-test-existing/.githooks/pre-commit
+grep -c '# >>> artem-from-ua/plantuml >>>' /tmp/plantuml-test-existing/.githooks/pre-commit
 grep -q 'eslint --fix' /tmp/plantuml-test-existing/.githooks/pre-commit && echo "✓ Original content still preserved"
 ```
 
@@ -558,7 +558,7 @@ CLAUDE_PROJECT_DIR="/tmp/plantuml-test-uninstall2" \
 bash "${CLAUDE_PLUGIN_ROOT}/scripts/uninstall-hook.sh"
 
 grep -q 'My custom hook' /tmp/plantuml-test-uninstall2/.githooks/pre-commit && echo "✓ Custom hook preserved"
-grep -q '>>> tribe-coding/plantuml >>>' /tmp/plantuml-test-uninstall2/.githooks/pre-commit && echo "✗ Plantuml still present" || echo "✓ Plantuml removed"
+grep -q '>>> artem-from-ua/plantuml >>>' /tmp/plantuml-test-uninstall2/.githooks/pre-commit && echo "✗ Plantuml still present" || echo "✓ Plantuml removed"
 ```
 
 **Expected result:**
@@ -1026,7 +1026,7 @@ create docs/architecture.md with a description of simple client-server architect
 - ✅ Multiple diagrams are created (Component, Sequence, Deployment are common for this prompt)
 - ✅ All diagrams have correct two-part format
 
-**Test results from issue [#28](https://github.com/Tribe-Coding/claude-plugins/issues/28):**
+**Test results from issue [#28](https://github.com/artem-from-ua/claude-plugins/issues/28):**
 
 | Test | Model | Skill invoked? | Notes |
 |------|-------|----------------|-------|
@@ -1933,7 +1933,7 @@ Look for PlantUML rules in system prompt (visible in first user interaction). Sh
 
 **Expected (v1.5.2+):**
 ```
-Encode it: echo "$source" | python3 /Users/USER/.claude/plugins/cache/tribe-coding/plantuml/1.5.8/scripts/plantuml-encode.py
+Encode it: echo "$source" | python3 /Users/USER/.claude/plugins/cache/artem-from-ua/plantuml/1.5.8/scripts/plantuml-encode.py
 ```
 
 **Not expected (broken):**

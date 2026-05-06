@@ -44,7 +44,7 @@ After the file is written (or content printed), a summary table is printed to **
 | Lines / Tokens | Content metrics; exact via Anthropic `count_tokens` API when `ANTHROPIC_API_KEY` is set, otherwise estimated as `~Tokens` (bytes/3.8) |
 | Context% | Each source's share of total context |
 
-Playbook presets (from `playbook@tribe-coding`) appear as individual rows when using playbook v0.3.1+.
+Playbook presets (from `playbook@artem-from-ua`) appear as individual rows when using playbook v0.3.1+.
 
 ## Steps
 

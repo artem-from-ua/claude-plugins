@@ -107,8 +107,8 @@ Every diagram has two parts: a `plantuml` source block and an image URL below it
 ## 📦 Installation <a name="installation"></a>
 
 ```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-/plugin install plantuml@tribe-coding
+/plugin marketplace add artem-from-ua/claude-plugins
+/plugin install plantuml@artem-from-ua
 /plugin
 ```
 

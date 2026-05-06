@@ -3,7 +3,7 @@
   "version": "0.3.1",
   "description": "Retrospective session reports: summarize tasks, decisions, open questions from Claude Code sessions",
   "author": {
-    "name": "Tribe Coding"
+    "name": "Artem Naluzhnyy"
   },
   "license": "MIT",
   "commands": [

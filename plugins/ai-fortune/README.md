@@ -24,8 +24,8 @@ One command that:
 ## 📦 Installation <a name="installation"></a>
 
 ```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-/plugin install ai-fortune@tribe-coding
+/plugin marketplace add artem-from-ua/claude-plugins
+/plugin install ai-fortune@artem-from-ua
 ```
 
 Select **ai-fortune** in `/plugin` → enable **auto-update**.

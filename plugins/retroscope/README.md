@@ -19,8 +19,8 @@ Reports include: task outcomes, decisions made, open questions, GitHub/PR refere
 ## 📦 Installation <a name="installation"></a>
 
 ```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-/plugin install retroscope@tribe-coding
+/plugin marketplace add artem-from-ua/claude-plugins
+/plugin install retroscope@artem-from-ua
 ```
 
 Select **retroscope** in `/plugin` → enable **auto-update**.

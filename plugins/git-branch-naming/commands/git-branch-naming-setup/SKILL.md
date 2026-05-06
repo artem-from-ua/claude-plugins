@@ -102,7 +102,7 @@ git config core.hooksPath .githooks
 
 Next steps:
 1. Commit this file: git add .claude-plugin/git-branch-naming.json && git commit -m "chore: add branch naming config"
-2. Add plugin to .claude/settings.json: { "enabledPlugins": { "git-branch-naming@tribe-coding": true } }
+2. Add plugin to .claude/settings.json: { "enabledPlugins": { "git-branch-naming@artem-from-ua": true } }
 3. Push to share conventions with your team
 
 Branch naming enforcement is now active in this Claude Code session.

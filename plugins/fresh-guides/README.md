@@ -72,8 +72,8 @@ per resource. [Source: developer.hashicorp.com/terraform/language/v1.7.x/import]
 ## 📦 Installation <a name="installation"></a>
 
 ```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-/plugin install fresh-guides@tribe-coding
+/plugin marketplace add artem-from-ua/claude-plugins
+/plugin install fresh-guides@artem-from-ua
 /plugin
 ```
 

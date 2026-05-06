@@ -61,7 +61,7 @@ while IFS= read -r name; do
   [[ -z "$name" ]] && continue
   preset_file="$PRESETS_DIR/$name.md"
   if [[ -f "$preset_file" ]]; then
-    printf '<!-- Source: Plugin playbook@tribe-coding (v%s) Preset %s -->\n' "$VERSION" "$name"
+    printf '<!-- Source: Plugin playbook@artem-from-ua (v%s) Preset %s -->\n' "$VERSION" "$name"
     sed -n '/^<!-- RULES -->/,/^<!-- \/RULES -->/{/^<!-- /d; p;}' "$preset_file"
     printf '\n'
   fi
