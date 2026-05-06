@@ -17,7 +17,7 @@ Plugins that need project-level configuration store config files in `.claude-plu
 
 **Backwards compatibility:** Scripts also check `{project}/.claude/<name>.json` as fallback for configs created before this convention.
 
-**Setup wizards** (e.g., `/playbook-setup`, `/semver-setup`, `/git-branch-naming-setup`, `/kb-grooming-setup`, `/retroscope-setup`, `/technology-explainer-setup`) write to `.claude-plugin/<name>.json` by default. The statusline plugins (`/statusline-setup`, `/statusline-compact:statusline-setup`) configure `~/.claude/settings.json` instead.
+**Setup wizards** (e.g., `/playbook-setup`, `/semver-setup`, `/git-branch-naming-setup`, `/kb-grooming-setup`, `/retroscope-setup`, `/technology-explainer-setup`) write to `.claude-plugin/<name>.json` by default. The statusline plugin (`/statusline-setup`) configures `~/.claude/settings.json` instead.
 
 ### Settings Hierarchy (Claude Code)
 
@@ -139,7 +139,7 @@ SessionStart scripts follow a naming convention based on their purpose. The `con
 | Purpose | Convention | Used by |
 |---------|-----------|---------|
 | Inject rules into system prompt | `inject-rules.sh` | plantuml, semver, retroscope, playbook, technology-explainer, git-branch-naming |
-| Configure environment / UI | `setup-<what>.sh` | statusline, statusline-compact, plantuml (`setup-project.sh`) |
+| Configure environment / UI | `setup-<what>.sh` | statusline, plantuml (`setup-project.sh`) |
 
 **Rules:**
 - Rule-injection scripts MUST be named `inject-rules.sh` — no qualifiers (`inject-base-rules.sh`, `inject-core-rules.sh`).
@@ -181,7 +181,7 @@ SessionStart hooks inject text into Claude's system prompt. The Anthropic API ca
 
 | Category | Plugins | Why |
 |----------|---------|-----|
-| **Deterministic** | `plantuml`, `git-branch-naming`, `retroscope`, `statusline`, `statusline-compact` | Static output — same input always produces identical text. Safe for prefix caching. |
+| **Deterministic** | `plantuml`, `git-branch-naming`, `retroscope`, `statusline` | Static output — same input always produces identical text. Safe for prefix caching. |
 | **Config-dependent** | `playbook`, `semver`, `technology-explainer` | Output depends on user config files (`.claude-plugin/*.json`). Config rarely changes between sessions, so practically stable. |
 | **No SessionStart hooks** | `context`, `kb-grooming`, `ai-fortune` | These plugins use only commands/skills, no hook output injected at session start. |
 
@@ -262,9 +262,9 @@ Plugins that install git hooks (pre-commit, pre-push, etc.) **must not overwrite
 
 **Marker-based injection:** Wrap the plugin's section in marker comments:
 ```bash
-# >>> tribe-coding/<plugin-name> >>>
+# >>> artem-from-ua/<plugin-name> >>>
 # ... plugin hook logic ...
-# <<< tribe-coding/<plugin-name> <<<
+# <<< artem-from-ua/<plugin-name> <<<
 ```
 
 **Rules:**
@@ -317,27 +317,27 @@ To test a plugin locally before pushing to remote and installing via marketplace
 
 **1. Copy plugin into the marketplace clone:**
 ```bash
-cp -r plugins/<name> ~/.claude/plugins/marketplaces/tribe-coding/plugins/<name>
+cp -r plugins/<name> ~/.claude/plugins/marketplaces/artem-from-ua/plugins/<name>
 ```
 
 **2. Register in the marketplace manifest (if not already):**
 ```bash
-# Edit ~/.claude/plugins/marketplaces/tribe-coding/.claude-plugin/marketplace.json
+# Edit ~/.claude/plugins/marketplaces/artem-from-ua/.claude-plugin/marketplace.json
 # Add the plugin entry to the "plugins" array
 ```
 
 **3. Enable in settings:**
 ```bash
 # Edit ~/.claude/settings.json — add to "enabledPlugins":
-"<name>@tribe-coding": true
+"<name>@artem-from-ua": true
 ```
 
 **4. Restart Claude Code** — the plugin should appear in `/plugin` and its commands in the skill list.
 
 **After testing — clean up:**
-- Remove `~/.claude/plugins/marketplaces/tribe-coding/plugins/<name>` (will be re-created on next marketplace sync)
-- Remove `"<name>@tribe-coding": true` from `~/.claude/settings.json` (will be re-added on proper install)
+- Remove `~/.claude/plugins/marketplaces/artem-from-ua/plugins/<name>` (will be re-created on next marketplace sync)
+- Remove `"<name>@artem-from-ua": true` from `~/.claude/settings.json` (will be re-added on proper install)
 - The marketplace manifest cache will be overwritten on next sync, so no manual revert needed
 
-**Why this works:** Claude Code resolves plugin `"source"` paths relative to `~/.claude/plugins/marketplaces/<marketplace>/`. So `"source": "./plugins/ai-fortune"` resolves to `~/.claude/plugins/marketplaces/tribe-coding/plugins/ai-fortune`. Placing files there makes the plugin discoverable without pushing to remote.
+**Why this works:** Claude Code resolves plugin `"source"` paths relative to `~/.claude/plugins/marketplaces/<marketplace>/`. So `"source": "./plugins/ai-fortune"` resolves to `~/.claude/plugins/marketplaces/artem-from-ua/plugins/ai-fortune`. Placing files there makes the plugin discoverable without pushing to remote.
 

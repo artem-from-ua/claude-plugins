@@ -154,7 +154,7 @@ Tests in `ACCEPTANCE_TESTS.md` are run by Claude Code's Bash tool (zsh on macOS)
 
 > **Note:** While this section focuses on SessionStart hooks (the most common), the same testing principles apply to all hook events: PostCompact, SubagentStart/Stop, WorktreeCreate/Remove, etc. For event-specific hooks, design tests that trigger the specific event (e.g., fill context to trigger compaction for PostCompact hooks, use `--worktree` for WorktreeCreate hooks).
 
-**Critical insight from [issue #28](https://github.com/Tribe-Coding/claude-plugins/issues/28):** SessionStart hooks that inject MANDATORY instructions work correctly, but testing them requires understanding environmental failure modes.
+**Critical insight from [issue #28](https://github.com/artem-from-ua/claude-plugins/issues/28):** SessionStart hooks that inject MANDATORY instructions work correctly, but testing them requires understanding environmental failure modes.
 
 ### Test Design Recommendations
 

@@ -29,8 +29,8 @@ if [ ! -f "$HOOK_FILE" ]; then
   exit 0
 fi
 
-MARKER_BEGIN="# >>> tribe-coding/plantuml >>>"
-MARKER_END="# <<< tribe-coding/plantuml <<<"
+MARKER_BEGIN="# >>> artem-from-ua/plantuml >>>"
+MARKER_END="# <<< artem-from-ua/plantuml <<<"
 
 if ! grep -qF "$MARKER_BEGIN" "$HOOK_FILE"; then
   echo "No plantuml section found in $HOOK_FILE. Nothing to uninstall."

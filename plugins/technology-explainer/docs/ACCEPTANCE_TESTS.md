@@ -94,7 +94,7 @@ echo "$output" | grep -q 'Sources.*terraform' && echo "✅ 2.1: Sources present"
 echo "$output" | grep -q 'proficiency-guide-expert' && echo "✅ 2.1: Expert skill pointer" || echo "❌ 2.1: Expert skill pointer missing"
 echo "$output" | grep -q 'proficiency-guide-intermediate' && echo "✅ 2.1: Intermediate skill pointer" || echo "❌ 2.1: Intermediate skill pointer missing"
 echo "$output" | grep -q 'proficiency-guide-learning' && echo "✅ 2.1: Learning skill pointer" || echo "❌ 2.1: Learning skill pointer missing"
-echo "$output" | grep -q '<!-- Source: Plugin technology-explainer@tribe-coding' && echo "✅ 2.1: Source marker" || echo "❌ 2.1: Source marker missing"
+echo "$output" | grep -q '<!-- Source: Plugin technology-explainer@artem-from-ua' && echo "✅ 2.1: Source marker" || echo "❌ 2.1: Source marker missing"
 
 # Test 2.2: Silent exit with no config
 output=$(env HOME=/tmp/nonexistent CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT")

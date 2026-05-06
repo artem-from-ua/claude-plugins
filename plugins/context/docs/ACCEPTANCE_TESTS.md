@@ -450,14 +450,14 @@ CONTEXT_PLUGIN="/Users/artem/devel/claude-plugins/plugins/context"
 
 # Setup fake cache with v0.3.1 playbook
 FAKE_CACHE="/tmp/fake-cache-ctx-test-$$"
-mkdir -p "$FAKE_CACHE/tribe-coding/playbook/0.3.1"
-cp -r "$PLAYBOOK_PLUGIN/." "$FAKE_CACHE/tribe-coding/playbook/0.3.1/"
+mkdir -p "$FAKE_CACHE/artem-from-ua/playbook/0.3.1"
+cp -r "$PLAYBOOK_PLUGIN/." "$FAKE_CACHE/artem-from-ua/playbook/0.3.1/"
 
 # Setup fake HOME with settings.json enabling only playbook
 FAKE_HOME="/tmp/fake-home-ctx-test-$$"
 mkdir -p "$FAKE_HOME/.claude/plugins"
 rsync -a "$FAKE_CACHE/" "$FAKE_HOME/.claude/plugins/cache/"
-jq '.enabledPlugins = {"playbook@tribe-coding": true}' \
+jq '.enabledPlugins = {"playbook@artem-from-ua": true}' \
   "$HOME/.claude/settings.json" > "$FAKE_HOME/.claude/settings.json"
 
 # Setup fake project with playbook config
@@ -501,13 +501,13 @@ PLAYBOOK_PLUGIN="/Users/artem/devel/claude-plugins/plugins/playbook"
 CONTEXT_PLUGIN="/Users/artem/devel/claude-plugins/plugins/context"
 
 FAKE_CACHE="/tmp/fake-cache-legend-$$"
-mkdir -p "$FAKE_CACHE/tribe-coding/playbook/0.3.1"
-cp -r "$PLAYBOOK_PLUGIN/." "$FAKE_CACHE/tribe-coding/playbook/0.3.1/"
+mkdir -p "$FAKE_CACHE/artem-from-ua/playbook/0.3.1"
+cp -r "$PLAYBOOK_PLUGIN/." "$FAKE_CACHE/artem-from-ua/playbook/0.3.1/"
 
 FAKE_HOME="/tmp/fake-home-legend-$$"
 mkdir -p "$FAKE_HOME/.claude/plugins"
 rsync -a "$FAKE_CACHE/" "$FAKE_HOME/.claude/plugins/cache/"
-jq '.enabledPlugins = {"playbook@tribe-coding": true}' \
+jq '.enabledPlugins = {"playbook@artem-from-ua": true}' \
   "$HOME/.claude/settings.json" > "$FAKE_HOME/.claude/settings.json"
 
 FAKE_PROJ="/tmp/fake-proj-legend-$$"
@@ -529,7 +529,7 @@ rm -rf "$FAKE_CACHE" "$FAKE_HOME" "$FAKE_PROJ"
 
 **Expected result:**
 - ✅ `Legend:` line present at bottom of table
-- ✅ Legend mentions `playbook@tribe-coding`
+- ✅ Legend mentions `playbook@artem-from-ua`
 
 ---
 
@@ -745,27 +745,27 @@ CONTEXT_PLUGIN="/Users/artem/devel/claude-plugins/plugins/context"
 PLANTUML_PLUGIN="/Users/artem/devel/claude-plugins/plugins/plantuml"
 
 FAKE_HOME="/tmp/fake-home-plugskill-$$"
-FAKE_CACHE="$FAKE_HOME/.claude/plugins/cache/tribe-coding/plantuml/1.0.0"
+FAKE_CACHE="$FAKE_HOME/.claude/plugins/cache/artem-from-ua/plantuml/1.0.0"
 mkdir -p "$FAKE_CACHE"
 cp -r "$PLANTUML_PLUGIN/." "$FAKE_CACHE/"
-jq '.enabledPlugins = {"plantuml@tribe-coding": true}' \
+jq '.enabledPlugins = {"plantuml@artem-from-ua": true}' \
   "$HOME/.claude/settings.json" > "$FAKE_HOME/.claude/settings.json"
 
 TABLE_FILE=$(HOME="$FAKE_HOME" CLAUDE_PROJECT_DIR="/tmp" \
   bash "${CONTEXT_PLUGIN}/scripts/ctx-show.sh" --file 2>/dev/null | tail -1)
 
 echo "Plugin skill rows (should be 3+):"
-grep -c 'plantuml@tribe-coding' "$TABLE_FILE" || echo "0"
+grep -c 'plantuml@artem-from-ua' "$TABLE_FILE" || echo "0"
 
 echo "plantuml-diagram-guide present:"
-grep -c 'plantuml@tribe-coding.*plantuml-diagram-guide' "$TABLE_FILE" || echo "0"
+grep -c 'plantuml@artem-from-ua.*plantuml-diagram-guide' "$TABLE_FILE" || echo "0"
 
 rm -rf "$FAKE_HOME"
 ```
 
 **Expected result:**
-- ✅ Plugin skills appear with `plantuml@tribe-coding (vX.Y.Z) · skill-name` format
-- ✅ `plantuml@tribe-coding (v1.0.0) · plantuml-diagram-guide` is present
+- ✅ Plugin skills appear with `plantuml@artem-from-ua (vX.Y.Z) · skill-name` format
+- ✅ `plantuml@artem-from-ua (v1.0.0) · plantuml-diagram-guide` is present
 
 ---
 
@@ -780,25 +780,25 @@ rm -rf "$FAKE_HOME"
 CONTEXT_PLUGIN="/Users/artem/devel/claude-plugins/plugins/context"
 
 FAKE_HOME="/tmp/fake-home-dedup-$$"
-mkdir -p "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/.claude-plugin"
-mkdir -p "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/commands/foo"
-mkdir -p "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/skills"
+mkdir -p "$FAKE_HOME/.claude/plugins/cache/artem-from-ua/testplugin/1.0.0/.claude-plugin"
+mkdir -p "$FAKE_HOME/.claude/plugins/cache/artem-from-ua/testplugin/1.0.0/commands/foo"
+mkdir -p "$FAKE_HOME/.claude/plugins/cache/artem-from-ua/testplugin/1.0.0/skills"
 
-cat > "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/.claude-plugin/plugin.json" <<'EOF'
+cat > "$FAKE_HOME/.claude/plugins/cache/artem-from-ua/testplugin/1.0.0/.claude-plugin/plugin.json" <<'EOF'
 {"name":"testplugin","version":"1.0.0","commands":["./commands/"],"skills":["./commands/"]}
 EOF
 
-cat > "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/commands/foo/SKILL.md" <<'EOF'
+cat > "$FAKE_HOME/.claude/plugins/cache/artem-from-ua/testplugin/1.0.0/commands/foo/SKILL.md" <<'EOF'
 ---
 name: foo
 description: Duplicate test skill
 ---
 EOF
 
-mkdir -p "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/hooks"
-echo '{"hooks":{}}' > "$FAKE_HOME/.claude/plugins/cache/tribe-coding/testplugin/1.0.0/hooks/hooks.json"
+mkdir -p "$FAKE_HOME/.claude/plugins/cache/artem-from-ua/testplugin/1.0.0/hooks"
+echo '{"hooks":{}}' > "$FAKE_HOME/.claude/plugins/cache/artem-from-ua/testplugin/1.0.0/hooks/hooks.json"
 
-jq '.enabledPlugins = {"testplugin@tribe-coding": true}' \
+jq '.enabledPlugins = {"testplugin@artem-from-ua": true}' \
   "$HOME/.claude/settings.json" > "$FAKE_HOME/.claude/settings.json"
 
 TABLE_FILE=$(HOME="$FAKE_HOME" CLAUDE_PROJECT_DIR="/tmp" \

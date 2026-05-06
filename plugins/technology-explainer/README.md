@@ -90,8 +90,8 @@ persistent rules. `PostToolUse` hooks can match specific tools via the
 ## 📦 Installation <a name="installation"></a>
 
 ```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-/plugin install technology-explainer@tribe-coding
+/plugin marketplace add artem-from-ua/claude-plugins
+/plugin install technology-explainer@artem-from-ua
 /plugin
 ```
 

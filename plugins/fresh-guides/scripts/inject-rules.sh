@@ -39,7 +39,7 @@ if [[ "$COUNT" == "0" ]]; then
 fi
 
 # Emit compact output (≤300 tokens)
-printf '<!-- Source: Plugin fresh-guides@tribe-coding (v%s) -->\n' "$VERSION"
+printf '<!-- Source: Plugin fresh-guides@artem-from-ua (v%s) -->\n' "$VERSION"
 printf '## Fresh Guides — Fast-Changing Technology Watchlist\n\n'
 printf 'These technologies change frequently — model training data may be outdated.\n'
 printf 'When the conversation involves any of them AND advice is version-specific,\n'

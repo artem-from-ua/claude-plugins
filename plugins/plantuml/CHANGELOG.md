@@ -109,7 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `inject-base-rules.sh` now uses `PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"`
-- Outputs absolute paths like `/Users/.../cache/tribe-coding/plantuml/1.5.2/scripts/plantuml-encode.py`
+- Outputs absolute paths like `/Users/.../cache/artem-from-ua/plantuml/1.5.2/scripts/plantuml-encode.py`
 - Heredoc changed from `<<'RULES'` to `<<RULES` to enable variable substitution
 - Escaped all backticks and `$` symbols in heredoc to prevent command execution
 

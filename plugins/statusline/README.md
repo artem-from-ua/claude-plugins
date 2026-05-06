@@ -44,8 +44,8 @@ Cache refresh: 60s (all bars).
 ## 📦 Installation <a name="installation"></a>
 
 ```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-/plugin install statusline@tribe-coding
+/plugin marketplace add artem-from-ua/claude-plugins
+/plugin install statusline@artem-from-ua
 ```
 
 Select **statusline** in `/plugin` → enable **auto-update**.

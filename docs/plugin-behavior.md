@@ -36,7 +36,7 @@ Use for: on-demand reference data, catalogs, guides that are useful in specific 
 - State **when** to use, not just **what** it does: `"Use when choosing which diagram type fits a documentation task"` (good) vs `"Diagram type catalog"` (bad — no trigger signal).
 - If the skill has a "When to suggest" table (like `plantuml-diagram-guide`), that logic belongs inside the skill body. The description should summarize the trigger concisely.
 
-**Best practices for maximum effectiveness** (based on [testing](https://github.com/Tribe-Coding/claude-plugins/issues/28) and [community research](https://scottspence.com/posts/how-to-make-claude-code-skills-activate-reliably)):
+**Best practices for maximum effectiveness** (based on [testing](https://github.com/artem-from-ua/claude-plugins/issues/28) and [community research](https://scottspence.com/posts/how-to-make-claude-code-skills-activate-reliably)):
 
 1. **Lead with action state** — Use "Invoked automatically" or "Use when" at the start, not just "Catalog of..." or "Guide for...". This signals when/how the skill activates.
 
@@ -393,5 +393,5 @@ When designing a new plugin, start with the pattern that best matches your use c
 
 **SessionStart path resolution:**
 - Script resolves `PLUGIN_ROOT` dynamically: `${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}`
-- Outputs absolute paths in heredoc (e.g., `/Users/.../cache/tribe-coding/plantuml/1.5.8/scripts/plantuml-encode.py`)
+- Outputs absolute paths in heredoc (e.g., `/Users/.../cache/artem-from-ua/plantuml/1.5.8/scripts/plantuml-encode.py`)
 - Never use `${CLAUDE_PLUGIN_ROOT}` in heredoc text (only works in hooks.json command fields)

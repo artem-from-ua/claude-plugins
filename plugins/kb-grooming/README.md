@@ -45,7 +45,7 @@ If you decline issue creation, the full report is saved to `docs/audit/kb-groomi
 ## 📦 Installation <a name="installation"></a>
 
 ```bash
-/plugin install kb-grooming@tribe-coding
+/plugin install kb-grooming@artem-from-ua
 ```
 
 ## ⚙️ How it works <a name="how-it-works"></a>

@@ -1,9 +1,9 @@
 {
   "name": "plantuml",
-  "version": "1.8.2",
+  "version": "1.9.0",
   "description": "PlantUML diagram automation: auto-sync, validation, diagram type guide",
   "author": {
-    "name": "Tribe Coding"
+    "name": "Artem Naluzhnyy"
   },
   "license": "MIT",
   "commands": [

@@ -23,18 +23,18 @@
 | User    | CLAUDE.md       | ~/.claude/CLAUDE.md                                |    15 |     191 |       1% |
 | Project | CLAUDE.md       | ./CLAUDE.md                                        |   752 |   8,545 |      74% |
 | Project | Memory          | ~/.claude/projects/.../memory/MEMORY.md            |    14 |     198 |       1% |
-| Project | Plugin hook     | plantuml@tribe-coding (v1.6.3) · inject-rules |    49 |     836 |       7% |
-| Project | Playbook Preset | playbook@tribe-coding (v0.5.5) · documentation-principles |    16 |     308 |       2% |
-| Project | Playbook Preset | playbook@tribe-coding (v0.5.5) · github-workflow          |    12 |     178 |       1% |
-| Project | Playbook Preset | playbook@tribe-coding (v0.5.5) · macos-python             |    13 |     191 |       1% |
-| Project | Playbook Preset | playbook@tribe-coding (v0.5.5) · macos-zsh-quirks         |    13 |     212 |       1% |
-| Project | Playbook Preset | playbook@tribe-coding (v0.5.5) · readme                   |    17 |     375 |       3% |
-| Project | Plugin hook     | semver@tribe-coding (v0.2.1) · inject-rules        |    20 |     265 |       2% |
-| Project | Plugin hook     | retroscope@tribe-coding (v0.2.3) · inject-rules    |     8 |     115 |       1% |
+| Project | Plugin hook     | plantuml@artem-from-ua (v1.6.3) · inject-rules |    49 |     836 |       7% |
+| Project | Playbook Preset | playbook@artem-from-ua (v0.5.5) · documentation-principles |    16 |     308 |       2% |
+| Project | Playbook Preset | playbook@artem-from-ua (v0.5.5) · github-workflow          |    12 |     178 |       1% |
+| Project | Playbook Preset | playbook@artem-from-ua (v0.5.5) · macos-python             |    13 |     191 |       1% |
+| Project | Playbook Preset | playbook@artem-from-ua (v0.5.5) · macos-zsh-quirks         |    13 |     212 |       1% |
+| Project | Playbook Preset | playbook@artem-from-ua (v0.5.5) · readme                   |    17 |     375 |       3% |
+| Project | Plugin hook     | semver@artem-from-ua (v0.2.1) · inject-rules        |    20 |     265 |       2% |
+| Project | Plugin hook     | retroscope@artem-from-ua (v0.2.3) · inject-rules    |     8 |     115 |       1% |
 | User    | Skill           | interview-simple                                               |     1 |       5 |       0% |
-| Project | Skill           | plantuml@tribe-coding (v1.6.3) · plantuml-diagram-guide       |     1 |      98 |       0% |
-| Project | Skill           | semver@tribe-coding (v0.2.1) · semver-guide                   |     1 |      96 |       0% |
-| Project | Skill           | context@tribe-coding (v0.6.3) · ctx-show                      |     1 |      95 |       0% |
+| Project | Skill           | plantuml@artem-from-ua (v1.6.3) · plantuml-diagram-guide       |     1 |      98 |       0% |
+| Project | Skill           | semver@artem-from-ua (v0.2.1) · semver-guide                   |     1 |      96 |       0% |
+| Project | Skill           | context@artem-from-ua (v0.6.3) · ctx-show                      |     1 |      95 |       0% |
 |         | **TOTAL**       |                                                    |   933 |  11,808 |     100% |
 
 ⚠️  Context load (11808 tokens) exceeds threshold (6000 tokens = 3% of 200k context window)
@@ -44,15 +44,15 @@ Skills: names + descriptions loaded at session start (full SKILL.md on-demand)
 Summary:
 - ./CLAUDE.md dominates — 72% of context (8,545 tokens)
 - Loaded plugins: plantuml (v1.6.3), semver (v0.2.1), retroscope (v0.2.3)
-- Active Playbook presets: 5 presets from playbook@tribe-coding (v0.5.5)
+- Active Playbook presets: 5 presets from playbook@artem-from-ua (v0.5.5)
 - Total context load: ~11,800 tokens
 ```
 
 ## 📦 Installation <a name="installation"></a>
 
 ```bash
-/plugin marketplace add Tribe-Coding/claude-plugins
-/plugin install context@tribe-coding
+/plugin marketplace add artem-from-ua/claude-plugins
+/plugin install context@artem-from-ua
 /plugin
 ```
 

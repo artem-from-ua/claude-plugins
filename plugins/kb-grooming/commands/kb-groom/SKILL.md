@@ -45,7 +45,7 @@ Display a brief status: "Structural scan complete: X findings in Y files."
 Gather these inputs for the semantic subagent:
 
 1. **Structural report** — the JSON from step 2
-2. **Playbook presets** — if playbook plugin is configured, read active preset files from `~/.claude/plugins/cache/tribe-coding/playbook/*/presets/`. Extract only RULES zones (content between `<!-- RULES -->` markers). Skip if playbook is not installed.
+2. **Playbook presets** — if playbook plugin is configured, read active preset files from `~/.claude/plugins/cache/artem-from-ua/playbook/*/presets/`. Extract only RULES zones (content between `<!-- RULES -->` markers). Skip if playbook is not installed.
 3. **Project CLAUDE.md** — read `CLAUDE.md` from project root (if exists)
 4. **Global CLAUDE.md** — read `~/.claude/CLAUDE.md` (if exists)
 5. **Documentation files** — read all `.md` files in scope (per config `scope.include` / `scope.exclude`). For files longer than 500 lines: include first 100 lines + last 50 lines with a `[... truncated ...]` marker.

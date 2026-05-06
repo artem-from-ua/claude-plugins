@@ -3,7 +3,7 @@
   "version": "0.1.6",
   "description": "Documentation health analysis: structural checks, semantic compliance, and GitHub issue creation",
   "author": {
-    "name": "Tribe Coding"
+    "name": "Artem Naluzhnyy"
   },
   "license": "MIT",
   "commands": [

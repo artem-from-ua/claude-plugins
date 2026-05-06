@@ -149,7 +149,7 @@ append_source() {
 append_command_output() {
   local label="$1"
   local cmd="$2"
-  local plugin_id="$3"   # e.g. "plantuml@tribe-coding (v1.6.0)"
+  local plugin_id="$3"   # e.g. "plantuml@artem-from-ua (v1.6.0)"
   local scope="${4:-Project}"
   local hook_type="${5:-Plugin hook}"
 
@@ -173,7 +173,7 @@ append_command_output() {
   OUTPUT+=$'\n'"${result}"$'\n'
 
   # Check for playbook preset markers in output
-  # Marker format: <!-- Source: Plugin playbook@tribe-coding (vX.Y.Z) Preset NAME -->
+  # Marker format: <!-- Source: Plugin playbook@artem-from-ua (vX.Y.Z) Preset NAME -->
   if echo "$result" | grep -q '<!-- Source: Plugin playbook@[^ ]* (v[^)]*) Preset '; then
     # Split output by preset markers and record each preset separately
     local current_name=""

@@ -31,8 +31,8 @@ esac
 
 mkdir -p "$(dirname "$HOOK_FILE")"
 
-MARKER_BEGIN="# >>> tribe-coding/plantuml >>>"
-MARKER_END="# <<< tribe-coding/plantuml <<<"
+MARKER_BEGIN="# >>> artem-from-ua/plantuml >>>"
+MARKER_END="# <<< artem-from-ua/plantuml <<<"
 SECTION=$(cat "$TEMPLATE")
 
 if [ -f "$HOOK_FILE" ]; then
