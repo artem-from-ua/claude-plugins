@@ -40,6 +40,7 @@ A marketplace of reusable Claude Code plugins. Each plugin lives under `plugins/
 - **context** — Inspects full session context in load order
 - **fresh-guides** — Watchlist for fast-changing technologies: verifies advice against official docs
 - **git-branch-naming** — Enforces branch naming conventions (prefix/kebab-case)
+- **hermes-tweet** — Guides Hermes Agent X/Twitter workflows with read-first discovery and approval-gated actions
 - **kb-grooming** — Documentation health analysis: structural checks, semantic compliance, GitHub issues
 - **plantuml** — Keeps PlantUML diagram URLs in sync; provides ASCII rendering in terminal
 - **playbook** — Injects curated coding guideline presets into sessions

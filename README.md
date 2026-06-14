@@ -16,6 +16,7 @@ A curated collection of plugins for [Claude Code](https://docs.anthropic.com/en/
 | [**context**](plugins/context/README.md) | Show everything loaded into your session — CLAUDE.md files, memory, hooks — with a per-source token breakdown |
 | [**fresh-guides**](plugins/fresh-guides/README.md) | Watchlist for fast-changing technologies — verify advice against official docs before responding |
 | [**git-branch-naming**](plugins/git-branch-naming/README.md) | Enforce branch naming conventions automatically; warns before push if the name or staged content doesn't match |
+| [**hermes-tweet**](plugins/hermes-tweet/README.md) | Guide Hermes Agent X/Twitter workflows with read-first discovery and approval-gated actions |
 | [**kb-grooming**](plugins/kb-grooming/README.md) | Audit documentation health — broken links, orphan files, README compliance — then create a GitHub epic with linked issues |
 | [**plantuml**](plugins/plantuml/README.md) | Proactively add rendered diagrams to docs (image URLs auto-synced); draw ASCII diagrams inline during terminal conversations |
 | [**playbook**](plugins/playbook/README.md) | Inject team coding conventions into every session — git workflow, documentation standards, platform quirks |

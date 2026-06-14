@@ -1,0 +1,12 @@
+{
+  "name": "hermes-tweet",
+  "version": "0.1.0",
+  "description": "Hermes Agent X/Twitter workflow guidance: read-first endpoint discovery and approval-gated actions",
+  "author": {
+    "name": "Xquik"
+  },
+  "license": "MIT",
+  "skills": [
+    "./skills/"
+  ]
+}

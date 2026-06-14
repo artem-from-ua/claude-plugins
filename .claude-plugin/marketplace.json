@@ -19,6 +19,11 @@
       "description": "Git branch naming convention enforcement: validates names, warns on content mismatch"
     },
     {
+      "name": "hermes-tweet",
+      "source": "./plugins/hermes-tweet",
+      "description": "Hermes Agent X/Twitter workflow guidance: read-first endpoint discovery and approval-gated actions"
+    },
+    {
       "name": "kb-grooming",
       "source": "./plugins/kb-grooming",
       "description": "Documentation health analysis: structural checks, semantic compliance, and GitHub issue creation"
