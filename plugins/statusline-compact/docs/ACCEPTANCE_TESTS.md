@@ -191,7 +191,7 @@ Fixture `01`: `cwd` basename is `cc-timer` but `.workspace.repo.name` is `tokenp
 **Acceptance criteria:**
 - ✅ the line starts with repo `tokenpace` (proves `.workspace.repo.name` precedence)
 - ✅ no worktree segment
-- ✅ the line == `tokenpace · main · Opus 4.8 · high · 1M · 8% · $2.61`
+- ✅ the line == `tokenpace ･ main ･ Opus･4.8･high ･ 1M･8% ･ $2.61` (model･version･effort and size･% are tight pairs)
 
 #### 3.2 Fresh session, `used_percentage: null`
 
@@ -200,7 +200,7 @@ Fixture `02`.
 **Acceptance criteria:**
 - ✅ context-% segment **omitted** (no `%` in the output)
 - ✅ cost shown as `$0.00`
-- ✅ no placeholder gap — the line == `claude-plugins · main · Opus 4.8 · high · 1M · $0.00`
+- ✅ no placeholder gap — the line == `claude-plugins ･ main ･ Opus･4.8･high ･ 1M ･ $0.00`
   (branch depends on the fixture cwd's git state; the load-bearing checks are "no `%` segment" and "`$0.00` shown")
 
 #### 3.3 Active non-worktree

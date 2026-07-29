@@ -98,8 +98,8 @@ colorize_model() {
   out=$(echo "$name" | sed -E "s/([0-9]+\.[0-9]+)/${dim}\1${rst}/g")
   # Color the keyword token (display_name is canonical-cased, no /I flag needed)
   [ -n "$color" ] && out=$(echo "$out" | sed "s/${keyword}/${color}${keyword}${rst}/")
-  # Keep the plain space between keyword and version (e.g. Opus 4.8)
-  echo "$out"
+  # Join the keyword and version with a tight separator (e.g. Opus･4.8)
+  echo "$out" | sed "s/ /${SEP}/g"
 }
 
 # Colorize git branch: color the prefix by type, dim the slash.
@@ -202,36 +202,42 @@ ultra_seg() {
 # Absent optional segments are omitted so nothing shifts.
 # ---------------------------------------------------------------------------
 line=""
+# append() joins with a spaced separator " ･ "; append_tight() joins with a
+# tight "･" (no surrounding spaces) for segments that read as a pair.
 append() { [ -z "$line" ] && line="$1" || line="${line} ${SEP} $1"; }
+append_tight() { [ -z "$line" ] && line="$1" || line="${line}${SEP}$1"; }
 
-# repo (+ optional dimmed worktree name) as the first segment
+# repo (+ optional dimmed worktree name) as the first segment; the worktree name
+# attaches to the repo with a tight "･" separator.
 repo_seg="$repo_name"
-[ -n "$worktree" ] && repo_seg="${repo_seg} ${dim}${worktree}${rst}"
+[ -n "$worktree" ] && repo_seg="${repo_seg}${SEP}${dim}${worktree}${rst}"
 append "$repo_seg"
 
 # branch (+ optional dirty "!")
 if [ -n "$branch" ]; then
   branch_disp=$(colorize_branch "$branch")
-  [ -n "$dirty" ] && branch_disp="${branch_disp} ${bright_red}!${rst}"
+  [ -n "$dirty" ] && branch_disp="${branch_disp}${SEP}${bright_red}!${rst}"
   append "$branch_disp"
 fi
 
 [ -n "$model" ]  && append "$(colorize_model "$model")"
-[ -n "$effort" ] && append "$(colorize_effort "$effort")"
+# effort attaches tightly to the model (model･effort)
+[ -n "$effort" ] && append_tight "$(colorize_effort "$effort")"
 # ultra marker — separate pink segment right after effort; omitted (line does not
 # shift) when the last /effort was a normal level or there is no transcript.
 ultra=$(ultra_seg "$transcript")
 [ -n "$ultra" ] && append "$ultra"
 [ -n "$ctx_size" ] && append "$(humanize_ctx "$ctx_size")"
 
+# context used % attaches tightly to the context size (ctx-size･ctx-used%)
 if [ -n "$used_pct" ]; then
   ci=${used_pct%.*}
   if [ "$ci" -ge 80 ] 2>/dev/null; then
-    append "${bright_red}${used_pct}${rst}${dim}%${rst}"
+    append_tight "${bright_red}${used_pct}${rst}${dim}%${rst}"
   elif [ "$ci" -ge 60 ] 2>/dev/null; then
-    append "${yellow}${used_pct}${rst}${dim}%${rst}"
+    append_tight "${yellow}${used_pct}${rst}${dim}%${rst}"
   else
-    append "${used_pct}${dim}%${rst}"
+    append_tight "${used_pct}${dim}%${rst}"
   fi
 fi
 

@@ -15,19 +15,19 @@ no progress bars.
 Outside a worktree:
 
 ```markdown
-claude-plugins ･ main ･ Opus 4.8 ･ high ･ 1M ･ 5% ･ $0.52
+claude-plugins ･ main ･ Opus･4.8･high ･ 1M･5% ･ $0.52
 ```
 
 Inside a git worktree (with uncommitted changes):
 
 ```markdown
-claude-plugins feature+statusline-compact ･ feature/statusline-compact ! ･ Opus 4.8 ･ high ･ 1M ･ 5% ･ $0.69
+claude-plugins･feature+statusline-compact ･ feature/statusline-compact･! ･ Opus･4.8･high ･ 1M･5% ･ $0.69
 ```
 
 In an ultra effort mode, a pink `ultracode` (or `ultraplan` in plan mode) marker follows the effort:
 
 ```markdown
-claude-plugins ･ main ･ Opus 4.8 ･ xhigh ･ ultracode ･ 1M ･ 5% ･ $0.52
+claude-plugins ･ main ･ Opus･4.8･xhigh ･ ultracode ･ 1M･5% ･ $0.52
 ```
 
 Segments, left to right: repo name · worktree name (worktrees only) · git branch (red `!` when
@@ -72,7 +72,10 @@ full three-line `statusline` plugin.
 - **Context used %** — yellow ≥ 60%, red ≥ 80% (hidden when unavailable, e.g. a fresh session).
 - **Session cost** — always shown, even `$0.00`.
 
-Absent segments are omitted entirely, so the line never shifts position.
+Absent segments are omitted entirely, so the line never shifts position. Tightly-related pairs
+share a spaceless `･` separator to read as one unit — repo`･`worktree, branch`･`dirty-`!`,
+model`･`version`･`effort, and context-size`･`used-% — while the top-level segments are joined by a
+spaced ` ･ `.
 
 ## 📦 Installation <a name="installation"></a>
 
