@@ -145,6 +145,41 @@ Feed synthetic `.effort.level` values and assert the SGR code wrapping the level
 - ✅ an unknown level renders plain (no color)
 - ✅ an absent `.effort.level` omits the segment entirely
 
+#### 2.6 Ultra-mode Segment (pink `ultracode`/`ultraplan`)
+
+The renderer scans `.transcript_path` for the last genuine `/effort` command and, if it selected an
+ultra mode, appends a pink (`38;5;205`) `ultracode`/`ultraplan` segment right after effort. Build
+synthetic JSONL transcripts and point `.transcript_path` at each:
+
+```bash
+TD=$(mktemp -d)
+# genuine last /effort = ultracode, with a LATER assistant line quoting "…to max" (prose trap)
+printf '%s\n' \
+  '{"type":"user","message":{"role":"user","content":[{"type":"text","text":"<local-command-stdout>Set effort level to ultracode (this session only): xhigh + orchestration</local-command-stdout>"}]}}' \
+  '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"note: Set effort level to max — just prose"}]}}' \
+  > "$TD/ultracode.jsonl"
+# genuine last /effort = max, later assistant prose quotes "…to ultraplan" (the false-match bug)
+printf '%s\n' \
+  '{"type":"user","message":{"role":"user","content":[{"type":"text","text":"<local-command-stdout>Set effort level to max (this session only): Maximum</local-command-stdout>"}]}}' \
+  '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"the grep gave Set effort level to ultraplan from prose"}]}}' \
+  > "$TD/max-prose-trap.jsonl"
+
+pay(){ printf '{"cwd":"/tmp","workspace":{"repo":{"name":"demo"}},"model":{"display_name":"Opus 4.8"},"effort":{"level":"%s"},"cost":{"total_cost_usd":1},"context_window":{"context_window_size":1000000,"used_percentage":20},"transcript_path":"%s"}' "$1" "$2"; }
+S=plugins/statusline-compact/scripts/statusline-compact.sh
+
+pay xhigh "$TD/ultracode.jsonl"     | bash "$S"   # expect pink 38;5;205 "ultracode"
+pay max   "$TD/max-prose-trap.jsonl" | bash "$S"   # expect NO ultra segment (prose ignored)
+pay high  "$TD/NOPE.jsonl"           | bash "$S"   # missing transcript → no segment, no error
+```
+
+**Acceptance criteria:**
+- ✅ last `/effort` = `ultracode`/`ultraplan` → pink `38;5;205` segment with that exact word, right after effort
+- ✅ **prose immunity**: a later assistant message quoting `Set effort level to <word>` does NOT change the result (only `type:"user"` `/effort` echoes count)
+- ✅ last `/effort` = a normal level → ultra segment omitted (the normal effort segment still shows)
+- ✅ no `/effort` line / missing `.transcript_path` / unreadable file → segment omitted, no stderr
+- ✅ the pink SGR `38;5;205` appears **only** in an ultra case
+- ✅ detection is grep-narrow + `jq`-filter (binary-safe `grep -a`), ~7ms on a 2.6MB transcript
+
 ### 3. Integration Tests (fixtures)
 
 Fixtures capture real sessions. Every fixture must produce **exactly one line** (`wc -l == 1`).
@@ -156,7 +191,7 @@ Fixture `01`: `cwd` basename is `cc-timer` but `.workspace.repo.name` is `tokenp
 **Acceptance criteria:**
 - ✅ the line starts with repo `tokenpace` (proves `.workspace.repo.name` precedence)
 - ✅ no worktree segment
-- ✅ the line == `tokenpace · main · Opus 4.8 · high · 1M · 8% · $2.61`
+- ✅ the line == `tokenpace ･ main ･ Opus･4.8･high ･ 1M･8% ･ $2.61` (model･version･effort and size･% are tight pairs)
 
 #### 3.2 Fresh session, `used_percentage: null`
 
@@ -165,7 +200,7 @@ Fixture `02`.
 **Acceptance criteria:**
 - ✅ context-% segment **omitted** (no `%` in the output)
 - ✅ cost shown as `$0.00`
-- ✅ no placeholder gap — the line == `claude-plugins · main · Opus 4.8 · high · 1M · $0.00`
+- ✅ no placeholder gap — the line == `claude-plugins ･ main ･ Opus･4.8･high ･ 1M ･ $0.00`
   (branch depends on the fixture cwd's git state; the load-bearing checks are "no `%` segment" and "`$0.00` shown")
 
 #### 3.3 Active non-worktree
@@ -233,3 +268,4 @@ Exercise `/statusline-compact:statusline-compact-setup` logic against three `set
 | Version | Change |
 |---------|--------|
 | 0.1.0 | Initial release — single-line renderer, SessionStart copier, setup command with conflict detection |
+| 0.2.0 | Pink `ultracode`/`ultraplan` ultra-mode marker — detected from the session transcript's last `/effort` command (prose-immune via `type:"user"` filter) |

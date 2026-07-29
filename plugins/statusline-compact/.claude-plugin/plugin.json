@@ -1,6 +1,6 @@
 {
   "name": "statusline-compact",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Minimal single-line Claude Code statusline: repo/worktree/branch, model, effort, context window, context %, and session cost. Uses only stdin JSON plus local git — no network, no python3. Dependencies: jq and git.",
   "author": {
     "name": "Artem Naluzhnyy"
