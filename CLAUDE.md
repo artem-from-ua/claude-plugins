@@ -46,6 +46,7 @@ A marketplace of reusable Claude Code plugins. Each plugin lives under `plugins/
 - **retroscope** — Generates retrospective reports summarizing sessions
 - **semver** — Enforces semantic versioning on commit/push/PR
 - **statusline** — Three-line statusline: rate limits, context/branch, extra usage
+- **statusline-compact** — Minimal single-line statusline: repo/worktree/branch, model/effort/context/cost (jq + git only)
 - **technology-explainer** — Adapts explanation depth based on user proficiency per technology
 
 See [`docs/plugin-behavior.md`](docs/plugin-behavior.md) for how plugins use hooks, skills, and PostToolUse to work proactively.
@@ -109,3 +110,4 @@ Claude Code console interaction examples (blocks showing `You: … Claude: …` 
 
 - plantuml: Python 3.x, git
 - statusline: jq, curl, python3; macOS Keychain or ~/.claude/.credentials.json on Linux (for Anthropic OAuth token)
+- statusline-compact: jq, git (no network, no python3)
