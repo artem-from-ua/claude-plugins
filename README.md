@@ -22,6 +22,7 @@ A curated collection of plugins for [Claude Code](https://docs.anthropic.com/en/
 | [**retroscope**](plugins/retroscope/README.md) | Capture what happened each session and generate structured daily retrospective reports |
 | [**semver**](plugins/semver/README.md) | Validate that a version bump is staged before every commit, push, and PR — with configurable enforcement |
 | [**statusline**](plugins/statusline/README.md) | Three-line statusline showing API rate limits, context window usage, git branch, and model |
+| [**statusline-compact**](plugins/statusline-compact/README.md) | Minimal single-line statusline: repo/worktree/branch and model/effort/context/cost — jq + git only, no network |
 | [**technology-explainer**](plugins/technology-explainer/README.md) | Adapt explanation depth per technology — brief for experts, detailed for learners |
 
 ## 📦 Installation <a name="installation"></a>

@@ -14,6 +14,11 @@
       "description": "Custom Claude Code statusline with API rate limits, context window, git info"
     },
     {
+      "name": "statusline-compact",
+      "source": "./plugins/statusline-compact",
+      "description": "Minimal single-line statusline: repo/worktree/branch, model/effort/context/cost. jq + git only, no network"
+    },
+    {
       "name": "git-branch-naming",
       "source": "./plugins/git-branch-naming",
       "description": "Git branch naming convention enforcement: validates names, warns on content mismatch"
