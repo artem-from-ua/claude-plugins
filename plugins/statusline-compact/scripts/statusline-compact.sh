@@ -161,8 +161,10 @@ colorize_effort() {
   [ -n "$color" ] && echo "${color}${level}${rst}" || echo "$level"
 }
 
-# Emit a violet "ultracode"/"ultraplan" segment IFF the most recent /effort this
-# session selected an ultra mode. Rationale + why it needs jq, not a bare grep:
+# Detect whether the most recent /effort this session selected an ultra mode.
+# Prints "ultracode"/"ultraplan" (the raw word) when so, nothing otherwise — the
+# caller renders a single violet "ultra" token in place of the effort level.
+# Rationale + why it needs jq, not a bare grep:
 #
 #   The /effort command echoes plain text — "Set effort level to <word>" — into a
 #   message body. ultracode/ultraplan exist ONLY as that free text; the structured
@@ -178,8 +180,8 @@ colorize_effort() {
 #   few lines, keeps type=="user", and extracts the word. tail -1 = most recent.
 #   Cost ~7ms on a 2.6MB transcript. ultracode and ultraplan are one effort slot
 #   renamed by permission mode (normal->ultracode, plan->ultraplan), so at most one
-#   is ever current — a single token is always correct.
-ultra_seg() {
+#   is ever current.
+ultra_detect() {
   local tp="$1" word
   [ -f "$tp" ] && [ -r "$tp" ] || return 0
   word=$(grep -aE '<local-command-stdout>Set effort level to' "$tp" 2>/dev/null \
@@ -189,7 +191,7 @@ ultra_seg() {
         | (capture("<local-command-stdout>Set effort level to (?<w>[a-z]+)").w // empty)' 2>/dev/null \
     | tail -1)
   case "$word" in
-    ultracode|ultraplan) printf '%s%s%s' "$ultra_color" "$word" "$rst" ;;
+    ultracode|ultraplan) printf '%s' "$word" ;;
   esac
   return 0
 }
@@ -221,12 +223,15 @@ if [ -n "$branch" ]; then
 fi
 
 [ -n "$model" ]  && append "$(colorize_model "$model")"
-# effort attaches tightly to the model (model･effort)
-[ -n "$effort" ] && append_tight "$(colorize_effort "$effort")"
-# ultra marker — separate violet segment right after effort; omitted (line does not
-# shift) when the last /effort was a normal level or there is no transcript.
-ultra=$(ultra_seg "$transcript")
-[ -n "$ultra" ] && append "$ultra"
+# effort attaches tightly to the model (model･effort). In an ultra mode the effort
+# segment is REPLACED by a single violet "ultra" token (instead of showing the
+# coarse xhigh level plus a separate ultracode/ultraplan marker); otherwise the
+# normal color-coded effort level is shown.
+if [ -n "$(ultra_detect "$transcript")" ]; then
+  append_tight "${ultra_color}ultra${rst}"
+elif [ -n "$effort" ]; then
+  append_tight "$(colorize_effort "$effort")"
+fi
 [ -n "$ctx_size" ] && append "$(humanize_ctx "$ctx_size")"
 
 # context used % attaches tightly to the context size (ctx-size･ctx-used%)
