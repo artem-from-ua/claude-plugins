@@ -24,7 +24,7 @@ very_dim=$(printf '\033[38;5;237m')
 bright_green=$(printf '\033[38;5;71m')
 bright_red=$(printf '\033[38;5;167m')
 yellow=$(printf '\033[38;5;178m')
-ultra_color=$(printf '\033[38;5;93m')  # ultracode/ultraplan marker — blue-violet, distinct from 167/178
+ultra_color=$(printf '\033[38;5;135m') # ultracode/ultraplan marker — violet, distinct from 167/178
 
 # Separator between widgets — U+FF65 halfwidth middle dot, very_dim
 SEP="${very_dim}･${rst}"
@@ -161,7 +161,7 @@ colorize_effort() {
   [ -n "$color" ] && echo "${color}${level}${rst}" || echo "$level"
 }
 
-# Emit a blue-violet "ultracode"/"ultraplan" segment IFF the most recent /effort this
+# Emit a violet "ultracode"/"ultraplan" segment IFF the most recent /effort this
 # session selected an ultra mode. Rationale + why it needs jq, not a bare grep:
 #
 #   The /effort command echoes plain text — "Set effort level to <word>" — into a
@@ -223,7 +223,7 @@ fi
 [ -n "$model" ]  && append "$(colorize_model "$model")"
 # effort attaches tightly to the model (model･effort)
 [ -n "$effort" ] && append_tight "$(colorize_effort "$effort")"
-# ultra marker — separate blue-violet segment right after effort; omitted (line does not
+# ultra marker — separate violet segment right after effort; omitted (line does not
 # shift) when the last /effort was a normal level or there is no transcript.
 ultra=$(ultra_seg "$transcript")
 [ -n "$ultra" ] && append "$ultra"
