@@ -15,6 +15,13 @@ INPUT=$(cat)
 # Extract the command
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null || true)
 
+# Working directory of the command. Prefer the hook payload's cwd, which points at
+# the actual session directory (correct inside a git worktree, where CLAUDE_PROJECT_DIR
+# points at the MAIN checkout and would misreport the current branch). Fall back to
+# CLAUDE_PROJECT_DIR, then the process cwd.
+REPO_DIR=$(echo "$INPUT" | jq -r '.cwd // empty' 2>/dev/null || true)
+[[ -z "$REPO_DIR" ]] && REPO_DIR="${CLAUDE_PROJECT_DIR:-.}"
+
 # Fast exit: not a git command
 if [[ -z "$COMMAND" ]] || ! echo "$COMMAND" | grep -qE '^\s*(git\s)'; then
   exit 0
@@ -307,7 +314,7 @@ fi
 # git commit — check protected branch + staged content vs branch type
 if echo "$CMD" | grep -qE '^git\s+commit(\s|$)'; then
   # Get current branch
-  CURRENT_BRANCH=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+  CURRENT_BRANCH=$(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
 
   # Skip detached HEAD
   if [[ -z "$CURRENT_BRANCH" ]] || [[ "$CURRENT_BRANCH" == "HEAD" ]]; then
@@ -333,7 +340,7 @@ This bypasses code review. Use a feature branch and open a pull request instead:
     exit 0
   fi
 
-  MISMATCH_RESULT=$("$PLUGIN_ROOT/scripts/check-content-mismatch.sh" --staged "$CURRENT_BRANCH" "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || true)
+  MISMATCH_RESULT=$("$PLUGIN_ROOT/scripts/check-content-mismatch.sh" --staged "$CURRENT_BRANCH" "$REPO_DIR" 2>/dev/null || true)
   if [[ -n "$MISMATCH_RESULT" ]]; then
     permission_response "$ENFORCEMENT_CONTENT_MISMATCH" "$MISMATCH_RESULT"
   fi
@@ -348,7 +355,7 @@ if echo "$CMD" | grep -qE '^git\s+push(\s|$)'; then
   fi
 
   # Get current branch
-  CURRENT_BRANCH=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+  CURRENT_BRANCH=$(git -C "$REPO_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
 
   if [[ -z "$CURRENT_BRANCH" ]] || [[ "$CURRENT_BRANCH" == "HEAD" ]]; then
     exit 0
@@ -367,7 +374,7 @@ This is usually done via a pull request instead of a direct push. Are you sure?"
 
   # Content mismatch check on full branch diff
   if [[ "$WARN_ON_CONTENT_MISMATCH" == "true" ]]; then
-    MISMATCH_RESULT=$("$PLUGIN_ROOT/scripts/check-content-mismatch.sh" --branch "$CURRENT_BRANCH" "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || true)
+    MISMATCH_RESULT=$("$PLUGIN_ROOT/scripts/check-content-mismatch.sh" --branch "$CURRENT_BRANCH" "$REPO_DIR" 2>/dev/null || true)
     if [[ -n "$MISMATCH_RESULT" ]]; then
       permission_response "$ENFORCEMENT_CONTENT_MISMATCH" "$MISMATCH_RESULT"
     fi

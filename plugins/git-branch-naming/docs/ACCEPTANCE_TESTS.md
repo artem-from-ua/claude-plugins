@@ -178,6 +178,57 @@ echo "Exit: $?"  # Expected: 0, no output
 
 ---
 
+## 3c. Unit Tests — Worktree Branch Detection (regression #338)
+
+**Objective:** In a git worktree, branch detection must use the command's `cwd`
+(the worktree, on its feature branch), NOT `CLAUDE_PROJECT_DIR` (the main checkout,
+often on `main`). Otherwise a commit/push from a worktree is falsely blocked as a
+"protected branch" commit.
+
+```bash
+SCRIPT="$(pwd)/plugins/git-branch-naming/scripts/validate-branch.sh"
+PLUGIN="$(pwd)/plugins/git-branch-naming"
+
+# Setup: main repo on 'main' + a worktree on feature/demo. Config denies protected commits.
+T=$(mktemp -d); git -C "$T" init -q -b main
+git -C "$T" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+mkdir -p "$T/.claude-plugin"
+printf '%s' '{"protectedBranches":["main"],"enforcement":{"protectedBranch":"deny","contentMismatch":"ask"},"warnOnContentMismatch":false}' \
+  > "$T/.claude-plugin/git-branch-naming.json"
+git -C "$T" worktree add -q "$T/wt" -b feature/demo
+
+# CLAUDE_PROJECT_DIR is the MAIN checkout (on 'main') in every case below — the bug condition.
+
+# Test 1: commit from the worktree → payload cwd = worktree → ALLOW (exit 0, no output)
+printf '{"tool_input":{"command":"git commit -m x"},"cwd":"%s"}' "$T/wt" \
+  | env CLAUDE_PROJECT_DIR="$T" CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT"
+echo "Exit: $?"  # Expected: 0, no "protected branch" output
+
+# Test 2: commit from the main checkout → payload cwd = main → BLOCK (deny)
+printf '{"tool_input":{"command":"git commit -m x"},"cwd":"%s"}' "$T" \
+  | env CLAUDE_PROJECT_DIR="$T" CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT"
+# Expected: permissionDecision deny, mentions "protected branch 'main'"
+
+# Test 3: push from the worktree → ALLOW
+printf '{"tool_input":{"command":"git push -u origin feature/demo"},"cwd":"%s"}' "$T/wt" \
+  | env CLAUDE_PROJECT_DIR="$T" CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT"
+echo "Exit: $?"  # Expected: 0
+
+# Test 4: no cwd in payload → falls back to CLAUDE_PROJECT_DIR (main) → BLOCK (backward-compatible)
+printf '{"tool_input":{"command":"git commit -m x"}}' \
+  | env CLAUDE_PROJECT_DIR="$T" CLAUDE_PLUGIN_ROOT="$PLUGIN" bash "$SCRIPT"
+# Expected: deny on 'main' — old behavior preserved when payload has no cwd
+
+rm -rf "$T"
+```
+
+**Acceptance criteria:**
+- ✅ commit/push from a worktree on a feature branch → silent passthrough (not blocked)
+- ✅ commit/push from the main checkout on a protected branch → still blocked
+- ✅ payload without `.cwd` → falls back to `CLAUDE_PROJECT_DIR` (backward-compatible)
+
+---
+
 ## 3b. Unit Tests — Open PR Check
 
 **Objective:** Verify `check_open_pr()` detects foreign PRs and respects config.
