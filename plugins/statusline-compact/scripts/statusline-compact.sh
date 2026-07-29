@@ -24,6 +24,7 @@ very_dim=$(printf '\033[38;5;237m')
 bright_green=$(printf '\033[38;5;71m')
 bright_red=$(printf '\033[38;5;167m')
 yellow=$(printf '\033[38;5;178m')
+pink=$(printf '\033[38;5;205m')        # ultracode/ultraplan marker — hot pink, distinct from 167/178
 
 # Separator between widgets — U+FF65 halfwidth middle dot, very_dim
 SEP="${very_dim}･${rst}"
@@ -51,6 +52,7 @@ effort=$(echo "$input" | jq -r '.effort.level // empty')
 ctx_size=$(echo "$input" | jq -r '.context_window.context_window_size // empty')
 used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
 cost=$(echo "$input" | jq -r '.cost.total_cost_usd // 0')
+transcript=$(echo "$input" | jq -r '.transcript_path // empty')
 
 # ---------------------------------------------------------------------------
 # Git branch + dirty indicator (computed locally, like the statusline plugin).
@@ -159,6 +161,39 @@ colorize_effort() {
   [ -n "$color" ] && echo "${color}${level}${rst}" || echo "$level"
 }
 
+# Emit a pink "ultracode"/"ultraplan" segment IFF the most recent /effort this
+# session selected an ultra mode. Rationale + why it needs jq, not a bare grep:
+#
+#   The /effort command echoes plain text — "Set effort level to <word>" — into a
+#   message body. ultracode/ultraplan exist ONLY as that free text; the structured
+#   .effort enum never holds them (it is low/medium/high/xhigh/max), so the sole
+#   signal is the transcript. BUT a naive `grep 'Set effort level to' | tail -1`
+#   also matches our own assistant prose that quotes the phrase, and picks the
+#   wrong (most-recent-quoted) word — verified: it returned "ultraplan"/"ultrathink"
+#   while the real /effort was "max". The only reliable filter is the record type:
+#   a genuine /effort echo is a type=="user" record carrying <local-command-stdout>.
+#
+#   grep -a narrows the JSONL to candidate lines fast (binary-safe; JSONL can carry
+#   odd bytes, else grep may print "Binary file matches"); jq then parses ONLY those
+#   few lines, keeps type=="user", and extracts the word. tail -1 = most recent.
+#   Cost ~7ms on a 2.6MB transcript. ultracode and ultraplan are one effort slot
+#   renamed by permission mode (normal->ultracode, plan->ultraplan), so at most one
+#   is ever current — a single token is always correct.
+ultra_seg() {
+  local tp="$1" word
+  [ -f "$tp" ] && [ -r "$tp" ] || return 0
+  word=$(grep -aE '<local-command-stdout>Set effort level to' "$tp" 2>/dev/null \
+    | jq -rc 'select(.type=="user")
+        | (.message.content // empty)
+        | (if type=="array" then (map(.text // "") | join("\n")) else tostring end)
+        | (capture("<local-command-stdout>Set effort level to (?<w>[a-z]+)").w // empty)' 2>/dev/null \
+    | tail -1)
+  case "$word" in
+    ultracode|ultraplan) printf '%s%s%s' "$pink" "$word" "$rst" ;;
+  esac
+  return 0
+}
+
 # ---------------------------------------------------------------------------
 # Single line, segments joined with SEP:
 #   repo worktree ･ branch ! ･ model ･ effort ･ ctx-size ･ ctx-used% ･ $cost
@@ -183,6 +218,10 @@ fi
 
 [ -n "$model" ]  && append "$(colorize_model "$model")"
 [ -n "$effort" ] && append "$(colorize_effort "$effort")"
+# ultra marker — separate pink segment right after effort; omitted (line does not
+# shift) when the last /effort was a normal level or there is no transcript.
+ultra=$(ultra_seg "$transcript")
+[ -n "$ultra" ] && append "$ultra"
 [ -n "$ctx_size" ] && append "$(humanize_ctx "$ctx_size")"
 
 if [ -n "$used_pct" ]; then

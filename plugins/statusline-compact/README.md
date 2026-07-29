@@ -24,8 +24,15 @@ Inside a git worktree (with uncommitted changes):
 claude-plugins feature+statusline-compact ･ feature/statusline-compact ! ･ Opus 4.8 ･ high ･ 1M ･ 5% ･ $0.69
 ```
 
+In an ultra effort mode, a pink `ultracode` (or `ultraplan` in plan mode) marker follows the effort:
+
+```markdown
+claude-plugins ･ main ･ Opus 4.8 ･ xhigh ･ ultracode ･ 1M ･ 5% ･ $0.52
+```
+
 Segments, left to right: repo name · worktree name (worktrees only) · git branch (red `!` when
-dirty) · model · effort · context-window size · context used % · session cost.
+dirty) · model · effort · ultra marker (only in an ultra mode) · context-window size ·
+context used % · session cost.
 
 ## ⚙️ How it works <a name="how-it-works"></a>
 
@@ -36,7 +43,9 @@ dirty) · model · effort · context-window size · context used % · session co
 
 Every value comes straight from the JSON Claude Code pipes to the statusline command
 (`.workspace.repo.name`, `.workspace.git_worktree`, `.model.display_name`, `.effort.level`,
-`.context_window.*`, `.cost.total_cost_usd`); the git branch and dirty flag are read locally.
+`.context_window.*`, `.cost.total_cost_usd`); the git branch and dirty flag are read locally. The
+ultra marker additionally scans the session transcript (`.transcript_path`) for the last `/effort`
+command — still no network, just a fast grep + `jq` over the local JSONL file.
 There are **no** network requests and **no** `python3` dependency — a deliberate contrast with the
 full three-line `statusline` plugin.
 
@@ -51,6 +60,14 @@ full three-line `statusline` plugin.
   the trailing ` (… context)` is trimmed since context size is shown separately.
 - **Effort** — `.effort.level`, color-coded along a low→max gradient:
   **low = blue, medium = cyan, high = green, xhigh = yellow, max = red** (hidden when absent).
+- **Ultra mode** — a **pink** `ultracode` / `ultraplan` marker, shown right after effort when the
+  most recent `/effort` this session selected an ultra mode. These are one effort slot renamed by
+  permission mode (normal → `ultracode`, plan → `ultraplan`), so exactly one ever shows. The
+  `.effort` field and the statusline payload only carry the coarse level (ultra maps to `xhigh`), so
+  the marker is detected by scanning the session transcript (`.transcript_path`) for the last
+  genuine `/effort` command — filtered by record type, so our own chat mentions of the phrase don't
+  trigger a false positive. Omitted when the last `/effort` was a normal level or no transcript is
+  available.
 - **Context size** — `1000000 → 1M`, `200000 → 200K`.
 - **Context used %** — yellow ≥ 60%, red ≥ 80% (hidden when unavailable, e.g. a fresh session).
 - **Session cost** — always shown, even `$0.00`.
