@@ -24,7 +24,7 @@ Inside a git worktree (with uncommitted changes):
 claude-plugins･feature+statusline-compact ･ feature/statusline-compact･! ･ Opus･4.8･high ･ 1M･5% ･ $0.69
 ```
 
-In an ultra effort mode, a pink `ultracode` (or `ultraplan` in plan mode) marker follows the effort:
+In an ultra effort mode, a blue-violet `ultracode` (or `ultraplan` in plan mode) marker follows the effort:
 
 ```markdown
 claude-plugins ･ main ･ Opus･4.8･xhigh ･ ultracode ･ 1M･5% ･ $0.52
@@ -60,7 +60,7 @@ full three-line `statusline` plugin.
   the trailing ` (… context)` is trimmed since context size is shown separately.
 - **Effort** — `.effort.level`, color-coded along a low→max gradient:
   **low = blue, medium = cyan, high = green, xhigh = yellow, max = red** (hidden when absent).
-- **Ultra mode** — a **pink** `ultracode` / `ultraplan` marker, shown right after effort when the
+- **Ultra mode** — a **blue-violet** `ultracode` / `ultraplan` marker, shown right after effort when the
   most recent `/effort` this session selected an ultra mode. These are one effort slot renamed by
   permission mode (normal → `ultracode`, plan → `ultraplan`), so exactly one ever shows. The
   `.effort` field and the statusline payload only carry the coarse level (ultra maps to `xhigh`), so

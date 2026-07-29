@@ -15,7 +15,7 @@ lists only the fields `statusline-compact.sh` consumes. For the full field catal
 | `.workspace.git_worktree` | worktree segment | Present **only** in worktree sessions. Its presence is how the plugin knows it is in a worktree — no `git rev-parse` needed. |
 | `.model.display_name` | model | e.g. `"Opus 4.8 (1M context)"`. The trailing ` (… context)` is trimmed; the keyword is color-coded and the version dimmed. |
 | `.effort.level` | effort | One of `low`, `medium`, `high`, `xhigh`, `max` (least→most). Color-coded blue→cyan→green→yellow→red. Hidden when absent. |
-| `.transcript_path` | ultra marker (pink `ultracode`/`ultraplan`) | Path to the session JSONL. Scanned for the last genuine `/effort` command (`Set effort level to <word>` inside a `type:"user"` record). `ultracode`/`ultraplan` exist ONLY as this transcript text — `.effort` never carries them (ultra maps to `xhigh`). Segment omitted when the last `/effort` was a normal level, the file is missing, or the field is absent. |
+| `.transcript_path` | ultra marker (blue-violet `ultracode`/`ultraplan`) | Path to the session JSONL. Scanned for the last genuine `/effort` command (`Set effort level to <word>` inside a `type:"user"` record). `ultracode`/`ultraplan` exist ONLY as this transcript text — `.effort` never carries them (ultra maps to `xhigh`). Segment omitted when the last `/effort` was a normal level, the file is missing, or the field is absent. |
 | `.context_window.context_window_size` | context size | e.g. `1000000 → 1M`, `200000 → 200K`. |
 | `.context_window.used_percentage` | context used % | Integer. Can be `null` on a fresh session → the segment is hidden. Yellow ≥ 60%, red ≥ 80%. |
 | `.cost.total_cost_usd` | session cost | Formatted `$X.XX`; always shown, even `$0.00`. |
@@ -52,7 +52,7 @@ grep -aE '<local-command-stdout>Set effort level to' "$transcript" \
 ```
 
 `ultracode` and `ultraplan` are one effort slot renamed by permission mode (normal → `ultracode`,
-plan → `ultraplan`), so the last `/effort` word is always exactly one of them — a single pink token
+plan → `ultraplan`), so the last `/effort` word is always exactly one of them — a single blue-violet token
 is correct. `ultrathink` is a per-turn keyword on a different axis; it is never an `/effort` word and
 is deliberately **not** part of this segment.
 

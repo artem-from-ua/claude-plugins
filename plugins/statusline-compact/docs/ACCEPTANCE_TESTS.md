@@ -145,10 +145,10 @@ Feed synthetic `.effort.level` values and assert the SGR code wrapping the level
 - ✅ an unknown level renders plain (no color)
 - ✅ an absent `.effort.level` omits the segment entirely
 
-#### 2.6 Ultra-mode Segment (pink `ultracode`/`ultraplan`)
+#### 2.6 Ultra-mode Segment (blue-violet `ultracode`/`ultraplan`)
 
 The renderer scans `.transcript_path` for the last genuine `/effort` command and, if it selected an
-ultra mode, appends a pink (`38;5;205`) `ultracode`/`ultraplan` segment right after effort. Build
+ultra mode, appends a blue-violet (`38;5;93`) `ultracode`/`ultraplan` segment right after effort. Build
 synthetic JSONL transcripts and point `.transcript_path` at each:
 
 ```bash
@@ -167,17 +167,17 @@ printf '%s\n' \
 pay(){ printf '{"cwd":"/tmp","workspace":{"repo":{"name":"demo"}},"model":{"display_name":"Opus 4.8"},"effort":{"level":"%s"},"cost":{"total_cost_usd":1},"context_window":{"context_window_size":1000000,"used_percentage":20},"transcript_path":"%s"}' "$1" "$2"; }
 S=plugins/statusline-compact/scripts/statusline-compact.sh
 
-pay xhigh "$TD/ultracode.jsonl"     | bash "$S"   # expect pink 38;5;205 "ultracode"
+pay xhigh "$TD/ultracode.jsonl"     | bash "$S"   # expect blue-violet 38;5;93 "ultracode"
 pay max   "$TD/max-prose-trap.jsonl" | bash "$S"   # expect NO ultra segment (prose ignored)
 pay high  "$TD/NOPE.jsonl"           | bash "$S"   # missing transcript → no segment, no error
 ```
 
 **Acceptance criteria:**
-- ✅ last `/effort` = `ultracode`/`ultraplan` → pink `38;5;205` segment with that exact word, right after effort
+- ✅ last `/effort` = `ultracode`/`ultraplan` → blue-violet `38;5;93` segment with that exact word, right after effort
 - ✅ **prose immunity**: a later assistant message quoting `Set effort level to <word>` does NOT change the result (only `type:"user"` `/effort` echoes count)
 - ✅ last `/effort` = a normal level → ultra segment omitted (the normal effort segment still shows)
 - ✅ no `/effort` line / missing `.transcript_path` / unreadable file → segment omitted, no stderr
-- ✅ the pink SGR `38;5;205` appears **only** in an ultra case
+- ✅ the blue-violet SGR `38;5;93` appears **only** in an ultra case
 - ✅ detection is grep-narrow + `jq`-filter (binary-safe `grep -a`), ~7ms on a 2.6MB transcript
 
 ### 3. Integration Tests (fixtures)
