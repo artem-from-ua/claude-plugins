@@ -56,15 +56,142 @@ cost=$(echo "$input" | jq -r '.cost.total_cost_usd // 0')
 transcript=$(echo "$input" | jq -r '.transcript_path // empty')
 
 # ---------------------------------------------------------------------------
-# Git branch + dirty indicator (computed locally, like the statusline plugin).
+# M-letter (PR-not-merged) cache. The render must never block on the network,
+# so it only ever READS a small per-repo/per-branch cache file; a detached
+# background `gh` refreshes it. Two cache states matter:
+#
+#   merged     terminal — a merged PR never un-merges, so once we learn a branch
+#              is merged we cache it forever and never call gh for it again.
+#   unmerged   an open PR exists but is not merged yet; re-checked when the
+#              cache entry is older than PR_CACHE_TTL (7 min).
+#
+# A branch with NO PR is cached as "none" (also TTL'd) and yields no M letter —
+# an un-PR'd branch is already flagged by P.
+#
+# Cache file: ~/.claude/.statusline-compact-pr-cache/<repo>-<branch-slug>
+# Line format: "<state> <unix-epoch-written>". We avoid Date/clock builtins that
+# aren't available and use `date +%s` (always present on macOS/Linux).
+PR_CACHE_TTL=420  # 7 minutes, in seconds
+PR_CACHE_DIR="$HOME/.claude/.statusline-compact-pr-cache"
+
+# Compute the cache file path for a repo+branch. Slugifies unsafe chars.
+pr_cache_file() {
+  local repo="$1" branch="$2" slug
+  slug=$(printf '%s-%s' "$repo" "$branch" | tr '/ ' '__' | tr -cd 'A-Za-z0-9._-')
+  printf '%s/%s' "$PR_CACHE_DIR" "$slug"
+}
+
+# Read the cached M-state and, when stale (and not terminally "merged"), kick
+# off a detached background refresh. Echoes "1" when the M letter should show
+# (state == unmerged), nothing otherwise. Never calls gh synchronously.
+pr_cache_status() {
+  local cwd="$1" branch="$2"
+  # Need a repo slug for the cache key; derive from the origin remote URL basename.
+  local remote repo
+  remote=$(git -C "$cwd" config --get remote.origin.url 2>/dev/null)
+  [ -z "$remote" ] && return 0   # no remote → no PR concept → no M
+  repo=$(basename -s .git "$remote")
+  local file state age now
+  file=$(pr_cache_file "$repo" "$branch")
+
+  state=""
+  if [ -f "$file" ]; then
+    state=$(cut -d' ' -f1 "$file" 2>/dev/null)
+    local written
+    written=$(cut -d' ' -f2 "$file" 2>/dev/null)
+    now=$(date +%s 2>/dev/null)
+    if [ -n "$written" ] && [ -n "$now" ]; then
+      age=$((now - written))
+    else
+      age=$PR_CACHE_TTL  # unparseable → treat as stale
+    fi
+  else
+    age=$PR_CACHE_TTL    # missing → stale
+  fi
+
+  # "merged" is terminal: serve from cache forever, never refresh.
+  if [ "$state" = "merged" ]; then
+    return 0
+  fi
+
+  # Stale (or missing) and not terminal → refresh in the background.
+  if [ "${age:-$PR_CACHE_TTL}" -ge "$PR_CACHE_TTL" ] 2>/dev/null; then
+    pr_cache_refresh "$cwd" "$branch" "$file" &
+  fi
+
+  # Serve whatever we currently know. Only "unmerged" lights the M letter.
+  [ "$state" = "unmerged" ] && printf '1'
+  return 0
+}
+
+# Detached background refresh: query gh for the branch's PR state and rewrite
+# the cache file. Runs disconnected from the render; its latency never matters.
+# Requires `gh`; silently no-ops (leaving the stale cache) if gh is absent or
+# the network is down.
+pr_cache_refresh() {
+  local cwd="$1" branch="$2" file="$3"
+  command -v gh > /dev/null 2>&1 || return 0
+  mkdir -p "$PR_CACHE_DIR" 2>/dev/null
+  local state now json merged
+  # --state all so we still see a merged PR; take the most recent match.
+  json=$(cd "$cwd" && gh pr list --head "$branch" --state all \
+           --json state --limit 1 --jq '.[0].state' 2>/dev/null)
+  case "$json" in
+    MERGED)          state="merged" ;;
+    OPEN|CLOSED)     state="unmerged" ;;  # CLOSED-unmerged still "not merged"
+    *)               state="none" ;;      # no PR / gh error
+  esac
+  # A CLOSED (not merged) PR shouldn't nag forever; treat only OPEN as unmerged.
+  [ "$json" = "CLOSED" ] && state="none"
+  now=$(date +%s 2>/dev/null)
+  printf '%s %s\n' "$state" "${now:-0}" > "$file" 2>/dev/null
+}
+
+# ---------------------------------------------------------------------------
+# Git branch + a [CPM] status block (all computed locally + a cache file; the
+# render NEVER blocks on the network — see the M note below).
+#
+#   C  local Changes not committed  (uncommitted work in the tree)
+#   P  local commits not Pushed     (commits ahead of the upstream branch)
+#   M  PR not Merged                (an open, unmerged PR exists — only checked
+#                                    once the branch is fully pushed; see gate)
+#
+# Each letter shows only when its condition holds; an all-clear branch shows no
+# block at all (not even the "[]" brackets). The letters are red; the brackets
+# are gray.
 # ---------------------------------------------------------------------------
 branch=""
-dirty=""
+committed_dirty=""   # C: uncommitted changes in the working tree
+unpushed=""          # P: local commits not on the upstream branch
+pr_unmerged=""       # M: an open, unmerged PR exists (from the cache file)
 if [ -n "$cwd" ] && git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
   branch=$(git -C "$cwd" branch --show-current 2>/dev/null)
   if [ -n "$branch" ]; then
+    # C — uncommitted changes (staged, unstaged, or untracked)
     if [ -n "$(git -C "$cwd" status --porcelain=v1 --untracked-files=normal 2>/dev/null)" ]; then
-      dirty="1"
+      committed_dirty="1"
+    fi
+    # P — commits ahead of the upstream. Reads only local refs (no network).
+    # `@{upstream}` fails when the branch has no upstream configured; treat that
+    # as "not pushed" so a never-pushed branch still flags P.
+    has_upstream=""
+    ahead=$(git -C "$cwd" rev-list --count '@{upstream}..HEAD' 2>/dev/null)
+    if [ -z "$ahead" ]; then
+      # No upstream at all → nothing has been pushed yet.
+      unpushed="1"
+    else
+      has_upstream="1"
+      [ "$ahead" -gt 0 ] 2>/dev/null && unpushed="1"
+    fi
+    # M — PR-not-merged, resolved from a cache file the render only READS, with a
+    # purely-local GATE: only worth checking once the branch is actually on the
+    # remote — i.e. it has an upstream AND nothing is unpushed. Until then there
+    # is no remote branch a PR could target, so we never call gh (and P already
+    # covers the "not pushed yet" state). The gate is git-only; the merged/open
+    # distinction still needs gh, done via a detached background refresh so the
+    # render never waits on api.github.com.
+    if [ -n "$has_upstream" ] && [ -z "$unpushed" ]; then
+      pr_unmerged=$(pr_cache_status "$cwd" "$branch")
     fi
   fi
 fi
@@ -203,9 +330,9 @@ ultra_detect() {
 
 # ---------------------------------------------------------------------------
 # Single line, segments joined with SEP:
-#   repo ･ badge･branch ! ･ model ･ effort ･ ctx-size ･ ctx-used% ･ $cost
-# The checkout badge attaches to the branch with a tight "･"; the dirty "!"
-# attaches to the branch with a tight "･". Everything else is SEP-joined.
+#   repo ･ badge･branch･[CPM] ･ model ･ effort ･ ctx-size ･ ctx-used% ･ $cost
+# The checkout badge attaches to the branch with a tight "･"; the [CPM] status
+# block follows the branch with a tight "･" too. Everything else is SEP-joined.
 # Absent optional segments are omitted so nothing shifts.
 # ---------------------------------------------------------------------------
 line=""
@@ -226,11 +353,21 @@ else
   badge="${yellow}Root${rst}"
 fi
 
-# branch (+ optional dirty "!"), preceded tightly by the badge. When there is no
-# branch (cwd is not a git repo), the badge still shows as its own segment.
+# Build the [CPM] status block: red letters for each active condition, gray
+# brackets. No active letters → no block at all (not even the brackets).
+#   C committed_dirty · P unpushed · M pr_unmerged
+cpm=""
+[ -n "$committed_dirty" ] && cpm="${cpm}C"
+[ -n "$unpushed" ]        && cpm="${cpm}P"
+[ -n "$pr_unmerged" ]     && cpm="${cpm}M"
+status_block=""
+[ -n "$cpm" ] && status_block="${dim}[${rst}${bright_red}${cpm}${rst}${dim}]${rst}"
+
+# branch (+ optional [CPM] block), preceded tightly by the badge. When there is
+# no branch (cwd is not a git repo), the badge still shows as its own segment.
 if [ -n "$branch" ]; then
   branch_disp="${badge}${SEP}$(colorize_branch "$branch")"
-  [ -n "$dirty" ] && branch_disp="${branch_disp}${SEP}${bright_red}!${rst}"
+  [ -n "$status_block" ] && branch_disp="${branch_disp}${SEP}${status_block}"
   append "$branch_disp"
 else
   append "$badge"

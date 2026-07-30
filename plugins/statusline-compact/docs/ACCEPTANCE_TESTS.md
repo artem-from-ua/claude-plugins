@@ -240,9 +240,89 @@ Run against a temporary repo (`git init` in `mktemp -d`), feeding a fixture whos
 
 **Acceptance criteria:**
 - ✅ current branch appears in the line
-- ✅ dirty working tree → trailing `!` colored `38;5;167`
-- ✅ clean working tree → no `!`
-- ✅ `cwd` that is not a git repo → branch segment (and its separator) omitted entirely
+- ✅ `cwd` that is not a git repo → branch segment (and its separator) omitted entirely; the checkout
+  badge still shows as its own segment
+
+#### 4.1 `[CPM]` Status Block
+
+The `[CPM]` block follows the branch after a tight `･` (`branch･[CPM]`): **red letters**
+(`38;5;167`), **gray brackets** (`38;5;240`). Each letter shows only when its condition holds; no
+active letters → no block at all (no brackets, no separator). Build temporary repos to exercise each
+combination.
+
+**C / P (local, no network):**
+
+```bash
+strip(){ sed $'s/\x1b\\[[0-9;]*m//g'; }
+S=plugins/statusline-compact/scripts/statusline-compact.sh
+pay(){ printf '{"cwd":"%s","workspace":{"repo":{"name":"demo"}},"model":{"display_name":"Opus 4.8"},"cost":{"total_cost_usd":0},"context_window":{"context_window_size":1000000,"used_percentage":10}}' "$1"; }
+
+TD=$(mktemp -d)
+# clean, no upstream → never pushed → P
+R1="$TD/r1"; git -C "$R1" init -q 2>/dev/null || { mkdir -p "$R1"; git -C "$R1" init -q; }
+git -C "$R1" config user.email t@t; git -C "$R1" config user.name t
+echo a > "$R1/a"; git -C "$R1" add -A; git -C "$R1" commit -qm init
+pay "$R1" | bash "$S" | strip           # expect [P]
+echo b >> "$R1/a"
+pay "$R1" | bash "$S" | strip           # expect [CP]
+
+# pushed & clean via a bare remote → no block
+BARE="$TD/bare.git"; git init -q --bare "$BARE"
+R2="$TD/r2"; git clone -q "$BARE" "$R2"
+git -C "$R2" config user.email t@t; git -C "$R2" config user.name t
+echo x > "$R2/x"; git -C "$R2" add -A; git -C "$R2" commit -qm init
+git -C "$R2" push -q -u origin HEAD
+pay "$R2" | bash "$S" | strip           # expect NO block
+echo y > "$R2/y"; git -C "$R2" add -A; git -C "$R2" commit -qm second
+pay "$R2" | bash "$S" | strip           # expect [P] (1 commit ahead)
+```
+
+**Acceptance criteria (C / P):**
+- ✅ clean + no upstream → `[P]`
+- ✅ + uncommitted change → `[CP]`
+- ✅ pushed & clean → **no block** (no brackets)
+- ✅ 1 commit ahead of upstream → `[P]`
+- ✅ letters are `38;5;167` (red); brackets are `38;5;240` (gray)
+
+**M (gated + cache-driven, never blocks the render):** `M` is first **gated** on a purely-local
+signal — the render calls `pr_cache_status` (which may spawn the background `gh`) **only** when the
+branch has an upstream *and* no unpushed commits. Until the branch is fully pushed, `gh` is never
+invoked. Once the gate is open, the render only *reads* the cache file at
+`~/.claude/.statusline-compact-pr-cache/<repo>-<branch-slug>` (line format `<state> <unix-epoch>`,
+states: `merged` / `unmerged` / `none`); a detached background `gh` refreshes it. Seed the cache
+directly to test each state (repo needs an `origin` remote and a pushed-clean branch for M to engage):
+
+```bash
+CACHE="$HOME/.claude/.statusline-compact-pr-cache"; mkdir -p "$CACHE"
+# R2 from above has origin "bare"; branch "main" → slug "bare-main"
+cf="$CACHE/bare-main"; now=$(date +%s)
+printf 'unmerged %s\n' "$now" > "$cf"; pay "$R2" | bash "$S" | strip   # expect [M] (P clean)
+printf 'merged %s\n'   "$now" > "$cf"; pay "$R2" | bash "$S" | strip   # expect NO block (terminal)
+printf 'none %s\n'     "$now" > "$cf"; pay "$R2" | bash "$S" | strip   # expect NO block
+```
+
+**Acceptance criteria (M):**
+- ✅ cache `unmerged` (fresh) → `[M]`
+- ✅ cache `merged` → **no block** (merged is terminal; never re-checked, never `gh`-called again)
+- ✅ cache `none` → **no block**
+- ✅ cache `unmerged` **stale** (old epoch) → still serves `[M]` from cache *and* triggers a detached
+  background refresh (the render does not wait for it)
+- ✅ **render never blocks**: with a slow `gh` shim on `PATH` (`sleep 3; echo OPEN`) and a stale cache,
+  render wall-time is well under 1s (measured ~0.16s), i.e. the background `gh` never blocks the render
+- ✅ no `origin` remote, or `gh` absent → no `M` letter, no error
+- ✅ background refresh: after a stale non-terminal cache, a fast `gh` shim returning `OPEN` rewrites
+  the cache to `unmerged`; returning `MERGED` rewrites to `merged`; `CLOSED`/no-PR → `none`
+
+**Acceptance criteria (M gate — purely local, no `gh`):** the observable proof is the cache file — a
+gated-out branch leaves a seeded stale cache **untouched** (no background `gh` ran); a gated-in branch
+**rewrites** it. Seed the cache with a bogus stale sentinel (`printf 'SENTINEL 111' > "$cf"`), render,
+wait ~1s, then diff:
+- ✅ **no upstream** (never pushed) → cache untouched; block shows `[P]`, never `[M]` (even if the
+  seeded cache said `unmerged`)
+- ✅ **upstream + unpushed commit** → cache untouched; block shows `[P]`, never `[M]`
+- ✅ **upstream + fully pushed & clean** → cache **rewritten** by the background `gh` (gate open)
+- ✅ the gate is git-only (`@{upstream}` resolves + `rev-list @{upstream}..HEAD == 0`); it fires no
+  network call by itself
 
 ### 5. Setup / Conflict Detection
 
@@ -265,6 +345,9 @@ Exercise `/statusline-compact:statusline-compact-setup` logic against three `set
   worktree sessions; a manually-created worktree opened without that field would show the yellow `Root`
   badge instead of gray `Worktree` (the branch still renders from local `git`).
 - The AskUserQuestion confirmation in the setup flow is interactive and cannot be fully automated.
+- The `M` letter is eventually-consistent: it reflects the last background `gh` refresh, so it can lag
+  a just-opened or just-merged PR by up to the 7-minute TTL (a merged result then sticks permanently).
+  This is deliberate — it keeps the render off the network's critical path.
 
 ## Version History
 
@@ -276,3 +359,4 @@ Exercise `/statusline-compact:statusline-compact-setup` logic against three `set
 | 0.2.2 | Model palette recolor (Opus=green, Fable=red, Sonnet=cyan, Haiku=blue); sub-1M context size number flagged yellow |
 | 0.3.0 | Checkout badge replaces the worktree name — green `Worktree` in a worktree, gray `Root` in the main checkout |
 | 0.3.1 | Swap checkout-badge colors (gray `Worktree`, yellow `Root`); attach the badge tightly to the branch (`badge･branch`) instead of the repo |
+| 0.4.0 | `[CPM]` status block after the branch (red letters, gray brackets): **C** uncommitted, **P** unpushed, **M** PR-not-merged. C/P local-only; M is **gated on a local signal** (only checked once the branch is pushed & clean — no `gh` before that) and then cache-driven with a detached background `gh` refresh (7-min TTL, merged cached permanently), so the render never blocks on the network. Replaces the old dirty `!`. |

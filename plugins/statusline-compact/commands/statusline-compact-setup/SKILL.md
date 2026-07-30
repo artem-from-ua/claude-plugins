@@ -64,10 +64,12 @@ conflict with a statusline that is already configured.
 
 6. **Confirm** and summarize the single line's segments: repo name, the checkout badge
    (gray `Worktree` in a git worktree, yellow `Root` in the main checkout), the current git
-   branch with a red `!` when the working tree is dirty, model (Opus=green, Fable=red,
-   Sonnet=cyan, Haiku=blue), effort level (low=blue, medium=cyan, high=green, xhigh=yellow,
-   max=red), context-window size (yellow below 1M), context used % (yellow ≥60%, red ≥80%),
-   and session cost.
+   branch followed by a `[CPM]` status block (red letters, gray brackets — **C** uncommitted
+   changes, **P** unpushed commits, **M** PR-not-merged; omitted entirely when none apply),
+   model (Opus=green, Fable=red, Sonnet=cyan, Haiku=blue), effort level (low=blue, medium=cyan,
+   high=green, xhigh=yellow, max=red), context-window size (yellow below 1M), context used %
+   (yellow ≥60%, red ≥80%), and session cost. Note the `M` letter needs `gh` (optional) and is
+   served from a background-refreshed cache so the render never blocks.
 
    Tell the user to restart the session (or start a new one) for the change to apply.
 
