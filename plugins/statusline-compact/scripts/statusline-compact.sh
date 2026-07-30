@@ -4,8 +4,9 @@
 # No network calls, no python3 — uses only stdin fields plus local git.
 #
 # Layout (one line, segments joined with ･):
-#   repo-name worktree ･ branch ! ･ model ･ effort ･ ctx-size ･ ctx-used% ･ $cost
-#   (worktree name is dimmed and attached to the repo with a plain space)
+#   repo-name checkout-badge ･ branch ! ･ model ･ effort ･ ctx-size ･ ctx-used% ･ $cost
+#   (checkout badge: green "Worktree" in a worktree, gray "Root" in the main
+#    checkout — attached to the repo with a tight "･")
 #
 # Highlighting conventions (shared with the statusline plugin):
 #   separators   -> very_dim (237)
@@ -202,8 +203,8 @@ ultra_detect() {
 
 # ---------------------------------------------------------------------------
 # Single line, segments joined with SEP:
-#   repo worktree ･ branch ! ･ model ･ effort ･ ctx-size ･ ctx-used% ･ $cost
-# The dimmed worktree name attaches to the repo with a plain space; the dirty "!"
+#   repo badge ･ branch ! ･ model ･ effort ･ ctx-size ･ ctx-used% ･ $cost
+# The checkout badge attaches to the repo with a tight "･"; the dirty "!"
 # attaches to the branch with a plain space. Everything else is SEP-joined.
 # Absent optional segments are omitted so nothing shifts.
 # ---------------------------------------------------------------------------
@@ -213,10 +214,14 @@ line=""
 append() { [ -z "$line" ] && line="$1" || line="${line} ${SEP} $1"; }
 append_tight() { [ -z "$line" ] && line="$1" || line="${line}${SEP}$1"; }
 
-# repo (+ optional dimmed worktree name) as the first segment; the worktree name
-# attaches to the repo with a tight "･" separator.
-repo_seg="$repo_name"
-[ -n "$worktree" ] && repo_seg="${repo_seg}${SEP}${dim}${worktree}${rst}"
+# repo + a checkout badge as the first segment, attached with a tight "･":
+# green "Worktree" inside a git worktree, gray "Root" in the main checkout.
+# Presence of .workspace.git_worktree is the signal (set only in worktree sessions).
+if [ -n "$worktree" ]; then
+  repo_seg="${repo_name}${SEP}${bright_green}Worktree${rst}"
+else
+  repo_seg="${repo_name}${SEP}${dim}Root${rst}"
+fi
 append "$repo_seg"
 
 # branch (+ optional dirty "!")
