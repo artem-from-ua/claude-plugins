@@ -50,13 +50,18 @@ claude-plugins ･ Worktree･feature/login ･ Opus･4.8･high ･ 1M･15% �
 #    the open PR isn't merged yet → M
 claude-plugins ･ Worktree･feature/login･[M] ･ Opus･4.8･high ･ 1M･18% ･ $0.55
 
+# 4b. you commit a fixup on top — not pushed yet → P, but the PR is still open → M stays → PM
+claude-plugins ･ Worktree･feature/login･[PM] ･ Opus･4.8･high ･ 1M･19% ･ $0.58
+
 # 5. the PR merges — M clears (a merged result is cached permanently); block gone
 claude-plugins ･ Worktree･feature/login ･ Opus･4.8･high ･ 1M･20% ･ $0.61
 ```
 
 If you commit *without* pushing while a change is still uncommitted, letters stack — e.g. `[CP]`.
-`M` only ever appears once the branch is fully pushed (step 4 onward); before that `P` already tells
-you the branch isn't on the remote.
+`M` first lights up only once the branch is fully pushed (step 4 onward): before there's a remote
+branch, `gh` isn't called and `P` already tells you the branch isn't pushed. But once a PR exists and
+`M` is known, adding a local commit on top keeps `M` lit alongside `P` — you'll see `[PM]`. Protected
+branches (`main`/`master`/`develop`) never show `M`.
 
 Segments, left to right: repo name · checkout badge (gray `Worktree` / yellow `Root`) attached to the
 git branch · a `[CPM]` status block (red letters, gray brackets) · model · effort (or `ultra` in an
@@ -95,15 +100,21 @@ full three-line `statusline` plugin.
   - **`M`** — an open PR that is not **m**erged yet. No PR → no `M` (an un-PR'd branch is already
     flagged by `P`).
 
-  `C` and `P` are computed from local `git` only (no network). `M` is **gated on a purely-local
-  signal**: it is only ever checked once the branch is actually on the remote — i.e. it has an
-  upstream *and* has no unpushed commits (both read from local refs). Until you push, there is no
-  remote branch a PR could target, so `gh` is never called (and `P` already covers that state). Once
-  the gate is open, `M` is resolved from a tiny per-branch **cache file** that the render only
-  *reads* — a detached background `gh` refreshes it, so the render **never blocks on the network**.
-  A *merged* result is cached permanently (a merged PR never un-merges); an *open* or *no-PR* result
-  is re-checked when the cache entry is older than 5 minutes. Requires `gh` for the `M` letter only;
-  without `gh`, `C` and `P` still work.
+  `C` and `P` are computed from local `git` only (no network). `M` has two **purely-local** gates,
+  deliberately kept separate:
+  - Protected branches (`main`/`master`/`develop`) never carry a feature PR → no `M`, and `gh` is
+    never called for them.
+  - Whether `gh` may **refresh** the cache is gated on the branch being fully pushed (an upstream
+    *and* no unpushed commits, both read from local refs) — until it's on the remote there's no PR
+    target we could have missed. But the **display** of an already-known `M` is *not* gated on this:
+    once a (draft or open) PR is in the cache, `M` stays lit even after you add a local commit on
+    top, so `[PM]` is possible. The unpushed state blocks the network refresh, not the display.
+
+  `M` is resolved from a tiny per-branch **cache file** that the render only *reads* — a detached
+  background `gh` refreshes it (when the refresh gate is open), so the render **never blocks on the
+  network**. A *merged* result is cached permanently (a merged PR never un-merges); an *open* or
+  *no-PR* result is re-checked when the cache entry is older than 5 minutes. Requires `gh` for the
+  `M` letter only; without `gh`, `C` and `P` still work.
 - **Model** — color-coded: **Opus = green, Fable = red, Sonnet = cyan, Haiku = blue**; version dimmed;
   the trailing ` (… context)` is trimmed since context size is shown separately.
 - **Effort** — `.effort.level`, color-coded along a low→max gradient:
