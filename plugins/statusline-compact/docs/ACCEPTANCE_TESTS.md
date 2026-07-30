@@ -361,3 +361,4 @@ Exercise `/statusline-compact:statusline-compact-setup` logic against three `set
 | 0.3.1 | Swap checkout-badge colors (gray `Worktree`, yellow `Root`); attach the badge tightly to the branch (`badge･branch`) instead of the repo |
 | 0.4.0 | `[CPM]` status block after the branch (red letters, gray brackets): **C** uncommitted, **P** unpushed, **M** PR-not-merged. C/P local-only; M is **gated on a local signal** (only checked once the branch is pushed & clean — no `gh` before that) and then cache-driven with a detached background `gh` refresh (7-min TTL, merged cached permanently), so the render never blocks on the network. Replaces the old dirty `!`. |
 | 0.4.1 | Shorten the M-cache TTL from 7 min to 5 min so a newly-opened/closed PR is reflected sooner |
+| 0.4.2 | Docs: README `[CPM]` lifecycle demo walking one terminal through `[C]`→`[P]`→`[M]` |

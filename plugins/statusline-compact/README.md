@@ -30,6 +30,34 @@ In an ultra effort mode, the effort level is replaced by a single violet `ultra`
 claude-plugins ･ Root･main ･ Opus･4.8･ultra ･ 1M･5% ･ $0.52
 ```
 
+### The `[CPM]` block over one feature's lifecycle
+
+Watch the same terminal as you take a change from edit to merge — the block flips through
+`[C]` → `[P]` → `[M]` and then disappears. Each letter is red, the brackets gray; the whole block
+(and its `･`) is omitted the moment nothing applies.
+
+```markdown
+# 1. you edit a file — uncommitted work → C
+claude-plugins ･ Worktree･feature/login･[C] ･ Opus･4.8･high ･ 1M･12% ･ $0.30
+
+# 2. you commit locally — C clears, but the commit isn't on the remote yet → P
+claude-plugins ･ Worktree･feature/login･[P] ･ Opus･4.8･high ･ 1M･14% ･ $0.41
+
+# 3. you push — nothing is out of sync, so the block vanishes for a moment
+claude-plugins ･ Worktree･feature/login ･ Opus･4.8･high ･ 1M･15% ･ $0.48
+
+# 4. you open a PR — the branch is pushed & clean, so M is now checked (background gh);
+#    the open PR isn't merged yet → M
+claude-plugins ･ Worktree･feature/login･[M] ･ Opus･4.8･high ･ 1M･18% ･ $0.55
+
+# 5. the PR merges — M clears (a merged result is cached permanently); block gone
+claude-plugins ･ Worktree･feature/login ･ Opus･4.8･high ･ 1M･20% ･ $0.61
+```
+
+If you commit *without* pushing while a change is still uncommitted, letters stack — e.g. `[CP]`.
+`M` only ever appears once the branch is fully pushed (step 4 onward); before that `P` already tells
+you the branch isn't on the remote.
+
 Segments, left to right: repo name · checkout badge (gray `Worktree` / yellow `Root`) attached to the
 git branch · a `[CPM]` status block (red letters, gray brackets) · model · effort (or `ultra` in an
 ultra mode) · context-window size · context used % · session cost.
