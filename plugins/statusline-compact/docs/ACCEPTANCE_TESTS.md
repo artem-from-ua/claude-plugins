@@ -192,8 +192,8 @@ Fixture `01`: `cwd` basename is `cc-timer` but `.workspace.repo.name` is `tokenp
 
 **Acceptance criteria:**
 - ✅ the line starts with repo `tokenpace` (proves `.workspace.repo.name` precedence)
-- ✅ gray `Root` badge (no `.workspace.git_worktree`), attached to the repo with a tight `･`
-- ✅ the line == `tokenpace･Root ･ main ･ Opus･4.8･high ･ 1M･8% ･ $2.61` (repo･badge, model･version･effort and size･% are tight pairs)
+- ✅ yellow `Root` badge (no `.workspace.git_worktree`), colored `38;5;178`, attached to the branch with a tight `･`
+- ✅ the line == `tokenpace ･ Root･main ･ Opus･4.8･high ･ 1M･8% ･ $2.61` (badge･branch, model･version･effort and size･% are tight pairs)
 
 #### 3.2 Fresh session, `used_percentage: null`
 
@@ -202,14 +202,14 @@ Fixture `02`.
 **Acceptance criteria:**
 - ✅ context-% segment **omitted** (no `%` in the output)
 - ✅ cost shown as `$0.00`
-- ✅ no placeholder gap — the line == `claude-plugins･Root ･ main ･ Opus･4.8･high ･ 1M ･ $0.00`
+- ✅ no placeholder gap — the line == `claude-plugins ･ Root･main ･ Opus･4.8･high ･ 1M ･ $0.00`
   (branch depends on the fixture cwd's git state; the load-bearing checks are "no `%` segment" and "`$0.00` shown")
 
 #### 3.3 Active non-worktree
 
 Fixture `03`.
 
-**Acceptance criteria:** ✅ repo `claude-plugins`, gray `Root` badge, `5%`, `$0.52`.
+**Acceptance criteria:** ✅ repo `claude-plugins`, yellow `Root` badge, `5%`, `$0.52`.
 
 #### 3.4 Non-worktree with an open PR
 
@@ -222,7 +222,7 @@ Fixture `04` contains a `.pr` object.
 Fixture `05`.
 
 **Acceptance criteria:**
-- ✅ green `Worktree` badge (`.workspace.git_worktree` present), colored `38;5;71`, attached with a tight `･`
+- ✅ gray `Worktree` badge (`.workspace.git_worktree` present), colored `38;5;240`, attached to the branch with a tight `･` (`Worktree･<branch>`)
 - ✅ repo == `claude-plugins` (NOT the worktree name — repo.name precedence in a worktree)
 - ✅ the worktree name itself is NOT rendered (replaced by the fixed `Worktree` badge)
 - ✅ `5%`, `$0.69`
@@ -231,7 +231,7 @@ Fixture `05`.
 
 Diff the ANSI-stripped line across the worktree and non-worktree fixtures.
 
-**Acceptance criteria:** ✅ the checkout badge is always present (green `Worktree` vs gray `Root`),
+**Acceptance criteria:** ✅ the checkout badge is always present (gray `Worktree` vs yellow `Root`),
 and genuinely-absent segments (branch) are omitted, not replaced by placeholders, so the line never jumps.
 
 ### 4. Git Tests
@@ -262,8 +262,8 @@ Exercise `/statusline-compact:statusline-compact-setup` logic against three `set
 ## Known Limitations
 
 - The checkout badge relies on `.workspace.git_worktree`, which Claude Code only supplies for
-  worktree sessions; a manually-created worktree opened without that field would show the gray `Root`
-  badge instead of green `Worktree` (the branch still renders from local `git`).
+  worktree sessions; a manually-created worktree opened without that field would show the yellow `Root`
+  badge instead of gray `Worktree` (the branch still renders from local `git`).
 - The AskUserQuestion confirmation in the setup flow is interactive and cannot be fully automated.
 
 ## Version History
@@ -275,3 +275,4 @@ Exercise `/statusline-compact:statusline-compact-setup` logic against three `set
 | 0.2.1 | Ultra marker recolored to blue-violet (`38;5;135`); collapsed to a single `ultra` token |
 | 0.2.2 | Model palette recolor (Opus=green, Fable=red, Sonnet=cyan, Haiku=blue); sub-1M context size number flagged yellow |
 | 0.3.0 | Checkout badge replaces the worktree name — green `Worktree` in a worktree, gray `Root` in the main checkout |
+| 0.3.1 | Swap checkout-badge colors (gray `Worktree`, yellow `Root`); attach the badge tightly to the branch (`badge･branch`) instead of the repo |

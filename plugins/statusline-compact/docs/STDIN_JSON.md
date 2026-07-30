@@ -12,7 +12,7 @@ lists only the fields `statusline-compact.sh` consumes. For the full field catal
 | `.workspace.repo.name` | repo name | Preferred source; correct even inside a worktree. |
 | `.workspace.project_dir` | repo-name fallback | Basename used only when `repo.name` is absent. Inside a worktree this is the worktree dir, not the repo root — hence the `repo.name` preference. |
 | `.cwd` | repo-name fallback + git | Basename is the last-resort repo name; also the directory `git` is run in. |
-| `.workspace.git_worktree` | checkout badge | Present **only** in worktree sessions. Its presence drives the badge — green `Worktree` when set, gray `Root` when absent — no `git rev-parse` needed. The worktree name itself is not rendered. |
+| `.workspace.git_worktree` | checkout badge | Present **only** in worktree sessions. Its presence drives the badge — gray `Worktree` when set, yellow `Root` when absent — no `git rev-parse` needed. The worktree name itself is not rendered. |
 | `.model.display_name` | model | e.g. `"Opus 4.8 (1M context)"`. The trailing ` (… context)` is trimmed; the keyword is color-coded and the version dimmed. |
 | `.effort.level` | effort | One of `low`, `medium`, `high`, `xhigh`, `max` (least→most). Color-coded blue→cyan→green→yellow→red. Hidden when absent. |
 | `.transcript_path` | ultra-mode effort (violet `ultra`) | Path to the session JSONL. Scanned for the last genuine `/effort` command (`Set effort level to <word>` inside a `type:"user"` record). When it is `ultracode`/`ultraplan`, the effort segment is replaced by a violet `ultra` token; these words exist ONLY as this transcript text — `.effort` never carries them (ultra maps to `xhigh`). Falls back to the normal `.effort.level` when the last `/effort` was a normal level, the file is missing, or the field is absent. |
@@ -105,4 +105,4 @@ Worktree session (abridged) — note `git_worktree` and the top-level `worktree`
 In the worktree case, `repo.name` is still `my-project`, while the basename of `project_dir` /
 `cwd` would be `feature+x` — which is why the plugin prefers `.workspace.repo.name` for the repo
 name. The worktree name itself is not shown; the presence of `git_worktree` only flips the checkout
-badge to green `Worktree` (gray `Root` otherwise).
+badge to gray `Worktree` (yellow `Root` otherwise).
