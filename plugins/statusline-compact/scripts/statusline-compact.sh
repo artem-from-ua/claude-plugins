@@ -63,7 +63,7 @@ transcript=$(echo "$input" | jq -r '.transcript_path // empty')
 #   merged     terminal — a merged PR never un-merges, so once we learn a branch
 #              is merged we cache it forever and never call gh for it again.
 #   unmerged   an open PR exists but is not merged yet; re-checked when the
-#              cache entry is older than PR_CACHE_TTL (7 min).
+#              cache entry is older than PR_CACHE_TTL (5 min).
 #
 # A branch with NO PR is cached as "none" (also TTL'd) and yields no M letter —
 # an un-PR'd branch is already flagged by P.
@@ -71,7 +71,7 @@ transcript=$(echo "$input" | jq -r '.transcript_path // empty')
 # Cache file: ~/.claude/.statusline-compact-pr-cache/<repo>-<branch-slug>
 # Line format: "<state> <unix-epoch-written>". We avoid Date/clock builtins that
 # aren't available and use `date +%s` (always present on macOS/Linux).
-PR_CACHE_TTL=420  # 7 minutes, in seconds
+PR_CACHE_TTL=300  # 5 minutes, in seconds
 PR_CACHE_DIR="$HOME/.claude/.statusline-compact-pr-cache"
 
 # Compute the cache file path for a repo+branch. Slugifies unsafe chars.

@@ -74,7 +74,7 @@ full three-line `statusline` plugin.
   the gate is open, `M` is resolved from a tiny per-branch **cache file** that the render only
   *reads* — a detached background `gh` refreshes it, so the render **never blocks on the network**.
   A *merged* result is cached permanently (a merged PR never un-merges); an *open* or *no-PR* result
-  is re-checked when the cache entry is older than 7 minutes. Requires `gh` for the `M` letter only;
+  is re-checked when the cache entry is older than 5 minutes. Requires `gh` for the `M` letter only;
   without `gh`, `C` and `P` still work.
 - **Model** — color-coded: **Opus = green, Fable = red, Sonnet = cyan, Haiku = blue**; version dimmed;
   the trailing ` (… context)` is trimmed since context size is shown separately.
