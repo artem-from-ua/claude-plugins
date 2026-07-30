@@ -110,4 +110,6 @@ Claude Code console interaction examples (blocks showing `You: … Claude: …` 
 
 - plantuml: Python 3.x, git
 - statusline: jq, curl, python3; macOS Keychain or ~/.claude/.credentials.json on Linux (for Anthropic OAuth token)
-- statusline-compact: jq, git (no network, no python3)
+- statusline-compact: jq, git (no python3; the render makes no network calls). Optional `gh` for the
+  `[CPM]` block's M (PR-not-merged) letter, invoked only as a detached background refresh — without
+  `gh` the M letter is simply omitted and everything else works
