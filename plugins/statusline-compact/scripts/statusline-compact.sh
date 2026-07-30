@@ -72,7 +72,8 @@ fi
 # Helpers
 # ---------------------------------------------------------------------------
 
-# Colorize model name by keyword. Fable=167, Opus=178, Sonnet=71, Haiku=37.
+# Colorize model name by keyword. Opus=71 (green), Fable=167 (red),
+# Sonnet=37 (cyan), Haiku=33 (blue).
 # Trims a trailing " (… context)" parenthetical (ctx-size is its own segment)
 # and dims the version number.
 colorize_model() {
@@ -86,11 +87,11 @@ colorize_model() {
   if echo "$name" | grep -qi "fable"; then
     color=$(printf '\033[38;5;167m'); keyword="Fable"
   elif echo "$name" | grep -qi "opus"; then
-    color=$(printf '\033[38;5;178m'); keyword="Opus"
+    color=$(printf '\033[38;5;71m'); keyword="Opus"
   elif echo "$name" | grep -qi "sonnet"; then
-    color=$(printf '\033[38;5;71m'); keyword="Sonnet"
+    color=$(printf '\033[38;5;37m'); keyword="Sonnet"
   elif echo "$name" | grep -qi "haiku"; then
-    color=$(printf '\033[38;5;37m'); keyword="Haiku"
+    color=$(printf '\033[38;5;33m'); keyword="Haiku"
   fi
 
   # Dim the version number (e.g. 4.8)
@@ -129,19 +130,22 @@ colorize_branch() {
 }
 
 # Humanize a context-window size: 1000000 -> 1M, 200000 -> 200K, 1500000 -> 1.5M.
-# Number is bright, the K/M suffix is dim. Pure bash integer math (no awk/python).
+# The K/M suffix is dim. Contexts below 1M color the number yellow to flag the
+# reduced window; a full 1M+ context leaves the number in the terminal default.
+# Pure bash integer math (no awk/python).
 humanize_ctx() {
   local n="$1"
   case "$n" in ''|*[!0-9]*) echo "$n"; return ;; esac
   local whole rem
+  local yellow=$(printf '\033[38;5;178m')
   if [ "$n" -ge 1000000 ]; then
     whole=$((n / 1000000)); rem=$(((n % 1000000) / 100000))
     [ "$rem" -eq 0 ] && echo "${whole}${dim}M${rst}" || echo "${whole}.${rem}${dim}M${rst}"
   elif [ "$n" -ge 1000 ]; then
     whole=$((n / 1000)); rem=$(((n % 1000) / 100))
-    [ "$rem" -eq 0 ] && echo "${whole}${dim}K${rst}" || echo "${whole}.${rem}${dim}K${rst}"
+    [ "$rem" -eq 0 ] && echo "${yellow}${whole}${rst}${dim}K${rst}" || echo "${yellow}${whole}.${rem}${rst}${dim}K${rst}"
   else
-    echo "$n"
+    echo "${yellow}${n}${rst}"
   fi
 }
 

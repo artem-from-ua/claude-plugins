@@ -86,7 +86,8 @@ Source the script's `humanize_ctx` (or exercise via synthetic stdin) and assert:
 | `999` | `999` (verbatim) |
 | `` (empty) | `` |
 
-**Acceptance criteria:** ✅ suffix `K`/`M` is dimmed; the number is bright.
+**Acceptance criteria:** ✅ suffix `K`/`M` is dimmed; ✅ a sub-1M number (`200K`, `128K`, `999`)
+is wrapped in yellow `38;5;178`; ✅ a full 1M+ number (`1M`, `1.5M`) carries no color on the number.
 
 #### 2.2 Model Palette
 
@@ -94,10 +95,10 @@ Feed synthetic `display_name`s and assert the SGR code wrapping each keyword:
 
 | Model | Expected code |
 |-------|---------------|
+| `Opus 4.8 (1M context)` | `38;5;71` (green) |
 | `Fable 5` | `38;5;167` (red) |
-| `Opus 4.8 (1M context)` | `38;5;178` (yellow) |
-| `Sonnet 4.6` | `38;5;71` (green) |
-| `Haiku 4.5` | `38;5;37` (cyan) |
+| `Sonnet 4.6` | `38;5;37` (cyan) |
+| `Haiku 4.5` | `38;5;33` (blue) |
 
 ```bash
 printf '{"model":{"display_name":"Opus 4.8 (1M context)"},"cost":{"total_cost_usd":0},"context_window":{"context_window_size":1000000,"used_percentage":50}}' \
