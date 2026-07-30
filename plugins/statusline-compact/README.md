@@ -56,7 +56,7 @@ full three-line `statusline` plugin.
 - **Worktree name** — shown (dimmed) only in a git worktree, from `.workspace.git_worktree`.
 - **Branch** — the real checked-out branch (`git branch --show-current`); prefix color-coded
   (`feature`, `fix`, `release`, `refactor`, …), slash dimmed. A red `!` is appended when the tree is dirty.
-- **Model** — color-coded: **Fable = red, Opus = yellow, Sonnet = green, Haiku = cyan**; version dimmed;
+- **Model** — color-coded: **Opus = green, Fable = red, Sonnet = cyan, Haiku = blue**; version dimmed;
   the trailing ` (… context)` is trimmed since context size is shown separately.
 - **Effort** — `.effort.level`, color-coded along a low→max gradient:
   **low = blue, medium = cyan, high = green, xhigh = yellow, max = red** (hidden when absent).
@@ -67,7 +67,8 @@ full three-line `statusline` plugin.
   command — filtered by record type, so our own chat mentions of the phrase don't trigger a false
   positive. Falls back to the normal effort level when the last `/effort` was a normal level or no
   transcript is available.
-- **Context size** — `1000000 → 1M`, `200000 → 200K`.
+- **Context size** — `1000000 → 1M`, `200000 → 200K`. The number is **yellow** for any window
+  below 1M (a reduced context) and left in the terminal default at a full 1M+; the `K`/`M` suffix is dimmed.
 - **Context used %** — yellow ≥ 60%, red ≥ 80% (hidden when unavailable, e.g. a fresh session).
 - **Session cost** — always shown, even `$0.00`.
 
