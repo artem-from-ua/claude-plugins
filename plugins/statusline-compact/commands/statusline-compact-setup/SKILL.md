@@ -62,11 +62,12 @@ conflict with a statusline that is already configured.
 5. **Verify dependencies.** Check that `jq` and `git` are on `PATH`; warn (do not fail)
    if either is missing. No `python3` and no network access are required.
 
-6. **Confirm** and summarize the single line's segments: repo name, the worktree name
-   (only in a git worktree), the current git branch with a red `!` when the working tree
-   is dirty, model (Fable=red, Opus=yellow, Sonnet=green, Haiku=cyan), effort level
-   (low=blue, medium=cyan, high=green, xhigh=yellow, max=red), context-window size,
-   context used % (yellow ≥60%, red ≥80%), and session cost.
+6. **Confirm** and summarize the single line's segments: repo name, the checkout badge
+   (green `Worktree` in a git worktree, gray `Root` in the main checkout), the current git
+   branch with a red `!` when the working tree is dirty, model (Opus=green, Fable=red,
+   Sonnet=cyan, Haiku=blue), effort level (low=blue, medium=cyan, high=green, xhigh=yellow,
+   max=red), context-window size (yellow below 1M), context used % (yellow ≥60%, red ≥80%),
+   and session cost.
 
    Tell the user to restart the session (or start a new one) for the change to apply.
 

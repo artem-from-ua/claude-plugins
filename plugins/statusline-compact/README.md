@@ -12,26 +12,26 @@ no progress bars.
 
 ## 🎬 Demo <a name="demo"></a>
 
-Outside a worktree:
+In the main checkout (gray `Root` badge):
 
 ```markdown
-claude-plugins ･ main ･ Opus･4.8･high ･ 1M･5% ･ $0.52
+claude-plugins･Root ･ main ･ Opus･4.8･high ･ 1M･5% ･ $0.52
 ```
 
-Inside a git worktree (with uncommitted changes):
+Inside a git worktree (green `Worktree` badge, with uncommitted changes):
 
 ```markdown
-claude-plugins･feature+statusline-compact ･ feature/statusline-compact･! ･ Opus･4.8･high ･ 1M･5% ･ $0.69
+claude-plugins･Worktree ･ feature/statusline-compact･! ･ Opus･4.8･high ･ 1M･5% ･ $0.69
 ```
 
 In an ultra effort mode, the effort level is replaced by a single violet `ultra` token:
 
 ```markdown
-claude-plugins ･ main ･ Opus･4.8･ultra ･ 1M･5% ･ $0.52
+claude-plugins･Root ･ main ･ Opus･4.8･ultra ･ 1M･5% ･ $0.52
 ```
 
-Segments, left to right: repo name · worktree name (worktrees only) · git branch (red `!` when
-dirty) · model · effort (or `ultra` in an ultra mode) · context-window size ·
+Segments, left to right: repo name · checkout badge (green `Worktree` / gray `Root`) · git branch
+(red `!` when dirty) · model · effort (or `ultra` in an ultra mode) · context-window size ·
 context used % · session cost.
 
 ## ⚙️ How it works <a name="how-it-works"></a>
@@ -53,7 +53,9 @@ full three-line `statusline` plugin.
 
 - **Repo name** — from `.workspace.repo.name` (falls back to the project directory / cwd basename).
   Correct even inside a worktree, where the project directory points at the worktree, not the repo root.
-- **Worktree name** — shown (dimmed) only in a git worktree, from `.workspace.git_worktree`.
+- **Checkout badge** — a fixed marker showing which kind of checkout the session is in, attached to
+  the repo name with a tight `･`: green **`Worktree`** in a git worktree, gray **`Root`** in the main
+  checkout. Keyed off the presence of `.workspace.git_worktree` (set only in worktree sessions).
 - **Branch** — the real checked-out branch (`git branch --show-current`); prefix color-coded
   (`feature`, `fix`, `release`, `refactor`, …), slash dimmed. A red `!` is appended when the tree is dirty.
 - **Model** — color-coded: **Opus = green, Fable = red, Sonnet = cyan, Haiku = blue**; version dimmed;
