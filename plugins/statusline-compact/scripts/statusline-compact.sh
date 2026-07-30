@@ -81,11 +81,19 @@ pr_cache_file() {
   printf '%s/%s' "$PR_CACHE_DIR" "$slug"
 }
 
-# Read the cached M-state and, when stale (and not terminally "merged"), kick
-# off a detached background refresh. Echoes "1" when the M letter should show
-# (state == unmerged), nothing otherwise. Never calls gh synchronously.
+# Read the cached M-state and, when stale (and not terminally "merged") AND a
+# refresh is permitted, kick off a detached background refresh. Echoes "1" when
+# the M letter should show (state == unmerged), nothing otherwise. Never calls
+# gh synchronously.
+#
+# $3 (allow_refresh): "1" → the branch is fully pushed, so gh may be queried to
+# refresh a stale cache; "" → the branch has unpushed work (or no upstream), so
+# we must NOT query gh (no remote branch a PR could target that we haven't seen
+# yet) — but we STILL serve a previously-learned "unmerged" from the cache. This
+# is what keeps M lit for an existing (draft) PR after you add a local commit on
+# top: the gate blocks the network call, not the display of what we already know.
 pr_cache_status() {
-  local cwd="$1" branch="$2"
+  local cwd="$1" branch="$2" allow_refresh="$3"
   # Need a repo slug for the cache key; derive from the origin remote URL basename.
   local remote repo
   remote=$(git -C "$cwd" config --get remote.origin.url 2>/dev/null)
@@ -114,8 +122,10 @@ pr_cache_status() {
     return 0
   fi
 
-  # Stale (or missing) and not terminal → refresh in the background.
-  if [ "${age:-$PR_CACHE_TTL}" -ge "$PR_CACHE_TTL" ] 2>/dev/null; then
+  # Stale (or missing) and not terminal → refresh in the background, but only
+  # when a refresh is permitted (branch fully pushed). A branch with unpushed
+  # work keeps serving its last-known state without touching gh.
+  if [ -n "$allow_refresh" ] && [ "${age:-$PR_CACHE_TTL}" -ge "$PR_CACHE_TTL" ] 2>/dev/null; then
     pr_cache_refresh "$cwd" "$branch" "$file" &
   fi
 
@@ -183,16 +193,30 @@ if [ -n "$cwd" ] && git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
       has_upstream="1"
       [ "$ahead" -gt 0 ] 2>/dev/null && unpushed="1"
     fi
-    # M — PR-not-merged, resolved from a cache file the render only READS, with a
-    # purely-local GATE: only worth checking once the branch is actually on the
-    # remote — i.e. it has an upstream AND nothing is unpushed. Until then there
-    # is no remote branch a PR could target, so we never call gh (and P already
-    # covers the "not pushed yet" state). The gate is git-only; the merged/open
-    # distinction still needs gh, done via a detached background refresh so the
-    # render never waits on api.github.com.
-    if [ -n "$has_upstream" ] && [ -z "$unpushed" ]; then
-      pr_unmerged=$(pr_cache_status "$cwd" "$branch")
-    fi
+    # M — PR-not-merged, resolved from a cache file the render only READS. Two
+    # separate git-only gates, deliberately distinct:
+    #
+    #   1. Protected branches (main/master/develop) never carry a feature PR, so
+    #      they get no M at all and never call gh.
+    #   2. Whether gh may be queried to REFRESH the cache is gated on the branch
+    #      being fully pushed (has_upstream AND nothing unpushed) — until it is on
+    #      the remote there is no branch a PR could target that we haven't already
+    #      seen. But an already-known "unmerged" (e.g. an existing draft PR) STILL
+    #      lights M even after you add a local commit on top; the unpushed state
+    #      blocks the network refresh, not the display of what the cache knows.
+    #
+    # The merged/open distinction still needs gh, done via a detached background
+    # refresh so the render never waits on api.github.com.
+    case "$branch" in
+      main|master|develop) : ;;   # protected → no M, no gh
+      *)
+        if [ -n "$has_upstream" ]; then
+          fully_pushed=""
+          [ -z "$unpushed" ] && fully_pushed="1"
+          pr_unmerged=$(pr_cache_status "$cwd" "$branch" "$fully_pushed")
+        fi
+        ;;
+    esac
   fi
 fi
 

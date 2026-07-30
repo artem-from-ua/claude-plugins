@@ -284,18 +284,30 @@ pay "$R2" | bash "$S" | strip           # expect [P] (1 commit ahead)
 - ✅ 1 commit ahead of upstream → `[P]`
 - ✅ letters are `38;5;167` (red); brackets are `38;5;240` (gray)
 
-**M (gated + cache-driven, never blocks the render):** `M` is first **gated** on a purely-local
-signal — the render calls `pr_cache_status` (which may spawn the background `gh`) **only** when the
-branch has an upstream *and* no unpushed commits. Until the branch is fully pushed, `gh` is never
-invoked. Once the gate is open, the render only *reads* the cache file at
+**M (gated + cache-driven, never blocks the render):** `M` has two **separate** purely-local gates,
+deliberately distinct:
+
+1. **Protected branches** (`main` / `master` / `develop`) never carry a feature PR → no `M`, and `gh`
+   is never invoked for them regardless of what the cache holds.
+2. **Whether `gh` may REFRESH the cache** is gated on the branch being *fully pushed* (has an upstream
+   *and* no unpushed commits). The **display** of an already-known state is NOT gated on this: a branch
+   with an upstream serves whatever the cache knows even with unpushed commits on top — so an existing
+   (draft) PR keeps `M` lit after you add a local commit. The unpushed state blocks the *network
+   refresh*, not the *display*. A branch with **no upstream** was never on the remote, so no PR could
+   target it that we haven't already seen → no `M` at all.
+
+Once display engages, the render only *reads* the cache file at
 `~/.claude/.statusline-compact-pr-cache/<repo>-<branch-slug>` (line format `<state> <unix-epoch>`,
-states: `merged` / `unmerged` / `none`); a detached background `gh` refreshes it. Seed the cache
-directly to test each state (repo needs an `origin` remote and a pushed-clean branch for M to engage):
+states: `merged` / `unmerged` / `none`); a detached background `gh` refreshes it when the refresh gate
+is open. Seed the cache directly to test each state (repo needs an `origin` remote and a pushed branch
+that is NOT `main`/`master`/`develop` for M to engage):
 
 ```bash
 CACHE="$HOME/.claude/.statusline-compact-pr-cache"; mkdir -p "$CACHE"
-# R2 from above has origin "bare"; branch "main" → slug "bare-main"
-cf="$CACHE/bare-main"; now=$(date +%s)
+# M only engages off protected branches, so move R2 onto a feature branch first.
+# R2 has origin "bare"; branch "feature/x" → slug "bare-feature_x"
+git -C "$R2" checkout -q -b feature/x; git -C "$R2" push -q -u origin feature/x
+cf="$CACHE/bare-feature_x"; now=$(date +%s)
 printf 'unmerged %s\n' "$now" > "$cf"; pay "$R2" | bash "$S" | strip   # expect [M] (P clean)
 printf 'merged %s\n'   "$now" > "$cf"; pay "$R2" | bash "$S" | strip   # expect NO block (terminal)
 printf 'none %s\n'     "$now" > "$cf"; pay "$R2" | bash "$S" | strip   # expect NO block
@@ -313,16 +325,21 @@ printf 'none %s\n'     "$now" > "$cf"; pay "$R2" | bash "$S" | strip   # expect 
 - ✅ background refresh: after a stale non-terminal cache, a fast `gh` shim returning `OPEN` rewrites
   the cache to `unmerged`; returning `MERGED` rewrites to `merged`; `CLOSED`/no-PR → `none`
 
-**Acceptance criteria (M gate — purely local, no `gh`):** the observable proof is the cache file — a
-gated-out branch leaves a seeded stale cache **untouched** (no background `gh` ran); a gated-in branch
-**rewrites** it. Seed the cache with a bogus stale sentinel (`printf 'SENTINEL 111' > "$cf"`), render,
-wait ~1s, then diff:
-- ✅ **no upstream** (never pushed) → cache untouched; block shows `[P]`, never `[M]` (even if the
-  seeded cache said `unmerged`)
-- ✅ **upstream + unpushed commit** → cache untouched; block shows `[P]`, never `[M]`
-- ✅ **upstream + fully pushed & clean** → cache **rewritten** by the background `gh` (gate open)
-- ✅ the gate is git-only (`@{upstream}` resolves + `rev-list @{upstream}..HEAD == 0`); it fires no
-  network call by itself
+**Acceptance criteria (M gates — purely local, no `gh`):** two observable behaviours — whether `M`
+*displays*, and whether the background `gh` *refresh* fires (proven by whether a seeded stale cache is
+left **untouched** or **rewritten**). Seed the cache with a bogus stale sentinel
+(`printf 'SENTINEL 111' > "$cf"`) or a fresh `unmerged`, render, wait ~1s, then diff:
+- ✅ **protected branch** (`main`/`master`/`develop`) → **no `M`** even with a fresh `unmerged` cache;
+  cache untouched (no background `gh` ran)
+- ✅ **no upstream** (never pushed) → no `M`; cache untouched; block shows `[P]` (even if the seeded
+  cache said `unmerged`) — a never-pushed branch had no PR target we could have missed
+- ✅ **upstream + unpushed commit, cache `unmerged`** → block shows **`[PM]`** — `M` served from cache
+  (an existing draft/open PR stays flagged), but the cache is left **untouched** (no background `gh`)
+- ✅ **upstream + unpushed commit, cache `none`/absent** → block shows `[P]`, never `[M]`; cache
+  untouched (unpushed blocks the refresh, so a stale/missing entry is not re-queried)
+- ✅ **upstream + fully pushed & clean** → cache **rewritten** by the background `gh` (refresh gate open)
+- ✅ the gates are git-only (branch-name check + `@{upstream}` resolves + `rev-list @{upstream}..HEAD`);
+  they fire no network call by themselves
 
 ### 5. Setup / Conflict Detection
 
@@ -362,3 +379,4 @@ Exercise `/statusline-compact:statusline-compact-setup` logic against three `set
 | 0.4.0 | `[CPM]` status block after the branch (red letters, gray brackets): **C** uncommitted, **P** unpushed, **M** PR-not-merged. C/P local-only; M is **gated on a local signal** (only checked once the branch is pushed & clean — no `gh` before that) and then cache-driven with a detached background `gh` refresh (7-min TTL, merged cached permanently), so the render never blocks on the network. Replaces the old dirty `!`. |
 | 0.4.1 | Shorten the M-cache TTL from 7 min to 5 min so a newly-opened/closed PR is reflected sooner |
 | 0.4.2 | Docs: README `[CPM]` lifecycle demo walking one terminal through `[C]`→`[P]`→`[M]` |
+| 0.5.0 | `M` now stays lit for an existing (draft/open) PR after you add a local commit on top — the unpushed-commit gate blocks the background `gh` *refresh*, no longer the *display* of an already-known `unmerged` (so `[PM]` is now possible). Protected branches (`main`/`master`/`develop`) are skipped entirely: no `M`, no `gh`. |
