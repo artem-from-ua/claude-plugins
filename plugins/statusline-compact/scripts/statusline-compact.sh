@@ -4,9 +4,9 @@
 # No network calls, no python3 — uses only stdin fields plus local git.
 #
 # Layout (one line, segments joined with ･):
-#   repo-name checkout-badge ･ branch ! ･ model ･ effort ･ ctx-size ･ ctx-used% ･ $cost
-#   (checkout badge: green "Worktree" in a worktree, gray "Root" in the main
-#    checkout — attached to the repo with a tight "･")
+#   repo-name ･ checkout-badge･branch ! ･ model ･ effort ･ ctx-size ･ ctx-used% ･ $cost
+#   (checkout badge: gray "Worktree" in a worktree, yellow "Root" in the main
+#    checkout — attached to the branch with a tight "･")
 #
 # Highlighting conventions (shared with the statusline plugin):
 #   separators   -> very_dim (237)
@@ -203,9 +203,9 @@ ultra_detect() {
 
 # ---------------------------------------------------------------------------
 # Single line, segments joined with SEP:
-#   repo badge ･ branch ! ･ model ･ effort ･ ctx-size ･ ctx-used% ･ $cost
-# The checkout badge attaches to the repo with a tight "･"; the dirty "!"
-# attaches to the branch with a plain space. Everything else is SEP-joined.
+#   repo ･ badge･branch ! ･ model ･ effort ･ ctx-size ･ ctx-used% ･ $cost
+# The checkout badge attaches to the branch with a tight "･"; the dirty "!"
+# attaches to the branch with a tight "･". Everything else is SEP-joined.
 # Absent optional segments are omitted so nothing shifts.
 # ---------------------------------------------------------------------------
 line=""
@@ -214,21 +214,26 @@ line=""
 append() { [ -z "$line" ] && line="$1" || line="${line} ${SEP} $1"; }
 append_tight() { [ -z "$line" ] && line="$1" || line="${line}${SEP}$1"; }
 
-# repo + a checkout badge as the first segment, attached with a tight "･":
-# green "Worktree" inside a git worktree, gray "Root" in the main checkout.
+# repo name as the first (spaced) segment.
+append "$repo_name"
+
+# checkout badge, attached to the branch with a tight "･" (badge･branch):
+# gray "Worktree" inside a git worktree, yellow "Root" in the main checkout.
 # Presence of .workspace.git_worktree is the signal (set only in worktree sessions).
 if [ -n "$worktree" ]; then
-  repo_seg="${repo_name}${SEP}${bright_green}Worktree${rst}"
+  badge="${dim}Worktree${rst}"
 else
-  repo_seg="${repo_name}${SEP}${dim}Root${rst}"
+  badge="${yellow}Root${rst}"
 fi
-append "$repo_seg"
 
-# branch (+ optional dirty "!")
+# branch (+ optional dirty "!"), preceded tightly by the badge. When there is no
+# branch (cwd is not a git repo), the badge still shows as its own segment.
 if [ -n "$branch" ]; then
-  branch_disp=$(colorize_branch "$branch")
+  branch_disp="${badge}${SEP}$(colorize_branch "$branch")"
   [ -n "$dirty" ] && branch_disp="${branch_disp}${SEP}${bright_red}!${rst}"
   append "$branch_disp"
+else
+  append "$badge"
 fi
 
 [ -n "$model" ]  && append "$(colorize_model "$model")"

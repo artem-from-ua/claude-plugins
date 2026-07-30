@@ -12,26 +12,26 @@ no progress bars.
 
 ## 🎬 Demo <a name="demo"></a>
 
-In the main checkout (gray `Root` badge):
+In the main checkout (yellow `Root` badge, attached to the branch):
 
 ```markdown
-claude-plugins･Root ･ main ･ Opus･4.8･high ･ 1M･5% ･ $0.52
+claude-plugins ･ Root･main ･ Opus･4.8･high ･ 1M･5% ･ $0.52
 ```
 
-Inside a git worktree (green `Worktree` badge, with uncommitted changes):
+Inside a git worktree (gray `Worktree` badge, with uncommitted changes):
 
 ```markdown
-claude-plugins･Worktree ･ feature/statusline-compact･! ･ Opus･4.8･high ･ 1M･5% ･ $0.69
+claude-plugins ･ Worktree･feature/statusline-compact･! ･ Opus･4.8･high ･ 1M･5% ･ $0.69
 ```
 
 In an ultra effort mode, the effort level is replaced by a single violet `ultra` token:
 
 ```markdown
-claude-plugins･Root ･ main ･ Opus･4.8･ultra ･ 1M･5% ･ $0.52
+claude-plugins ･ Root･main ･ Opus･4.8･ultra ･ 1M･5% ･ $0.52
 ```
 
-Segments, left to right: repo name · checkout badge (green `Worktree` / gray `Root`) · git branch
-(red `!` when dirty) · model · effort (or `ultra` in an ultra mode) · context-window size ·
+Segments, left to right: repo name · checkout badge (gray `Worktree` / yellow `Root`) attached to the
+git branch (red `!` when dirty) · model · effort (or `ultra` in an ultra mode) · context-window size ·
 context used % · session cost.
 
 ## ⚙️ How it works <a name="how-it-works"></a>
@@ -54,8 +54,9 @@ full three-line `statusline` plugin.
 - **Repo name** — from `.workspace.repo.name` (falls back to the project directory / cwd basename).
   Correct even inside a worktree, where the project directory points at the worktree, not the repo root.
 - **Checkout badge** — a fixed marker showing which kind of checkout the session is in, attached to
-  the repo name with a tight `･`: green **`Worktree`** in a git worktree, gray **`Root`** in the main
-  checkout. Keyed off the presence of `.workspace.git_worktree` (set only in worktree sessions).
+  the **branch** with a tight `･` (badge`･`branch): gray **`Worktree`** in a git worktree, yellow
+  **`Root`** in the main checkout. Keyed off the presence of `.workspace.git_worktree` (set only in
+  worktree sessions). Outside a git repo (no branch) the badge stands alone as its own segment.
 - **Branch** — the real checked-out branch (`git branch --show-current`); prefix color-coded
   (`feature`, `fix`, `release`, `refactor`, …), slash dimmed. A red `!` is appended when the tree is dirty.
 - **Model** — color-coded: **Opus = green, Fable = red, Sonnet = cyan, Haiku = blue**; version dimmed;
@@ -75,7 +76,7 @@ full three-line `statusline` plugin.
 - **Session cost** — always shown, even `$0.00`.
 
 Absent segments are omitted entirely, so the line never shifts position. Tightly-related pairs
-share a spaceless `･` separator to read as one unit — repo`･`worktree, branch`･`dirty-`!`,
+share a spaceless `･` separator to read as one unit — badge`･`branch`･`dirty-`!`,
 model`･`version`･`effort, and context-size`･`used-% — while the top-level segments are joined by a
 spaced ` ･ `.
 
