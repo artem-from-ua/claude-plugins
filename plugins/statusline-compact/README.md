@@ -96,7 +96,9 @@ full three-line `statusline` plugin.
   brackets**. Each letter shows only when its condition holds; if none hold, the whole block
   (brackets included, and its separator) is omitted:
   - **`C`** — local **c**hanges not committed (uncommitted work in the tree).
-  - **`P`** — local commits not **p**ushed (commits ahead of the upstream, or no upstream at all).
+  - **`P`** — local commits not **p**ushed (commits ahead of the upstream, or a branch that was never
+    pushed). A branch whose PR merged and whose remote branch was then deleted is **not** flagged — its
+    work is already in `main`, so there is nothing to push.
   - **`M`** — an open PR that is not **m**erged yet. No PR → no `M` (an un-PR'd branch is already
     flagged by `P`).
 

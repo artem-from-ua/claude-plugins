@@ -275,6 +275,17 @@ git -C "$R2" push -q -u origin HEAD
 pay "$R2" | bash "$S" | strip           # expect NO block
 echo y > "$R2/y"; git -C "$R2" add -A; git -C "$R2" commit -qm second
 pay "$R2" | bash "$S" | strip           # expect [P] (1 commit ahead)
+
+# pushed → PR merged → remote branch deleted (upstream CONFIG stays, tracking ref gone) → no block.
+# This is the normal end-of-feature state (`gh pr merge --squash --delete-branch`); the local HEAD is
+# the squash source, already in main, so there is nothing to push. `@{upstream}` now points at a gone
+# ref and `rev-list` fails — but `branch.<name>.remote` config still exists, so it is NOT "never pushed".
+git -C "$R2" checkout -q -b feature/gone
+echo z > "$R2/z"; git -C "$R2" add -A; git -C "$R2" commit -qm feat
+git -C "$R2" push -q -u origin feature/gone
+git -C "$R2" push -q origin --delete feature/gone
+git -C "$R2" update-ref -d refs/remotes/origin/feature/gone   # simulate the tracking ref being pruned
+pay "$R2" | bash "$S" | strip           # expect NO block (branch is merged+deleted, not unpushed)
 ```
 
 **Acceptance criteria (C / P):**
@@ -282,6 +293,10 @@ pay "$R2" | bash "$S" | strip           # expect [P] (1 commit ahead)
 - ✅ + uncommitted change → `[CP]`
 - ✅ pushed & clean → **no block** (no brackets)
 - ✅ 1 commit ahead of upstream → `[P]`
+- ✅ pushed → merged → remote branch deleted (upstream config stays, tracking ref gone) → **no block**
+  (regression: #353 — the two empty-`rev-list` states, "never pushed" vs "pushed-then-deleted", are
+  told apart by whether `branch.<name>.remote` config exists — present ⇒ not unpushed)
+- ✅ uncommitted change on a merged+deleted branch → `[C]` only (never `[CP]`)
 - ✅ letters are `38;5;167` (red); brackets are `38;5;240` (gray)
 
 **M (gated + cache-driven, never blocks the render):** `M` has two **separate** purely-local gates,
@@ -338,6 +353,9 @@ left **untouched** or **rewritten**). Seed the cache with a bogus stale sentinel
 - ✅ **upstream + unpushed commit, cache `none`/absent** → block shows `[P]`, never `[M]`; cache
   untouched (unpushed blocks the refresh, so a stale/missing entry is not re-queried)
 - ✅ **upstream + fully pushed & clean** → cache **rewritten** by the background `gh` (refresh gate open)
+- ✅ **pushed → merged → remote branch deleted** (tracking ref gone, config stays) → no `M`; cache
+  untouched — `rev-list @{upstream}..HEAD` fails so `has_upstream` stays unset, closing the refresh
+  gate. No `gh` is called for a branch whose remote is gone (and P is already suppressed, see above)
 - ✅ the gates are git-only (branch-name check + `@{upstream}` resolves + `rev-list @{upstream}..HEAD`);
   they fire no network call by themselves
 
@@ -380,3 +398,4 @@ Exercise `/statusline-compact:statusline-compact-setup` logic against three `set
 | 0.4.1 | Shorten the M-cache TTL from 7 min to 5 min so a newly-opened/closed PR is reflected sooner |
 | 0.4.2 | Docs: README `[CPM]` lifecycle demo walking one terminal through `[C]`→`[P]`→`[M]` |
 | 0.5.0 | `M` now stays lit for an existing (draft/open) PR after you add a local commit on top — the unpushed-commit gate blocks the background `gh` *refresh*, no longer the *display* of an already-known `unmerged` (so `[PM]` is now possible). Protected branches (`main`/`master`/`develop`) are skipped entirely: no `M`, no `gh`. |
+| 0.5.1 | Fix false `P` after a merged branch's remote is deleted (#353): a pushed→merged→deleted branch keeps its `branch.<name>.remote` config, so `rev-list @{upstream}..HEAD` fails on a gone tracking ref just like a never-pushed branch — the two are now told apart by that config (present ⇒ not unpushed ⇒ no `P`, and the `M` refresh gate stays closed). |
