@@ -20,8 +20,12 @@ lists only the fields `statusline-compact.sh` consumes. For the full field catal
 | `.context_window.used_percentage` | context used % | Integer. Can be `null` on a fresh session → the segment is hidden. Yellow ≥ 60%, red ≥ 80%. |
 | `.cost.total_cost_usd` | session cost | Formatted `$X.XX`; always shown, even `$0.00`. |
 
-The git branch and dirty flag are **not** read from stdin — they are computed locally with
-`git -C "$cwd" branch --show-current` and `git status --porcelain`, matching the `statusline` plugin.
+The git branch and the `[CPM]` status block are **not** read from stdin. Branch, **C** (uncommitted)
+and **P** (unpushed) are computed locally — `git branch --show-current`, `git status --porcelain`,
+`git rev-list --count @{upstream}..HEAD` — with no network. **M** (PR-not-merged) is **gated** on the
+same local refs (only checked once the branch has an upstream and no unpushed commits) and then read
+from a small per-branch cache file that a detached background `gh` refreshes, so the render never
+blocks on the network (see the `[CPM]` section in the README and ACCEPTANCE_TESTS).
 
 ## Ultra-mode detection (why it needs the transcript)
 

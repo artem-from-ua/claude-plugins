@@ -18,10 +18,10 @@ In the main checkout (yellow `Root` badge, attached to the branch):
 claude-plugins ･ Root･main ･ Opus･4.8･high ･ 1M･5% ･ $0.52
 ```
 
-Inside a git worktree (gray `Worktree` badge, with uncommitted changes):
+Inside a git worktree (gray `Worktree` badge; `[CP]` = uncommitted changes + unpushed commits):
 
 ```markdown
-claude-plugins ･ Worktree･feature/statusline-compact･! ･ Opus･4.8･high ･ 1M･5% ･ $0.69
+claude-plugins ･ Worktree･feature/statusline-compact･[CP] ･ Opus･4.8･high ･ 1M･5% ･ $0.69
 ```
 
 In an ultra effort mode, the effort level is replaced by a single violet `ultra` token:
@@ -31,8 +31,8 @@ claude-plugins ･ Root･main ･ Opus･4.8･ultra ･ 1M･5% ･ $0.52
 ```
 
 Segments, left to right: repo name · checkout badge (gray `Worktree` / yellow `Root`) attached to the
-git branch (red `!` when dirty) · model · effort (or `ultra` in an ultra mode) · context-window size ·
-context used % · session cost.
+git branch · a `[CPM]` status block (red letters, gray brackets) · model · effort (or `ultra` in an
+ultra mode) · context-window size · context used % · session cost.
 
 ## ⚙️ How it works <a name="how-it-works"></a>
 
@@ -58,7 +58,24 @@ full three-line `statusline` plugin.
   **`Root`** in the main checkout. Keyed off the presence of `.workspace.git_worktree` (set only in
   worktree sessions). Outside a git repo (no branch) the badge stands alone as its own segment.
 - **Branch** — the real checked-out branch (`git branch --show-current`); prefix color-coded
-  (`feature`, `fix`, `release`, `refactor`, …), slash dimmed. A red `!` is appended when the tree is dirty.
+  (`feature`, `fix`, `release`, `refactor`, …), slash dimmed.
+- **`[CPM]` status block** — follows the branch after a tight `･`, with **red letters** and **gray
+  brackets**. Each letter shows only when its condition holds; if none hold, the whole block
+  (brackets included, and its separator) is omitted:
+  - **`C`** — local **c**hanges not committed (uncommitted work in the tree).
+  - **`P`** — local commits not **p**ushed (commits ahead of the upstream, or no upstream at all).
+  - **`M`** — an open PR that is not **m**erged yet. No PR → no `M` (an un-PR'd branch is already
+    flagged by `P`).
+
+  `C` and `P` are computed from local `git` only (no network). `M` is **gated on a purely-local
+  signal**: it is only ever checked once the branch is actually on the remote — i.e. it has an
+  upstream *and* has no unpushed commits (both read from local refs). Until you push, there is no
+  remote branch a PR could target, so `gh` is never called (and `P` already covers that state). Once
+  the gate is open, `M` is resolved from a tiny per-branch **cache file** that the render only
+  *reads* — a detached background `gh` refreshes it, so the render **never blocks on the network**.
+  A *merged* result is cached permanently (a merged PR never un-merges); an *open* or *no-PR* result
+  is re-checked when the cache entry is older than 7 minutes. Requires `gh` for the `M` letter only;
+  without `gh`, `C` and `P` still work.
 - **Model** — color-coded: **Opus = green, Fable = red, Sonnet = cyan, Haiku = blue**; version dimmed;
   the trailing ` (… context)` is trimmed since context size is shown separately.
 - **Effort** — `.effort.level`, color-coded along a low→max gradient:
@@ -76,7 +93,7 @@ full three-line `statusline` plugin.
 - **Session cost** — always shown, even `$0.00`.
 
 Absent segments are omitted entirely, so the line never shifts position. Tightly-related pairs
-share a spaceless `･` separator to read as one unit — badge`･`branch`･`dirty-`!`,
+share a spaceless `･` separator to read as one unit — badge`･`branch`･`[CPM],
 model`･`version`･`effort, and context-size`･`used-% — while the top-level segments are joined by a
 spaced ` ･ `.
 
@@ -89,7 +106,10 @@ spaced ` ･ `.
 
 Select **statusline-compact** in `/plugin` → enable **auto-update**.
 
-**Requirements:** `jq`, `git`. No `curl`, no `python3`, no network access.
+**Requirements:** `jq`, `git`. No `curl`, no `python3`. The render itself makes **no network calls** —
+the only optional network use is the `M` letter's detached background `gh` refresh, which runs
+disconnected from the render (see the `[CPM]` block above); without `gh` the `M` letter is simply
+never shown and everything else works.
 
 ## 🔧 Setup <a name="setup"></a>
 
