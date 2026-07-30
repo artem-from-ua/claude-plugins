@@ -182,17 +182,32 @@ if [ -n "$cwd" ] && git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
       committed_dirty="1"
     fi
     # P — commits ahead of the upstream. Reads only local refs (no network).
-    # `@{upstream}` fails when the branch has no upstream configured; treat that
-    # as "not pushed" so a never-pushed branch still flags P.
+    # `rev-list '@{upstream}..HEAD'` returns empty on failure, which happens in
+    # TWO distinct states that must be told apart:
+    #   1. never pushed  — no `branch.<name>.remote` config at all → genuinely
+    #                       nothing on the remote → flag P.
+    #   2. pushed→deleted — the branch was pushed, its PR merged, and the remote
+    #                       branch deleted (`gh pr merge --delete-branch`). The
+    #                       `branch.<name>.remote`/`.merge` config STAYS, so
+    #                       `@{upstream}` points at a now-gone tracking ref and
+    #                       rev-list fails — but the work is already in main, so
+    #                       there is nothing to push → do NOT flag P.
+    # `git config --get branch.<name>.remote` is a purely-local read that tells
+    # the two apart: absent → state 1 (P), present → state 2 (no P). In state 2
+    # `has_upstream` stays "" so the M gate below also skips (no gh for a branch
+    # whose remote is gone).
     has_upstream=""
     ahead=$(git -C "$cwd" rev-list --count '@{upstream}..HEAD' 2>/dev/null)
-    if [ -z "$ahead" ]; then
-      # No upstream at all → nothing has been pushed yet.
-      unpushed="1"
-    else
+    if [ -n "$ahead" ]; then
+      # Upstream resolved and rev-list succeeded → normal case.
       has_upstream="1"
       [ "$ahead" -gt 0 ] 2>/dev/null && unpushed="1"
+    elif [ -z "$(git -C "$cwd" config --get "branch.$branch.remote" 2>/dev/null)" ]; then
+      # State 1: no upstream config at all → never pushed → P.
+      unpushed="1"
     fi
+    # else State 2: upstream config exists but its tracking ref is gone
+    # (pushed→merged→deleted). Nothing to push → leave unpushed/has_upstream unset.
     # M — PR-not-merged, resolved from a cache file the render only READS. Two
     # separate git-only gates, deliberately distinct:
     #
