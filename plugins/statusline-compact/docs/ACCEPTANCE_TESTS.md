@@ -146,11 +146,12 @@ Feed synthetic `.effort.level` values and assert the SGR code wrapping the level
 - ✅ an unknown level renders plain (no color)
 - ✅ an absent `.effort.level` omits the segment entirely
 
-#### 2.6 Ultra-mode Segment (pink `ultracode`/`ultraplan`)
+#### 2.6 Ultra-mode Effort (violet `ultra`)
 
-The renderer scans `.transcript_path` for the last genuine `/effort` command and, if it selected an
-ultra mode, appends a pink (`38;5;205`) `ultracode`/`ultraplan` segment right after effort. Build
-synthetic JSONL transcripts and point `.transcript_path` at each:
+When the last genuine `/effort` this session selected an ultra mode (`ultracode`/`ultraplan`), the
+effort segment is **replaced** by a single violet (`38;5;135`) `ultra` token — instead of the coarse
+`xhigh` level. Otherwise the normal color-coded effort level shows. Build synthetic JSONL transcripts
+and point `.transcript_path` at each:
 
 ```bash
 TD=$(mktemp -d)
@@ -168,17 +169,17 @@ printf '%s\n' \
 pay(){ printf '{"cwd":"/tmp","workspace":{"repo":{"name":"demo"}},"model":{"display_name":"Opus 4.8"},"effort":{"level":"%s"},"cost":{"total_cost_usd":1},"context_window":{"context_window_size":1000000,"used_percentage":20},"transcript_path":"%s"}' "$1" "$2"; }
 S=plugins/statusline-compact/scripts/statusline-compact.sh
 
-pay xhigh "$TD/ultracode.jsonl"     | bash "$S"   # expect pink 38;5;205 "ultracode"
-pay max   "$TD/max-prose-trap.jsonl" | bash "$S"   # expect NO ultra segment (prose ignored)
-pay high  "$TD/NOPE.jsonl"           | bash "$S"   # missing transcript → no segment, no error
+pay xhigh "$TD/ultracode.jsonl"     | bash "$S"   # effort segment = violet 38;5;135 "ultra" (no xhigh)
+pay max   "$TD/max-prose-trap.jsonl" | bash "$S"   # effort segment = normal "max" (prose ignored)
+pay high  "$TD/NOPE.jsonl"           | bash "$S"   # missing transcript → normal "high", no error
 ```
 
 **Acceptance criteria:**
-- ✅ last `/effort` = `ultracode`/`ultraplan` → pink `38;5;205` segment with that exact word, right after effort
+- ✅ last `/effort` = `ultracode`/`ultraplan` → effort segment is the single word `ultra` in violet `38;5;135` (the coarse `xhigh` is NOT shown, and there is no separate ultracode/ultraplan token)
 - ✅ **prose immunity**: a later assistant message quoting `Set effort level to <word>` does NOT change the result (only `type:"user"` `/effort` echoes count)
-- ✅ last `/effort` = a normal level → ultra segment omitted (the normal effort segment still shows)
-- ✅ no `/effort` line / missing `.transcript_path` / unreadable file → segment omitted, no stderr
-- ✅ the pink SGR `38;5;205` appears **only** in an ultra case
+- ✅ last `/effort` = a normal level → normal color-coded effort level shown (no `ultra`)
+- ✅ no `/effort` line / missing `.transcript_path` / unreadable file → normal effort from `.effort.level`, no stderr
+- ✅ the violet SGR `38;5;135` and the word `ultra` appear **only** in an ultra case
 - ✅ detection is grep-narrow + `jq`-filter (binary-safe `grep -a`), ~7ms on a 2.6MB transcript
 
 ### 3. Integration Tests (fixtures)
