@@ -102,9 +102,11 @@ full three-line `statusline` plugin.
   brackets**. Each letter shows only when its condition holds; if none hold, the whole block
   (brackets included, and its separator) is omitted:
   - **`C`** — local **c**hanges not committed (uncommitted work in the tree).
-  - **`P`** — local commits not **p**ushed (commits ahead of the upstream, or a branch that was never
-    pushed). A branch whose PR merged and whose remote branch was then deleted is **not** flagged — its
-    work is already in `main`, so there is nothing to push.
+  - **`P`** — local commits not **p**ushed (commits ahead of the upstream, or a never-pushed branch
+    that carries commits absent from every remote). A branch whose PR merged and whose remote branch
+    was then deleted is **not** flagged — its work is already in `main`, so there is nothing to push.
+    Nor is a fresh branch cut off `origin/main` with no own commits (the `git worktree add` /
+    `EnterWorktree` case, even when local `main` lags origin) — those commits are already on origin.
   - **`M`** — an open PR that is not **m**erged yet. No PR → no `M` (an un-PR'd branch is already
     flagged by `P`). **Disabled by default** (set `STATUSLINE_COMPACT_ENABLE_PR_CHECK=1` to enable)
     while `gh` load is being measured — it's the only letter that invokes `gh`; the rest of this
