@@ -169,6 +169,15 @@ pr_cache_refresh() {
 # Each letter shows only when its condition holds; an all-clear branch shows no
 # block at all (not even the "[]" brackets). The letters are red; the brackets
 # are gray.
+#
+# M kill-switch: the M letter is the only thing that shells out to `gh` (via a
+# detached background refresh). It is DISABLED BY DEFAULT while we measure `gh`
+# load across cases — under suspicion that the background refresh overloads `gh`.
+# Set  STATUSLINE_COMPACT_ENABLE_PR_CHECK=1  to re-enable it (e.g. to take those
+# measurements). With it unset/0 the entire M block is skipped — no cache read,
+# no gate evaluation, no gh invocation ever — and the C/P letters are unaffected.
+# Measurement plan / re-enable criteria:
+#   https://github.com/artem-from-ua/claude-plugins/issues/356
 # ---------------------------------------------------------------------------
 branch=""
 committed_dirty=""   # C: uncommitted changes in the working tree
@@ -222,14 +231,21 @@ if [ -n "$cwd" ] && git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
     #
     # The merged/open distinction still needs gh, done via a detached background
     # refresh so the render never waits on api.github.com.
-    case "$branch" in
-      main|master|develop) : ;;   # protected → no M, no gh
-      *)
-        if [ -n "$has_upstream" ]; then
-          fully_pushed=""
-          [ -z "$unpushed" ] && fully_pushed="1"
-          pr_unmerged=$(pr_cache_status "$cwd" "$branch" "$fully_pushed")
-        fi
+    # M is opt-in while we measure gh load (see the kill-switch note above).
+    # Unless STATUSLINE_COMPACT_ENABLE_PR_CHECK is truthy, the whole block is
+    # skipped so `gh` is never invoked. C/P above are already computed.
+    case "${STATUSLINE_COMPACT_ENABLE_PR_CHECK:-0}" in
+      1|true|yes|on)
+        case "$branch" in
+          main|master|develop) : ;;   # protected → no M, no gh
+          *)
+            if [ -n "$has_upstream" ]; then
+              fully_pushed=""
+              [ -z "$unpushed" ] && fully_pushed="1"
+              pr_unmerged=$(pr_cache_status "$cwd" "$branch" "$fully_pushed")
+            fi
+            ;;
+        esac
         ;;
     esac
   fi

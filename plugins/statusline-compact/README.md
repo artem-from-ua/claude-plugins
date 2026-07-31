@@ -32,6 +32,12 @@ claude-plugins ･ Root･main ･ Opus･4.8･ultra ･ 1M･5% ･ $0.52
 
 ### The `[CPM]` block over one feature's lifecycle
 
+> **`M` is disabled by default.** The `M` letter is the only part that shells out to `gh`, and
+> it's temporarily off while we measure `gh` load across cases (it's under suspicion of
+> overloading `gh`). `C` and `P` work unchanged. To opt back in — e.g. to take measurements —
+> set `STATUSLINE_COMPACT_ENABLE_PR_CHECK=1` in the environment the statusline runs in. The
+> examples below show the full `[CPM]` behaviour as it works with `M` enabled.
+
 Watch the same terminal as you take a change from edit to merge — the block flips through
 `[C]` → `[P]` → `[M]` and then disappears. Each letter is red, the brackets gray; the whole block
 (and its `･`) is omitted the moment nothing applies.
@@ -100,7 +106,9 @@ full three-line `statusline` plugin.
     pushed). A branch whose PR merged and whose remote branch was then deleted is **not** flagged — its
     work is already in `main`, so there is nothing to push.
   - **`M`** — an open PR that is not **m**erged yet. No PR → no `M` (an un-PR'd branch is already
-    flagged by `P`).
+    flagged by `P`). **Disabled by default** (set `STATUSLINE_COMPACT_ENABLE_PR_CHECK=1` to enable)
+    while `gh` load is being measured — it's the only letter that invokes `gh`; the rest of this
+    subsection describes the behaviour when it's enabled.
 
   `C` and `P` are computed from local `git` only (no network). `M` has two **purely-local** gates,
   deliberately kept separate:
@@ -147,10 +155,11 @@ spaced ` ･ `.
 
 Select **statusline-compact** in `/plugin` → enable **auto-update**.
 
-**Requirements:** `jq`, `git`. No `curl`, no `python3`. The render itself makes **no network calls** —
-the only optional network use is the `M` letter's detached background `gh` refresh, which runs
-disconnected from the render (see the `[CPM]` block above); without `gh` the `M` letter is simply
-never shown and everything else works.
+**Requirements:** `jq`, `git`. No `curl`, no `python3`. The render itself makes **no network calls**.
+The only optional network use is the `M` letter's detached background `gh` refresh — and that is
+**disabled by default** while `gh` load is being measured (opt in with
+`STATUSLINE_COMPACT_ENABLE_PR_CHECK=1`). Even when enabled it runs disconnected from the render (see
+the `[CPM]` block above); without `gh`, or with `M` disabled, everything else works.
 
 ## 🔧 Setup <a name="setup"></a>
 
