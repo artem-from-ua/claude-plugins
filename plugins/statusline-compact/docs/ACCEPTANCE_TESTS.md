@@ -258,7 +258,7 @@ S=plugins/statusline-compact/scripts/statusline-compact.sh
 pay(){ printf '{"cwd":"%s","workspace":{"repo":{"name":"demo"}},"model":{"display_name":"Opus 4.8"},"cost":{"total_cost_usd":0},"context_window":{"context_window_size":1000000,"used_percentage":10}}' "$1"; }
 
 TD=$(mktemp -d)
-# clean, no upstream → never pushed → P
+# clean, no upstream, HEAD carries a commit on no remote → P
 R1="$TD/r1"; git -C "$R1" init -q 2>/dev/null || { mkdir -p "$R1"; git -C "$R1" init -q; }
 git -C "$R1" config user.email t@t; git -C "$R1" config user.name t
 echo a > "$R1/a"; git -C "$R1" add -A; git -C "$R1" commit -qm init
@@ -286,16 +286,28 @@ git -C "$R2" push -q -u origin feature/gone
 git -C "$R2" push -q origin --delete feature/gone
 git -C "$R2" update-ref -d refs/remotes/origin/feature/gone   # simulate the tracking ref being pruned
 pay "$R2" | bash "$S" | strip           # expect NO block (branch is merged+deleted, not unpushed)
+
+# fresh branch cut off origin/main with NO own commits → no block (#358). This is the
+# `git worktree add` / `EnterWorktree` case: local main may be behind origin, so HEAD is
+# "ahead of local main" yet every one of its commits is already on origin → nothing to push.
+# `--no-track` gives a TRUE State 1 (no `branch.<name>.remote` config at all), like EnterWorktree.
+git -C "$R2" checkout -q -b feature/fresh --no-track origin/main
+pay "$R2" | bash "$S" | strip           # expect NO block (rev-list HEAD --not --remotes == 0)
+echo w > "$R2/w"; git -C "$R2" add -A; git -C "$R2" commit -qm own
+pay "$R2" | bash "$S" | strip           # expect [P] (first own commit not on any remote)
 ```
 
 **Acceptance criteria (C / P):**
-- ✅ clean + no upstream → `[P]`
+- ✅ clean + no upstream, HEAD carries a commit on no remote → `[P]`
 - ✅ + uncommitted change → `[CP]`
 - ✅ pushed & clean → **no block** (no brackets)
 - ✅ 1 commit ahead of upstream → `[P]`
 - ✅ pushed → merged → remote branch deleted (upstream config stays, tracking ref gone) → **no block**
   (regression: #353 — the two empty-`rev-list` states, "never pushed" vs "pushed-then-deleted", are
   told apart by whether `branch.<name>.remote` config exists — present ⇒ not unpushed)
+- ✅ fresh branch off `origin/main` with **no own commits** (worktree / `EnterWorktree` case,
+  local main behind) → **no block** — no `P` (#358). In State 1 (no upstream config) `P` now
+  fires only when `rev-list --count HEAD --not --remotes > 0`; a first own commit on top → `[P]`
 - ✅ uncommitted change on a merged+deleted branch → `[C]` only (never `[CP]`)
 - ✅ letters are `38;5;167` (red); brackets are `38;5;240` (gray)
 
@@ -399,3 +411,4 @@ Exercise `/statusline-compact:statusline-compact-setup` logic against three `set
 | 0.4.2 | Docs: README `[CPM]` lifecycle demo walking one terminal through `[C]`→`[P]`→`[M]` |
 | 0.5.0 | `M` now stays lit for an existing (draft/open) PR after you add a local commit on top — the unpushed-commit gate blocks the background `gh` *refresh*, no longer the *display* of an already-known `unmerged` (so `[PM]` is now possible). Protected branches (`main`/`master`/`develop`) are skipped entirely: no `M`, no `gh`. |
 | 0.5.1 | Fix false `P` after a merged branch's remote is deleted (#353): a pushed→merged→deleted branch keeps its `branch.<name>.remote` config, so `rev-list @{upstream}..HEAD` fails on a gone tracking ref just like a never-pushed branch — the two are now told apart by that config (present ⇒ not unpushed ⇒ no `P`, and the `M` refresh gate stays closed). |
+| 0.6.1 | Fix false `P` on a fresh no-upstream branch cut off `origin/main` with no own commits (#358): in State 1 (no `branch.<name>.remote` config) `P` now fires only when `rev-list --count HEAD --not --remotes > 0` — a `git worktree add` / `EnterWorktree` branch whose commits are all already on origin no longer flags `P`; the first own commit on top restores it. Purely local check, no network. |

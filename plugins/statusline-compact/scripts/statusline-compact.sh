@@ -193,8 +193,10 @@ if [ -n "$cwd" ] && git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
     # P — commits ahead of the upstream. Reads only local refs (no network).
     # `rev-list '@{upstream}..HEAD'` returns empty on failure, which happens in
     # TWO distinct states that must be told apart:
-    #   1. never pushed  — no `branch.<name>.remote` config at all → genuinely
-    #                       nothing on the remote → flag P.
+    #   1. never pushed  — no `branch.<name>.remote` config at all. Flag P only
+    #                       if HEAD carries commits absent from EVERY remote-
+    #                       tracking branch; a fresh branch cut from origin/main
+    #                       (while local main is behind) has none → no P.
     #   2. pushed→deleted — the branch was pushed, its PR merged, and the remote
     #                       branch deleted (`gh pr merge --delete-branch`). The
     #                       `branch.<name>.remote`/`.merge` config STAYS, so
@@ -212,8 +214,12 @@ if [ -n "$cwd" ] && git -C "$cwd" rev-parse --git-dir > /dev/null 2>&1; then
       has_upstream="1"
       [ "$ahead" -gt 0 ] 2>/dev/null && unpushed="1"
     elif [ -z "$(git -C "$cwd" config --get "branch.$branch.remote" 2>/dev/null)" ]; then
-      # State 1: no upstream config at all → never pushed → P.
-      unpushed="1"
+      # State 1: no upstream config. Flag P only if HEAD carries commits that are
+      # on NO remote-tracking branch — otherwise there is genuinely nothing to
+      # push (e.g. a fresh worktree branched off origin/main while local main is
+      # behind). Purely local, no network; works for any remote layout.
+      local_only=$(git -C "$cwd" rev-list --count HEAD --not --remotes 2>/dev/null)
+      [ -n "$local_only" ] && [ "$local_only" -gt 0 ] 2>/dev/null && unpushed="1"
     fi
     # else State 2: upstream config exists but its tracking ref is gone
     # (pushed→merged→deleted). Nothing to push → leave unpushed/has_upstream unset.
