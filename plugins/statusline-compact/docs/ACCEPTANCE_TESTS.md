@@ -108,7 +108,7 @@ printf '{"model":{"display_name":"Opus 4.8 (1M context)"},"cost":{"total_cost_us
 **Acceptance criteria:**
 - ✅ keyword wrapped in the expected color
 - ✅ version `\d+\.\d+` wrapped in `38;5;240` (dim)
-- ✅ a plain space (not `･`) between the keyword and the version
+- ✅ a tight `･` (not a space) between the keyword and the version — `Opus･4.8`
 - ✅ trailing ` (1M context)` trimmed
 
 #### 2.3 Context % Thresholds
@@ -193,7 +193,7 @@ Fixture `01`: `cwd` basename is `cc-timer` but `.workspace.repo.name` is `tokenp
 **Acceptance criteria:**
 - ✅ the line starts with repo `tokenpace` (proves `.workspace.repo.name` precedence)
 - ✅ yellow `Root` badge (no `.workspace.git_worktree`), colored `38;5;178`, attached to the branch with a tight `･`
-- ✅ the line == `tokenpace ･ Root･main ･ Opus･4.8･high ･ 1M･8% ･ $2.61` (badge･branch, model･version･effort and size･% are tight pairs)
+- ✅ the line == `tokenpace   Root･main   Opus･4.8･high   1M･8%   $2.61` (top-level segments joined by three spaces; `Root･main`, `Opus･4.8･high` and `1M･8%` are tight `･` pairs)
 
 #### 3.2 Fresh session, `used_percentage: null`
 
@@ -202,7 +202,7 @@ Fixture `02`.
 **Acceptance criteria:**
 - ✅ context-% segment **omitted** (no `%` in the output)
 - ✅ cost shown as `$0.00`
-- ✅ no placeholder gap — the line == `claude-plugins ･ Root･main ･ Opus･4.8･high ･ 1M ･ $0.00`
+- ✅ no placeholder gap — the line == `claude-plugins   Root･main   Opus･4.8･high   1M   $0.00`
   (branch depends on the fixture cwd's git state; the load-bearing checks are "no `%` segment" and "`$0.00` shown")
 
 #### 3.3 Active non-worktree
@@ -219,20 +219,57 @@ Fixture `04` contains a `.pr` object.
 
 #### 3.5 Worktree
 
-Fixture `05`.
+Fixture `05`. A Claude Code worktree checks out a branch named `worktree-<git_worktree>`, so the
+branch text alone identifies the worktree and **no badge is rendered**.
 
 **Acceptance criteria:**
-- ✅ gray `Worktree` badge (`.workspace.git_worktree` present), colored `38;5;240`, attached to the branch with a tight `･` (`Worktree･<branch>`)
+- ✅ **no** `Worktree` badge in the line (the string `Worktree･` must not appear) when the branch is named `worktree-…`
+- ✅ the branch renders with the worktree layout: literal `worktree-` head in `38;5;240` (dim), prefix token in its type color, `+` in `38;5;240`, suffix in the terminal default
 - ✅ repo == `claude-plugins` (NOT the worktree name — repo.name precedence in a worktree)
-- ✅ the worktree name itself is NOT rendered (replaced by the fixed `Worktree` badge)
+- ✅ the `git_worktree` **value** is not rendered as such; the branch text comes from local `git`
 - ✅ `5%`, `$0.69`
+
+##### 3.5a Worktree with a non-`worktree-…` branch (badge fallback)
+
+Feed a payload with `.workspace.git_worktree` set but a `cwd` whose checked-out branch is e.g.
+`main` — the state after switching branches inside a worktree.
+
+**Acceptance criteria:**
+- ✅ the gray `Worktree` badge (`38;5;240`) **returns**, attached to the branch with a tight `･` (`Worktree･main`) — otherwise nothing on the line would reveal this is a worktree
+- ✅ the branch is colorized with the normal `/` rules (no dim head, no `+` splitting)
+
+##### 3.5b Branch colorization matrix
+
+Exercise `colorize_branch <branch> <is_worktree>` directly across the delimiter edge cases.
+`is_worktree` mirrors the presence of `.workspace.git_worktree`.
+
+| Branch | `is_worktree` | Expected rendering |
+|--------|---------------|--------------------|
+| `worktree-fix+stub-fallback-267` | set | dim `worktree-` · `38;5;203` `fix` · dim `+` · plain `stub-fallback-267` |
+| `worktree-experiments` | set | dim `worktree-` · plain `experiments` (no `+` → no prefix token to classify) |
+| `worktree-fix+a+b` | set | dim `worktree-` · `38;5;203` `fix` · dim `+` · plain `a+b` (**first** `+` splits) |
+| `worktree-fix/x` | set | dim `worktree-` · `38;5;203` `fix` · dim `/` · plain `x` (falls through to `/`) |
+| `worktree-foo+bar` | **unset** | entirely plain — a main-checkout branch merely named `worktree-…` is untouched |
+| `feature/a+b` | unset | `38;5;114` `feature` · dim `/` · plain `a+b` (`+` must **not** split) |
+| `main` | unset | plain |
 
 #### 3.6 Conditional-Segment Stability
 
 Diff the ANSI-stripped line across the worktree and non-worktree fixtures.
 
-**Acceptance criteria:** ✅ the checkout badge is always present (gray `Worktree` vs yellow `Root`),
-and genuinely-absent segments (branch) are omitted, not replaced by placeholders, so the line never jumps.
+**Acceptance criteria:** ✅ the checkout badge is present in the main checkout (yellow `Root`) and
+absent in a `worktree-…` worktree — that difference is by design, not a jump. Genuinely-absent
+segments (branch) are omitted, not replaced by placeholders, so the line never shifts position.
+
+#### 3.7 Separator Discipline
+
+Applies to every fixture.
+
+**Acceptance criteria:**
+- ✅ top-level segments are separated by exactly three `0x20` spaces
+- ✅ the ANSI-stripped line contains **no** spaced ` ･ ` (the wide separator is gone)
+- ✅ tight `･` pairs survive: `Root･main`, `branch･[CPM]`, `Opus･4.8･high`, `1M･5%`
+- ✅ no trailing whitespace (`grep -cE '[[:space:]]$'` == 0)
 
 ### 4. Git Tests
 
@@ -241,7 +278,8 @@ Run against a temporary repo (`git init` in `mktemp -d`), feeding a fixture whos
 **Acceptance criteria:**
 - ✅ current branch appears in the line
 - ✅ `cwd` that is not a git repo → branch segment (and its separator) omitted entirely; the checkout
-  badge still shows as its own segment
+  badge still shows as its own segment — yellow `Root` in the main checkout, or gray `Worktree` when
+  `.workspace.git_worktree` is set (with no branch there is no `worktree-…` name to stand in for it)
 
 #### 4.1 `[CPM]` Status Block
 
@@ -388,9 +426,10 @@ Exercise `/statusline-compact:statusline-compact-setup` logic against three `set
 
 ## Known Limitations
 
-- The checkout badge relies on `.workspace.git_worktree`, which Claude Code only supplies for
-  worktree sessions; a manually-created worktree opened without that field would show the yellow `Root`
-  badge instead of gray `Worktree` (the branch still renders from local `git`).
+- Worktree rendering relies on `.workspace.git_worktree`, which Claude Code only supplies for
+  worktree sessions. A manually-created worktree opened without that field is treated as a main
+  checkout: it shows the yellow `Root` badge, and its `worktree-…` branch renders with the plain `/`
+  rules — no dim `worktree-` head, no `+` splitting (the branch text still comes from local `git`).
 - The AskUserQuestion confirmation in the setup flow is interactive and cannot be fully automated.
 - The `M` letter is eventually-consistent: it reflects the last background `gh` refresh, so it can lag
   a just-opened or just-merged PR by up to the 5-minute TTL (a merged result then sticks permanently).
@@ -412,3 +451,4 @@ Exercise `/statusline-compact:statusline-compact-setup` logic against three `set
 | 0.5.0 | `M` now stays lit for an existing (draft/open) PR after you add a local commit on top — the unpushed-commit gate blocks the background `gh` *refresh*, no longer the *display* of an already-known `unmerged` (so `[PM]` is now possible). Protected branches (`main`/`master`/`develop`) are skipped entirely: no `M`, no `gh`. |
 | 0.5.1 | Fix false `P` after a merged branch's remote is deleted (#353): a pushed→merged→deleted branch keeps its `branch.<name>.remote` config, so `rev-list @{upstream}..HEAD` fails on a gone tracking ref just like a never-pushed branch — the two are now told apart by that config (present ⇒ not unpushed ⇒ no `P`, and the `M` refresh gate stays closed). |
 | 0.6.1 | Fix false `P` on a fresh no-upstream branch cut off `origin/main` with no own commits (#358): in State 1 (no `branch.<name>.remote` config) `P` now fires only when `rev-list --count HEAD --not --remotes > 0` — a `git worktree add` / `EnterWorktree` branch whose commits are all already on origin no longer flags `P`; the first own commit on top restores it. Purely local check, no network. |
+| 0.7.0 | Worktree sessions drop the gray `Worktree` badge and show the branch itself: dim `worktree-` head, type-colored prefix before the `+`, dim `+`, plain suffix (same palette as `/` branches). The badge returns only when a worktree has a non-`worktree-…` branch checked out. Top-level segments are now separated by three spaces instead of ` ･ `; tight `･` pairs (`Root･main`, `branch･[CPM]`, `Opus･4.8･high`, `1M･5%`) are unchanged. |
