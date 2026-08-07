@@ -3,10 +3,12 @@
 # Reads JSON from stdin (piped by Claude Code). Dependencies: jq, git.
 # No network calls, no python3 — uses only stdin fields plus local git.
 #
-# Layout (one line, segments joined with ･):
-#   repo-name ･ checkout-badge･branch ! ･ model ･ effort ･ ctx-size ･ ctx-used% ･ $cost
-#   (checkout badge: gray "Worktree" in a worktree, yellow "Root" in the main
-#    checkout — attached to the branch with a tight "･")
+# Layout (one line, top-level segments joined with three spaces):
+#   repo-name   [badge･]branch[･CPM]   model･effort   ctx-size･ctx-used%   $cost
+#   (checkout badge: yellow "Root" in the main checkout, attached to the branch
+#    with a tight "･". A worktree shows no badge — its branch already reads
+#    "worktree-<name>" — unless you switched to a branch not named that way, in
+#    which case a gray "Worktree" badge returns.)
 #
 # Highlighting conventions (shared with the statusline plugin):
 #   separators   -> very_dim (237)
@@ -27,8 +29,12 @@ bright_red=$(printf '\033[38;5;167m')
 yellow=$(printf '\033[38;5;178m')
 ultra_color=$(printf '\033[38;5;135m') # ultracode/ultraplan marker — violet, distinct from 167/178
 
-# Separator between widgets — U+FF65 halfwidth middle dot, very_dim
+# Separator between the two halves of a tight pair — U+FF65 halfwidth middle dot,
+# very_dim (Root･main, Opus･5･high, 1M･18%, branch･[CPM]).
 SEP="${very_dim}･${rst}"
+# Separator between top-level segments — three plain spaces. Whitespace needs no
+# SGR, so this carries none and leaves no color state open.
+WIDE_SEP="   "
 
 # ---------------------------------------------------------------------------
 # Field extraction. `// empty` also turns JSON null into "", so [ -z ] guards
@@ -292,29 +298,51 @@ colorize_model() {
   echo "$out" | sed "s/ /${SEP}/g"
 }
 
-# Colorize git branch: color the prefix by type, dim the slash.
-colorize_branch() {
-  local branch="$1"
-  local c_feature=$(printf '\033[38;5;114m')
-  local c_fix=$(printf '\033[38;5;203m')
-  local c_release=$(printf '\033[38;5;221m')
-  local c_refactor=$(printf '\033[38;5;110m')
-  local c_default=$(printf '\033[38;5;245m')
+# Map a branch-type prefix token to its color.
+branch_prefix_color() {
+  case "$1" in
+    feature|feat)               printf '\033[38;5;114m' ;;
+    fix|bugfix|hotfix)          printf '\033[38;5;203m' ;;
+    release|chore|revert)       printf '\033[38;5;221m' ;;
+    refactor|docs|test|ci|wip|exp|experiment|dev|develop) printf '\033[38;5;110m' ;;
+    *)                          printf '\033[38;5;245m' ;;
+  esac
+}
 
-  local prefix color suffix
-  if echo "$branch" | grep -q '/'; then
-    prefix="${branch%%/*}"
-    suffix="${branch#*/}"
-    case "$prefix" in
-      feature|feat)               color="$c_feature" ;;
-      fix|bugfix|hotfix)          color="$c_fix" ;;
-      release|chore|revert)       color="$c_release" ;;
-      refactor|docs|test|ci|wip|exp|experiment|dev|develop) color="$c_refactor" ;;
-      *)                          color="$c_default" ;;
-    esac
-    echo "${color}${prefix}${rst}${dim}/${rst}${suffix}"
+# Colorize a git branch: color the prefix token by type, dim the delimiter.
+#
+#   $1  branch name
+#   $2  non-empty when this is a worktree session (.workspace.git_worktree set)
+#
+# Two delimiter conventions, same color rules:
+#   normal    feature/login          -> 114 "feature" + dim "/" + "login"
+#   worktree  worktree-fix+a-b-267   -> dim "worktree-" + 203 "fix" + dim "+" + "a-b-267"
+# Claude Code names a worktree branch "worktree-<git_worktree>" and slugifies the
+# worktree name's "/" to "+", so "+" is that layout's prefix delimiter. Both the
+# dim "worktree-" head and the "+" split apply ONLY to a branch that really starts
+# with "worktree-" in a real worktree session, so a branch merely containing "+"
+# (feature/a+b) or one named "worktree-…" in the main checkout keeps plain "/"
+# rendering. A worktree branch with no "+" (worktree-experiments) gets the dim
+# head and nothing else — there is no prefix token to classify.
+colorize_branch() {
+  local branch="$1" is_worktree="$2"
+  local head="" rest="$branch" prefix suffix color
+
+  if [ -n "$is_worktree" ] && [ "${branch#worktree-}" != "$branch" ]; then
+    head="${dim}worktree-${rst}"
+    rest="${branch#worktree-}"
+  fi
+
+  if [ -n "$head" ] && [ "${rest#*+}" != "$rest" ]; then
+    prefix="${rest%%+*}"; suffix="${rest#*+}"
+    color=$(branch_prefix_color "$prefix")
+    echo "${head}${color}${prefix}${rst}${dim}+${rst}${suffix}"
+  elif [ "${rest#*/}" != "$rest" ]; then
+    prefix="${rest%%/*}"; suffix="${rest#*/}"
+    color=$(branch_prefix_color "$prefix")
+    echo "${head}${color}${prefix}${rst}${dim}/${rst}${suffix}"
   else
-    echo "$branch"
+    echo "${head}${rest}"
   fi
 }
 
@@ -390,28 +418,37 @@ ultra_detect() {
 }
 
 # ---------------------------------------------------------------------------
-# Single line, segments joined with SEP:
-#   repo ･ badge･branch･[CPM] ･ model ･ effort ･ ctx-size ･ ctx-used% ･ $cost
-# The checkout badge attaches to the branch with a tight "･"; the [CPM] status
+# Single line, top-level segments joined with WIDE_SEP (three spaces):
+#   repo   [badge･]branch･[CPM]   model･effort   ctx-size･ctx-used%   $cost
+# The checkout badge, when shown, attaches to the branch with a tight "･"; the [CPM] status
 # block follows the branch with a tight "･" too. Everything else is SEP-joined.
 # Absent optional segments are omitted so nothing shifts.
 # ---------------------------------------------------------------------------
 line=""
-# append() joins with a spaced separator " ･ "; append_tight() joins with a
+# append() joins top-level segments with three spaces; append_tight() joins with a
 # tight "･" (no surrounding spaces) for segments that read as a pair.
-append() { [ -z "$line" ] && line="$1" || line="${line} ${SEP} $1"; }
+append() { [ -z "$line" ] && line="$1" || line="${line}${WIDE_SEP}$1"; }
 append_tight() { [ -z "$line" ] && line="$1" || line="${line}${SEP}$1"; }
 
 # repo name as the first (spaced) segment.
 append "$repo_name"
 
-# checkout badge, attached to the branch with a tight "･" (badge･branch):
-# gray "Worktree" inside a git worktree, yellow "Root" in the main checkout.
-# Presence of .workspace.git_worktree is the signal (set only in worktree sessions).
-if [ -n "$worktree" ]; then
-  badge="${dim}Worktree${rst}"
-else
+# Checkout marker, attached to the branch with a tight "･" (badge･branch).
+# Presence of .workspace.git_worktree is the worktree signal (set only in worktree
+# sessions); the branch name decides whether a badge is needed at all:
+#   main checkout          -> yellow "Root"
+#   worktree, "worktree-*" -> no badge; the branch already reads "worktree-<name>"
+#                             (colorize_branch dims that head), so a badge would
+#                             only repeat it.
+#   worktree, other branch -> gray "Worktree" comes back: you switched branches
+#                             inside the worktree, so nothing else on the line
+#                             would hint that this is a worktree.
+if [ -z "$worktree" ]; then
   badge="${yellow}Root${rst}"
+elif [ -n "$branch" ] && [ "${branch#worktree-}" != "$branch" ]; then
+  badge=""
+else
+  badge="${dim}Worktree${rst}"
 fi
 
 # Build the [CPM] status block: red letters for each active condition, gray
@@ -424,10 +461,12 @@ cpm=""
 status_block=""
 [ -n "$cpm" ] && status_block="${dim}[${rst}${bright_red}${cpm}${rst}${dim}]${rst}"
 
-# branch (+ optional [CPM] block), preceded tightly by the badge. When there is
-# no branch (cwd is not a git repo), the badge still shows as its own segment.
+# branch (+ optional [CPM] block), preceded tightly by the badge when there is one.
+# When there is no branch (cwd is not a git repo), the badge stands alone as its
+# own segment.
 if [ -n "$branch" ]; then
-  branch_disp="${badge}${SEP}$(colorize_branch "$branch")"
+  branch_disp="$(colorize_branch "$branch" "$worktree")"
+  [ -n "$badge" ] && branch_disp="${badge}${SEP}${branch_disp}"
   [ -n "$status_block" ] && branch_disp="${branch_disp}${SEP}${status_block}"
   append "$branch_disp"
 else

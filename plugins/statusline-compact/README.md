@@ -15,19 +15,20 @@ no progress bars.
 In the main checkout (yellow `Root` badge, attached to the branch):
 
 ```markdown
-claude-plugins ･ Root･main ･ Opus･4.8･high ･ 1M･5% ･ $0.52
+claude-plugins   Root･main   Opus･4.8･high   1M･5%   $0.52
 ```
 
-Inside a git worktree (gray `Worktree` badge; `[CP]` = uncommitted changes + unpushed commits):
+Inside a git worktree there is no badge — the branch itself reads `worktree-<name>`, with the
+`worktree-` head and the `+` dimmed (`[CP]` = uncommitted changes + unpushed commits):
 
 ```markdown
-claude-plugins ･ Worktree･feature/statusline-compact･[CP] ･ Opus･4.8･high ･ 1M･5% ･ $0.69
+claude-plugins   worktree-feature+statusline-compact･[CP]   Opus･4.8･high   1M･5%   $0.69
 ```
 
 In an ultra effort mode, the effort level is replaced by a single violet `ultra` token:
 
 ```markdown
-claude-plugins ･ Root･main ･ Opus･4.8･ultra ･ 1M･5% ･ $0.52
+claude-plugins   Root･main   Opus･4.8･ultra   1M･5%   $0.52
 ```
 
 ### The `[CPM]` block over one feature's lifecycle
@@ -44,23 +45,23 @@ Watch the same terminal as you take a change from edit to merge — the block fl
 
 ```markdown
 # 1. you edit a file — uncommitted work → C
-claude-plugins ･ Worktree･feature/login･[C] ･ Opus･4.8･high ･ 1M･12% ･ $0.30
+claude-plugins   worktree-feature+login･[C]   Opus･4.8･high   1M･12%   $0.30
 
 # 2. you commit locally — C clears, but the commit isn't on the remote yet → P
-claude-plugins ･ Worktree･feature/login･[P] ･ Opus･4.8･high ･ 1M･14% ･ $0.41
+claude-plugins   worktree-feature+login･[P]   Opus･4.8･high   1M･14%   $0.41
 
 # 3. you push — nothing is out of sync, so the block vanishes for a moment
-claude-plugins ･ Worktree･feature/login ･ Opus･4.8･high ･ 1M･15% ･ $0.48
+claude-plugins   worktree-feature+login   Opus･4.8･high   1M･15%   $0.48
 
 # 4. you open a PR — the branch is pushed & clean, so M is now checked (background gh);
 #    the open PR isn't merged yet → M
-claude-plugins ･ Worktree･feature/login･[M] ･ Opus･4.8･high ･ 1M･18% ･ $0.55
+claude-plugins   worktree-feature+login･[M]   Opus･4.8･high   1M･18%   $0.55
 
 # 4b. you commit a fixup on top — not pushed yet → P, but the PR is still open → M stays → PM
-claude-plugins ･ Worktree･feature/login･[PM] ･ Opus･4.8･high ･ 1M･19% ･ $0.58
+claude-plugins   worktree-feature+login･[PM]   Opus･4.8･high   1M･19%   $0.58
 
 # 5. the PR merges — M clears (a merged result is cached permanently); block gone
-claude-plugins ･ Worktree･feature/login ･ Opus･4.8･high ･ 1M･20% ･ $0.61
+claude-plugins   worktree-feature+login   Opus･4.8･high   1M･20%   $0.61
 ```
 
 If you commit *without* pushing while a change is still uncommitted, letters stack — e.g. `[CP]`.
@@ -69,9 +70,10 @@ branch, `gh` isn't called and `P` already tells you the branch isn't pushed. But
 `M` is known, adding a local commit on top keeps `M` lit alongside `P` — you'll see `[PM]`. Protected
 branches (`main`/`master`/`develop`) never show `M`.
 
-Segments, left to right: repo name · checkout badge (gray `Worktree` / yellow `Root`) attached to the
-git branch · a `[CPM]` status block (red letters, gray brackets) · model · effort (or `ultra` in an
-ultra mode) · context-window size · context used % · session cost.
+Segments, left to right: repo name · the git branch, preceded by a yellow `Root` badge in the main
+checkout (a worktree needs none — its branch says so itself) · a `[CPM]` status block (red letters,
+gray brackets) · model · effort (or `ultra` in an ultra mode) · context-window size · context used %
+· session cost.
 
 ## ⚙️ How it works <a name="how-it-works"></a>
 
@@ -92,12 +94,22 @@ full three-line `statusline` plugin.
 
 - **Repo name** — from `.workspace.repo.name` (falls back to the project directory / cwd basename).
   Correct even inside a worktree, where the project directory points at the worktree, not the repo root.
-- **Checkout badge** — a fixed marker showing which kind of checkout the session is in, attached to
-  the **branch** with a tight `･` (badge`･`branch): gray **`Worktree`** in a git worktree, yellow
-  **`Root`** in the main checkout. Keyed off the presence of `.workspace.git_worktree` (set only in
-  worktree sessions). Outside a git repo (no branch) the badge stands alone as its own segment.
-- **Branch** — the real checked-out branch (`git branch --show-current`); prefix color-coded
-  (`feature`, `fix`, `release`, `refactor`, …), slash dimmed.
+- **Checkout badge** — a yellow **`Root`** marker in the main checkout, attached to the **branch**
+  with a tight `･` (`Root･main`). A worktree session normally shows **no badge**: its branch is
+  already named `worktree-<name>`, so a badge would only repeat it. The gray **`Worktree`** badge
+  does return in one case — a worktree whose checked-out branch is *not* named `worktree-…` (you
+  switched branches inside it), where nothing else on the line would reveal it's a worktree. Keyed
+  off the presence of `.workspace.git_worktree` (set only in worktree sessions). Outside a git repo
+  (no branch) the badge stands alone as its own segment.
+- **Branch** — the real checked-out branch (`git branch --show-current`); the prefix token is
+  color-coded (`feature`, `fix`, `release`, `refactor`, …) and the delimiter dimmed. Two layouts,
+  same colors: a normal branch splits on `/` (`feature/login`), while a worktree branch splits on
+  `+` and gets its literal `worktree-` head dimmed too — `worktree-fix+stub-fallback-267` renders as
+  dim `worktree-`, red `fix`, dim `+`, plain `stub-fallback-267`. (Claude Code names a worktree
+  branch `worktree-<worktree name>` and slugifies the name's `/` into `+`.) A worktree branch with
+  no `+` — `worktree-experiments` — gets the dim head and nothing else; there is no prefix token to
+  classify. The `+` split applies *only* to a real `worktree-…` branch in a worktree session, so a
+  branch that merely contains a `+` (`feature/a+b`) is unaffected.
 - **`[CPM]` status block** — follows the branch after a tight `･`, with **red letters** and **gray
   brackets**. Each letter shows only when its condition holds; if none hold, the whole block
   (brackets included, and its separator) is omitted:
@@ -144,9 +156,9 @@ full three-line `statusline` plugin.
 - **Session cost** — always shown, even `$0.00`.
 
 Absent segments are omitted entirely, so the line never shifts position. Tightly-related pairs
-share a spaceless `･` separator to read as one unit — badge`･`branch`･`[CPM],
-model`･`version`･`effort, and context-size`･`used-% — while the top-level segments are joined by a
-spaced ` ･ `.
+share a spaceless `･` separator to read as one unit — `Root･main･[CPM]`, `Opus･4.8･high`, and
+`1M･5%` — while the top-level segments are separated by three plain spaces, so the gap between
+widgets never reads as one of those pairs.
 
 ## 📦 Installation <a name="installation"></a>
 

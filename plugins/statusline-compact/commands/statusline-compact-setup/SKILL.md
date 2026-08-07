@@ -62,9 +62,10 @@ conflict with a statusline that is already configured.
 5. **Verify dependencies.** Check that `jq` and `git` are on `PATH`; warn (do not fail)
    if either is missing. No `python3` and no network access are required.
 
-6. **Confirm** and summarize the single line's segments: repo name, the checkout badge
-   (gray `Worktree` in a git worktree, yellow `Root` in the main checkout), the current git
-   branch followed by a `[CPM]` status block (red letters, gray brackets — **C** uncommitted
+6. **Confirm** and summarize the single line's segments: repo name, a yellow `Root` badge in
+   the main checkout (a worktree shows no badge — its branch already reads `worktree-…`; the
+   gray `Worktree` badge returns only if a worktree has some other branch checked out), the
+   current git branch followed by a `[CPM]` status block (red letters, gray brackets — **C** uncommitted
    changes, **P** unpushed commits, **M** PR-not-merged; omitted entirely when none apply),
    model (Opus=green, Fable=red, Sonnet=cyan, Haiku=blue), effort level (low=blue, medium=cyan,
    high=green, xhigh=yellow, max=red), context-window size (yellow below 1M), context used %
