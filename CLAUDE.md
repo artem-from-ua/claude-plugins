@@ -9,6 +9,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 gh pr merge <N> --squash --admin
 ```
 
+> [!CAUTION]
+> **Do NOT use `--delete-branch` from inside a git worktree.** `gh` attempts to switch the local checkout to `main` before deleting the merged branch, but the main checkout already has `main` checked out, causing `fatal: 'main' is already used by worktree at …`. The remote merge succeeds but the command reports failure, leaving the remote branch undeleted.
+>
+> To delete the remote branch after merging from a worktree, run the commands separately:
+> ```bash
+> gh pr merge <N> --squash --admin
+> git push origin --delete <branch>
+> ```
+
 ## ⚠️ CRITICAL: Version Bump Requirement
 
 **MANDATORY: Claude Code MUST automatically bump version when plugin files change**
