@@ -11,7 +11,8 @@ MANDATORY: Follow these rules for all PR and branch operations.
 
 - ALWAYS use `--squash` for PR merge (unless repo explicitly uses merge/rebase)
 - Before using `gh pr merge --auto` → check `gh api repos/OWNER/REPO --jq '.allow_auto_merge'`
-- After merging a PR → delete the source branch (remote + local)
+- Before `gh pr merge --delete-branch` → check `git worktree list --porcelain | grep '^branch refs/heads/main$'`; if the base branch is held by another worktree → merge WITHOUT `--delete-branch` (its cleanup step fails there, leaving BOTH branches undeleted) and clean up manually
+- After merging a PR → delete the source branch in this order: `git push origin --delete <branch>` → `git worktree remove <path>` (if a worktree holds the branch) → `git branch -D <branch>`. Never `git checkout main` first — it fails when another worktree holds `main`
 - Before first commit on a branch → run `gh pr list --head <branch> --state open --json number,title,author`; if open PR exists → check: (a) different author, or (b) your changes don't match the PR topic — in either case, ask user whether to commit here or create a new branch
 - **Before EVERY commit** → verify your changes match the branch scope (name + existing commits). If changes are unrelated to the branch topic → stop and ask whether to create a new branch. This applies even when there is no open PR — the branch name itself defines the scope
 - After committing on a PR branch → offer to update the PR description
@@ -35,6 +36,24 @@ MANDATORY: Follow these rules for all PR and branch operations.
   # then retry: gh pr merge <N> --squash
   ```
 - **`--force-with-lease` is safer than `--force`**: fails if the remote was updated by someone else since your last fetch.
+- **Do not use `--delete-branch` when the base branch is checked out in another worktree.** `gh pr merge -d` deletes the local *and* remote branch, and it does the local step by switching the checkout to the base branch first. If another worktree already holds that branch, git refuses:
+
+  ```
+  fatal: 'main' is already used by worktree at '/path/to/repo'
+  ```
+
+  The condition is **not** "I am inside a worktree" — it is "the base branch is checked out elsewhere". A worktree merely makes that the common case: the main checkout usually sits on `main` while the PR is merged from a worktree. Merging from a worktree whose main checkout is parked on some other branch works fine. Check the actual condition:
+
+  ```bash
+  git worktree list --porcelain | grep '^branch refs/heads/main$'   # a hit → base is busy
+  ```
+
+  Two consequences worth knowing:
+  - **The merge itself succeeded.** Only the cleanup step failed, but `gh` still exits non-zero. Judge by PR state, not by the exit code:
+    ```bash
+    gh pr view <N> --json state,mergedAt --jq '{state,mergedAt}'
+    ```
+  - **Both branches survive.** The step aborts *before* either deletion, so the remote branch is left orphaned too — not just the local one.
 
 ## After committing to a branch with an open PR
 
@@ -114,19 +133,32 @@ When creating a PR without a linked issue:
 
 ## Post-merge branch cleanup
 
-After a PR is merged, clean up the branch:
+After a PR is merged, clean up the branch. Never start with `git checkout main` — that step fails outright when another worktree holds `main`, and it is not needed at all:
 
 ```bash
-# Delete remote branch (if not auto-deleted by GitHub)
-gh pr view <N> --json headRefName --jq '.headRefName' | xargs git push origin --delete
+# 1. Remote branch (if not auto-deleted by GitHub) — works from anywhere, worktree included
+git push origin --delete <branch>
 
-# Switch to main and delete local branch
-git checkout main
-git pull origin main
-git branch -d <branch-name>
+# 2. Local branch — any worktree holding it must be removed FIRST
+git worktree remove <path>          # only if the branch lives in a worktree
+git branch -D <branch>
 ```
 
-If GitHub has "Automatically delete head branches" enabled, skip the remote delete step.
+If GitHub has "Automatically delete head branches" enabled, skip step 1.
+
+**Why the order is mandatory.** While a worktree holds a branch, that branch cannot be deleted from anywhere — not from the main checkout, and not from inside the worktree itself:
+
+```
+error: cannot delete branch 'feat' used by worktree at '/path/to/wt'
+```
+
+So `git -C <main-checkout> branch -D <branch>` is *not* a workaround; the worktree has to go first. The remote branch has no such constraint — `git push origin --delete` succeeds from inside a worktree.
+
+**Why `-D` and not `-d`.** After a squash merge the branch tip is not an ancestor of `main`, so git does not consider it merged and `-d` refuses. Do not reach for `git branch --merged` either — it misses squashed branches for the same reason. Prove the work landed with an empty diff instead:
+
+```bash
+git diff <branch> origin/main    # empty output → fully landed, safe to delete
+```
 
 ## Repository auto-detection with `gh`
 
