@@ -12,7 +12,7 @@
 #
 # Highlighting conventions (shared with the statusline plugin):
 #   separators   -> very_dim (237)
-#   units/punct  -> dim (242): % $ / .frac K/M brackets
+#   units/punct  -> dim (240): % $ / .frac K/M brackets, model version
 #   token        -> bright/colored: repo, branch, numbers, model keyword
 
 # Force a dot decimal separator so awk "%.2f" is stable in comma locales.
@@ -289,9 +289,14 @@ colorize_model() {
     color=$(printf '\033[38;5;33m'); keyword="Haiku"
   fi
 
-  # Dim the version number (e.g. 4.8)
+  # Dim the version number (e.g. 4.8, or a bare major like 5).
+  # The fractional part is optional so an integer version dims the same as a
+  # decimal one. The version is always a space-delimited token after the model
+  # keyword, so anchor on that space rather than a \b word boundary — BSD sed
+  # (macOS) does not support \b, and anchoring here also leaves digits glued to
+  # letters (e.g. a "1M" context token) untouched.
   local out
-  out=$(echo "$name" | sed -E "s/([0-9]+\.[0-9]+)/${dim}\1${rst}/g")
+  out=$(echo "$name" | sed -E "s/ ([0-9]+(\.[0-9]+)?)$/ ${dim}\1${rst}/")
   # Color the keyword token (display_name is canonical-cased, no /I flag needed)
   [ -n "$color" ] && out=$(echo "$out" | sed "s/${keyword}/${color}${keyword}${rst}/")
   # Join the keyword and version with a tight separator (e.g. Opus･4.8)
