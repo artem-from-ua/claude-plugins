@@ -40,6 +40,7 @@ A marketplace of reusable Claude Code plugins. Each plugin lives under `plugins/
 - **context** — Inspects full session context in load order
 - **fresh-guides** — Watchlist for fast-changing technologies: verifies advice against official docs
 - **git-branch-naming** — Enforces branch naming conventions (prefix/kebab-case)
+- **issue-conventions** — Issue label and title taxonomy: interactive design, mass relabeling, drift detection
 - **kb-grooming** — Documentation health analysis: structural checks, semantic compliance, GitHub issues
 - **plantuml** — Keeps PlantUML diagram URLs in sync; provides ASCII rendering in terminal
 - **playbook** — Injects curated coding guideline presets into sessions
@@ -108,6 +109,8 @@ Claude Code console interaction examples (blocks showing `You: … Claude: …` 
 
 ## Dependencies
 
+- issue-conventions: `gh` (authenticated), jq, python3, git. The python3 dependency is the taxonomy
+  document parser — one implementation of the contract shared by the commands and the drift check
 - plantuml: Python 3.x, git
 - statusline: jq, curl, python3; macOS Keychain or ~/.claude/.credentials.json on Linux (for Anthropic OAuth token)
 - statusline-compact: jq, git (no python3; the render makes no network calls). Optional `gh` for the
