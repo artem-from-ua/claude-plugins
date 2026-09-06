@@ -1,6 +1,6 @@
 {
   "name": "issue-conventions",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Issue label and title taxonomy: interactive design, mass relabeling, documentation drift detection",
   "author": {
     "name": "Artem Naluzhnyy"

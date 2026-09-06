@@ -19,7 +19,7 @@ Classifies the existing backlog against the taxonomy and applies the result in r
 
 Resolve the config (`.claude-plugin/` → `.claude/` → `~/.claude/`), take `taxonomyDocument`, and parse it: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/parse-taxonomy.py" <document>`.
 
-No config → point at `/issue-conventions:setup` and stop. This command never invents a taxonomy. A document that fails to parse → stop and show the reported line; there is no JSON fallback to fall back to.
+No config → point at `/issue-conventions-setup` and stop. This command never invents a taxonomy. A document that fails to parse → stop and show the reported line; there is no JSON fallback to fall back to.
 
 ### 2. Reconcile labels before touching issues
 

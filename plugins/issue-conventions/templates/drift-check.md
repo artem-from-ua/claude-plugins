@@ -17,7 +17,7 @@ Report these as they are — no re-derivation:
 | `missingOnGitHub` | divergence | `gh label create --force` with the document's color and description |
 | `undeclaredOnGitHub` | divergence | add to the document, add to the legacy mapping as `keep`, or delete from GitHub |
 | `metadataDrift` | divergence | someone edited a label in the GitHub UI; `gh label create --force` restores the document's values |
-| `violations` | divergence | issues breaking cardinality, a cross-axis rule, or the soft limit — run `/issue-conventions:relabel` |
+| `violations` | divergence | issues breaking cardinality, a cross-axis rule, or the soft limit — run `/issue-conventions-relabel` |
 | `builtinsPresent` | divergence | GitHub re-created a built-in it was told to delete; delete again |
 | `unusedValues` | **INFO** | a declared value nobody uses. **Not a defect** — zero use of a closing reason only means nothing was closed that way. Never report it as a divergence, or the report becomes noise people learn to skip |
 
@@ -29,7 +29,7 @@ Report these as they are — no re-derivation:
 
 **Modules without an axis** (only when `moduleAxis` is set). Compare `modulesOnDisk` against the values of that axis. A module is covered when it matches a value's name, **is mentioned in a value's description** (one value often covers two or three modules), or appears in `modulesIgnored`. Only genuinely uncovered modules are a finding, and the fix is "add a value, or add it to `ignore=`". Read the descriptions before reporting — this is where false positives come from.
 
-**Footer freshness.** `footer.lastSynced` against the document's last commit date (`git log -1 --format=%cI -- <document>`). Do not use file mtime: in a fresh clone every file looks modified. A document edited after the last sync means GitHub may not have caught up — INFO, with `/issue-conventions:drift` or `/issue-conventions:setup` as the fix.
+**Footer freshness.** `footer.lastSynced` against the document's last commit date (`git log -1 --format=%cI -- <document>`). Do not use file mtime: in a fresh clone every file looks modified. A document edited after the last sync means GitHub may not have caught up — INFO, with `/issue-conventions-drift` or `/issue-conventions-setup` as the fix.
 
 ## The report
 
@@ -41,7 +41,7 @@ Drift check — 4 findings · source of truth: docs/issue-labels.md
 DOCUMENT ↔ GITHUB
 - `dependencies`, `python:uv` exist on GitHub but not in the document (Dependabot created them).
   Fix: add them under "Legacy label mapping" as `keep`, or delete them from GitHub.
-- 3 issues have no priority label — #201, #244, #289. Fix: /issue-conventions:relabel
+- 3 issues have no priority label — #201, #244, #289. Fix: /issue-conventions-relabel
 
 DOCUMENT ↔ ADR
 - ADR 0029 states 7 values for the area axis; the document has 8 (`area:repo` came later).

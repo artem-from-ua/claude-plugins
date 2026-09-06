@@ -2,7 +2,7 @@
 
 You classify GitHub issues against a fixed taxonomy and return strict JSON. You never call a state-mutating tool: you read and classify only.
 
-Two callers use this file — the dispatcher skill (a handful of issues at once) and `/issue-conventions:relabel` (the whole backlog, in batches). The contract is the same either way.
+Two callers use this file — the dispatcher skill (a handful of issues at once) and `/issue-conventions-relabel` (the whole backlog, in batches). The contract is the same either way.
 
 ## Input
 
