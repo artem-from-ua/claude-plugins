@@ -31,12 +31,18 @@ ISSUES_FILE=$(bash "$SCRIPT_DIR/fetch-issues.sh")
 ISSUES=$(cat "$ISSUES_FILE")
 
 # Modules on disk, for check 9's input (the subagent decides what it means).
+#
+# Private modules (a leading underscore, and `__init__`) are dropped entirely —
+# they are implementation detail, never their own axis value. They therefore do
+# NOT need to be listed in the axis's `ignore=`. Names are reported without their
+# file extension: `transcode.py` becomes `transcode`, which is what an axis value
+# is matched against.
 MODULES="[]"
 SRC_PATH=$(echo "$MODEL" | jq -r '[.axes[] | select(.source.kind == "modules")][0].source.path // empty')
 if [[ -n "$SRC_PATH" && -d "$SRC_PATH" ]]; then
   MODULES=$(find "$SRC_PATH" -mindepth 1 -maxdepth 1 \( -type d -o -name '*.py' -o -name '*.ts' -o -name '*.go' -o -name '*.rs' -o -name '*.swift' \) \
     -exec basename {} \; 2>/dev/null \
-    | sed 's/\.[a-z]*$//' \
+    | sed 's/\.[A-Za-z0-9]*$//' \
     | grep -v '^_' \
     | sort -u \
     | jq -R . | jq -s .)
@@ -52,7 +58,7 @@ jq -n \
   | ($live | map(.name)) as $onGitHub
   | ($model.builtins.canonical) as $builtins
   | ($model.softLimit // 5) as $softLimit
-  | ($issues | map(.labels[]) | group_by(.) | map({key: .[0], count: length})
+  | ($issues | map(.labels[]) | group_by(.) | map({key: .[0], value: length})
      | from_entries) as $usage
 
   # --- mandatory-rule compliance (check 7) ---
@@ -73,7 +79,7 @@ jq -n \
           $model.axes[] | .values[] as $v
           | ($live[] | select(.name == $v.label)) as $l
           | select((($l.color | ascii_downcase) != (($v.color // "#cccccc") | ltrimstr("#") | ascii_downcase))
-                   or ((.description // "") != $v.description))
+                   or (($l.description // "") != $v.description))
           | {label: $v.label,
              github: {color: $l.color, description: ($l.description // "")},
              document: {color: ($v.color // "#cccccc" | ltrimstr("#")), description: $v.description}}

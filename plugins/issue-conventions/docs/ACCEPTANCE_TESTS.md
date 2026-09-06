@@ -92,6 +92,9 @@ Tolerant — each must exit **zero**:
 | 3.6 | `backup.sh` | writes `labels.json`, `issues.json`, `ROLLBACK.md`; the rollback commands are syntactically valid |
 | 3.7 | `inject-rules.sh` without a config | zero output, exit 0 |
 | 3.8 | `inject-rules.sh` twice in a row with a config | byte-identical output (determinism) |
+| 3.9 | `test-drift-jq.sh` | 8 tests pass — pins the semantics of the jq expressions in `drift-check.sh` |
+
+**On 3.9.** Two bugs shipped in 0.1.0 and were caught on the first polygon: `from_entries` fed `{key, count}` instead of `{key, value}` (so every declared value looked unused — 36 of 36, burying the five real ones), and a bare `.description` where `$l.description` was meant (so every label looked drifted, while `label-plan.sh` correctly reported zero updates on the same data). Both are the same shape: jq stayed silent and returned plausible output, so `bash -n` could not catch them. These tests pin behavior rather than syntax.
 
 ### 4.4 Drift detection 🟡
 
@@ -152,5 +155,7 @@ After any run that deleted labels, open `ROLLBACK.md` in the backup directory an
 | Labels vanished from issues | `--label` used instead of `--add-label`/`--remove-label` | `apply-reconcile.md` |
 | Foreign labels stripped | the delta was not intersected with taxonomy-owned labels | `apply-reconcile.md` |
 | Drift report full of noise | unused values reported as divergences instead of INFO | `templates/drift-check.md` |
+| Every label reported as drifted | bare `.description` instead of `$l.description` in the `metadataDrift` select | 3.9; cross-check against `label-plan.sh`, which is right when the two disagree |
+| Every value reported as unused | `from_entries` fed `count:` instead of `value:` | 3.9 |
 | Session context bloated after one issue | rules leaked into the dispatcher | 1.10 |
 | Prompt cache missing every session | the hook emits a computed date | 1.12 |
