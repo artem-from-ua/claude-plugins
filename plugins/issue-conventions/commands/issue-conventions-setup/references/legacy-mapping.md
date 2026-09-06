@@ -12,7 +12,7 @@ Every label that exists before the taxonomy needs a decision. Build the table `o
 | `keep` | the label is not ours: another tool created and maintains it | `dependencies`, `python:uv` from Dependabot |
 | `migrate` | the label expresses something GitHub has its own mechanism for | `phase-1` is a roadmap stage, i.e. a milestone |
 
-A `split` row has no target value. It is passed to the classifier as a criterion, and `/issue-conventions:relabel` decides issue by issue — write the criterion in the row's Why column, because that is what the classifier reads.
+A `split` row has no target value. It is passed to the classifier as a criterion, and `/issue-conventions-relabel` decides issue by issue — write the criterion in the row's Why column, because that is what the classifier reads.
 
 **Absorption** is a `delete` in disguise: a flat `plugin` label disappears not because it maps to something, but because every issue gets a more specific `plugin:<name>`. Propose it as `delete` with that explanation, never as `map`.
 

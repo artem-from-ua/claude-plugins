@@ -21,7 +21,7 @@ Read the first that exists: `.claude-plugin/issue-conventions.json` → `.claude
 
 A hit without a `taxonomyDocument` field counts as no taxonomy.
 
-**No config, or the document is missing or unparseable:** do NOT invent a taxonomy and do NOT block the operation. Apply whatever labels already exist in the repo, say once per session — "This repo has no issue taxonomy; `/issue-conventions:setup` can design one" (or name the broken path) — then carry on.
+**No config, or the document is missing or unparseable:** do NOT invent a taxonomy and do NOT block the operation. Apply whatever labels already exist in the repo, say once per session — "This repo has no issue taxonomy; `/issue-conventions-setup` can design one" (or name the broken path) — then carry on.
 
 ## Step 2: Route
 
@@ -32,8 +32,8 @@ Pick the row that matches what is about to happen. Launch the subagent with the 
 | A new issue is being created | `${SKILL_DIR}/references/classify-new.md` | `classifyNew` |
 | An existing issue changes scope, priority, severity, or classification; or is closed with a reason | `${SKILL_DIR}/references/reclassify.md` | `reclassify` |
 | Several issues at once (splitting an epic, a small cleanup) | `${CLAUDE_PLUGIN_ROOT}/templates/batch-classify.md` | `batchClassify` |
-| The whole backlog | stop — tell the user to run `/issue-conventions:relabel` | — |
-| "Is everything still consistent?" | stop — tell the user to run `/issue-conventions:drift` | — |
+| The whole backlog | stop — tell the user to run `/issue-conventions-relabel` | — |
+| "Is everything still consistent?" | stop — tell the user to run `/issue-conventions-drift` | — |
 
 The subagent cannot see this conversation. Pass it a 2–3 sentence summary of what the issue is about, alongside the issue number or the draft title and body.
 

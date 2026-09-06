@@ -19,7 +19,7 @@ Read-only. Reports what disagrees and how to fix it; changes nothing, so it is s
 
 Resolve the config (`.claude-plugin/` → `.claude/` → `~/.claude/`) and take `taxonomyDocument`.
 
-No config → say this repo has no taxonomy and point at `/issue-conventions:setup`. A document that fails to parse **is itself the finding**: report the line the parser names, since a document nothing can read is the worst drift there is.
+No config → say this repo has no taxonomy and point at `/issue-conventions-setup`. A document that fails to parse **is itself the finding**: report the line the parser names, since a document nothing can read is the worst drift there is.
 
 ### 2. Run the mechanical half
 
@@ -45,7 +45,7 @@ When everything agrees, that is one line, not a table.
 
 ## Fixing what it finds
 
-- Labels missing on GitHub, or color and description drift → `/issue-conventions:relabel` reconciles them in its second step, or `gh label create --force` directly.
-- Issues breaking the rules → `/issue-conventions:relabel`.
+- Labels missing on GitHub, or color and description drift → `/issue-conventions-relabel` reconciles them in its second step, or `gh label create --force` directly.
+- Issues breaking the rules → `/issue-conventions-relabel`.
 - Undeclared labels on GitHub → a decision: add to the document, record as `keep` in the legacy mapping, or delete from GitHub.
 - ADR out of step → update it, or supersede it with a new one. Never edit the document to match an ADR.

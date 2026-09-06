@@ -65,4 +65,4 @@ Write today's date into the document footer's sync row.
 
 ### 10. Drift check
 
-Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/drift-check.sh" <document>` and have the drift subagent report it. A fresh setup must show **zero divergences**; INFO findings are expected. Finish by pointing at `/issue-conventions:relabel`.
+Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/drift-check.sh" <document>` and have the drift subagent report it. A fresh setup must show **zero divergences**; INFO findings are expected. Finish by pointing at `/issue-conventions-relabel`.

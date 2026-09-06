@@ -65,7 +65,7 @@ Pre-filled from what the scan detected. Each becomes a `by:*` value. Skip if the
 Two separate questions — they are different commitments:
 
 - **Do title rules apply to new issues?** (`titleFormat.enabled`, default yes.) This is what the skill enforces going forward.
-- **Rewrite existing titles during relabel?** (`titleFormat.rewriteExisting`, default **no**.) Renaming a whole backlog is the least reversible thing this plugin can do; `/issue-conventions:relabel` will offer it again with a count of how many titles actually differ.
+- **Rewrite existing titles during relabel?** (`titleFormat.rewriteExisting`, default **no**.) Renaming a whole backlog is the least reversible thing this plugin can do; `/issue-conventions-relabel` will offer it again with a count of how many titles actually differ.
 
 ## 13. Disambiguation pass — mandatory
 

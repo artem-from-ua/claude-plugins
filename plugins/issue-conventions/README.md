@@ -11,14 +11,14 @@ Designs an issue label and title taxonomy for your repository, writes it as a do
 ## 🎬 Demo <a name="demo"></a>
 
 ```markdown
-> /issue-conventions:drift
+> /issue-conventions-drift
 
 Drift check — 4 findings · source of truth: docs/issue-labels.md
 
 DOCUMENT ↔ GITHUB
 - `dependencies`, `python:uv` exist on GitHub but not in the document (Dependabot created them).
   Fix: add them under "Legacy label mapping" as `keep`, or delete them from GitHub.
-- 3 issues have no priority label — #201, #244, #289. Fix: /issue-conventions:relabel
+- 3 issues have no priority label — #201, #244, #289. Fix: /issue-conventions-relabel
 
 DOCUMENT ↔ ADR
 - ADR 0029 states 7 values for the area axis; the document has 8 (`area:repo` came later).
@@ -55,9 +55,9 @@ GitHub labels                 ← derived state, synced to the document
 
 | Command | What it does |
 |---|---|
-| `/issue-conventions:setup` | Interviews you, writes the taxonomy document, drafts an ADR, creates the labels |
-| `/issue-conventions:relabel` | Classifies the existing backlog, reviews it in batches, applies with reconciliation |
-| `/issue-conventions:drift` | Read-only: reports what disagrees between the document, GitHub, and the ADR |
+| `/issue-conventions-setup` | Interviews you, writes the taxonomy document, drafts an ADR, creates the labels |
+| `/issue-conventions-relabel` | Classifies the existing backlog, reviews it in batches, applies with reconciliation |
+| `/issue-conventions-drift` | Read-only: reports what disagrees between the document, GitHub, and the ADR |
 
 The `issue-conventions-guide` skill runs on its own before any `gh issue create`, `gh issue edit`, `gh issue close`, or label change.
 
@@ -68,7 +68,7 @@ Classifying a backlog is not the expensive part — reviewing it is. So when you
 ## ⚙️ Setup <a name="setup"></a>
 
 ```bash
-/issue-conventions:setup
+/issue-conventions-setup
 ```
 
 The wizard scans your repo for candidates — directory structure for a structural axis, recurring topics across issue titles for a topical one — and offers them in every question. Nothing is imposed: axis names, dictionaries, colors, and mandatory rules are all yours to set. Only `type:*` and `priority:*` come pre-filled, and the palette assigns one color per axis so the prefix carries identity while the color carries the axis.
