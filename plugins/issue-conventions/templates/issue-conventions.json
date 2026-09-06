@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "taxonomyDocument": "docs/issue-labels.md",
+  "adr": null,
+  "titleFormat": {
+    "enabled": true,
+    "rewriteExisting": false
+  },
+  "thresholds": {
+    "minIssues": 30
+  },
+  "models": {
+    "classifyNew": "sonnet",
+    "reclassify": "sonnet",
+    "batchClassify": "sonnet",
+    "driftCheck": "haiku"
+  },
+  "efforts": {
+    "classifyNew": "medium",
+    "reclassify": "medium",
+    "batchClassify": "medium",
+    "driftCheck": "low"
+  },
+  "batchSize": 18,
+  "review": {
+    "location": "ask"
+  }
+}

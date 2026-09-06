@@ -1,7 +1,9 @@
 {
   "name": "artem-from-ua",
   "description": "Claude Code plugins by Artem Naluzhnyy: PlantUML diagram sync, custom statusline, and more",
-  "owner": { "name": "Artem Naluzhnyy" },
+  "owner": {
+    "name": "Artem Naluzhnyy"
+  },
   "plugins": [
     {
       "name": "plantuml",
@@ -62,6 +64,11 @@
       "name": "fresh-guides",
       "source": "./plugins/fresh-guides",
       "description": "Watchlist for fast-changing technologies: verifies advice against official docs before responding"
+    },
+    {
+      "name": "issue-conventions",
+      "source": "./plugins/issue-conventions",
+      "description": "Issue label and title taxonomy: interactive design, mass relabeling, documentation drift detection"
     }
   ]
 }
