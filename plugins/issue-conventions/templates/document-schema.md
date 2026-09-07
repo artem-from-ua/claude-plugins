@@ -10,7 +10,7 @@ Headings are the parse anchors. Their level, wording, and order are fixed.
 
 **Required sections:** `## Axes`, `## Cross-axis rules`, `## Values`, `## Disambiguation rules`, `## Worked examples`.
 
-**Optional sections:** `## Title format`, `## Legacy label mapping`, `## GitHub built-in labels`.
+**Optional sections:** `## Rule exceptions`, `## Title format`, `## Legacy label mapping`, `## GitHub built-in labels`.
 
 ## Skeleton
 
@@ -90,6 +90,12 @@ Every issue needs at least one `plugin:*` or `topic:*`; beyond five labels an is
 |---|---|---|
 | `by:kb-grooming` | Filed by the kb-grooming automation. | |
 
+## Rule exceptions
+
+| Issue | Rule | Why |
+|---|---|---|
+| #3 | at-least-one | A phase's own epic carries only its phase; no topic describes it better. |
+
 ## Disambiguation rules
 
 - **`type:feature` vs `type:refactor`** — only `type:feature` when a user can observe the change. Renames and internal restructuring are `type:refactor`.
@@ -146,7 +152,7 @@ Policy: **delete**. Exceptions kept: none.
 | | |
 |---|---|
 | Config | `.claude-plugin/issue-conventions.json` |
-| Plugin | `issue-conventions` v0.2.4 |
+| Plugin | `issue-conventions` v0.3.0 |
 | Last synced with GitHub | YYYY-MM-DD |
 <!-- /issue-conventions:managed -->
 ````
@@ -166,6 +172,7 @@ Policy: **delete**. Exceptions kept: none.
 | Values sections | Every row of the Axes table must have a matching `### ` section. Extra `### ` sections are ignored. |
 | Cross-axis rules | Machine-readable, since axis names are project-specific: `- at-least-one: a, b`, `- soft-limit: N`, `- mutually-exclusive: a, b`. Lines not starting with a known key are prose and are ignored. |
 | `<!-- source: ... -->` | Optional, under an axis `### ` heading. Key `source` is required, value `modules` or `manual`. For `modules`, `path=<repo-relative path>` is required (one path) and `ignore=<comma list>` is optional — modules deliberately left out of the axis; drift check skips them. An unknown `source` value is treated as `manual`, without error. |
+| Rule exceptions | Optional `## Rule exceptions` section with columns `Issue`, `Rule`, `Why`. Names issues that deliberately break a cross-axis rule. Without it, a decided exception is reported as a violation on every run — one permanent false positive, which is how a report earns being ignored. |
 | Allowed scopes | Optional table under `## Title format`, headed "Allowed scopes beyond the axis values", with columns `Scope` and `Why`. Scopes listed there are valid in titles even though no axis value carries the name — typically an issue proposing a component that does not exist yet. Without this table the rule lives only in prose, and the drift check reports every such title as a defect. |
 | Tolerance | **Unknown columns and unknown sections are ignored, not errors.** Someone adding an `Owner` column or a `## Notes` section must still get a working document. Strictness applies only where it is unavoidable: cardinality vocabulary, prefix match, description presence. |
 | Footer | The `<!-- issue-conventions:managed -->` marker is expected; its absence is a **warning, not an error** — a hand-written document should still work. |

@@ -12,7 +12,10 @@ The axis name comes from how the product is built, not from a fixed vocabulary. 
 | A pipeline of modules under `src/<pkg>/` | `stage:` | module names |
 | `internal/`, `cmd/`, `pkg/` (Go) | `component:` | directory names |
 | Layered app (`ui/`, `core/`, `infra/`) | `layer:` | directory names |
+| One flat package — dozens of files, no subdirectories | **no structural axis** | — |
 | Nothing structural stands out | ask, defaulting to a topical axis only | — |
+
+**A flat package has no structure to mine, and that is a finding, not a failure.** The second polygon had 90 Swift files directly under `Sources/<Package>/` — no pipeline, no layers, no sub-packages. File names there describe implementation, not the surfaces users file issues about, so an axis built from them would be a worse index than no axis at all. Say so, and go to a topical axis mined from the issues instead. Do not fall back to `stage:` because the reference project used it.
 
 Scan `src/<pkg>/*`, `plugins/*`, `packages/*`, `lib/`, `pkg/`, `cmd/`, `internal/`, `app/`. Exclude names starting with `_`, `__init__`, and anything test-shaped. Rank by file size plus git churn (`git log --format= --name-only | sort | uniq -c | sort -rn`). Cap at 15 candidates.
 
