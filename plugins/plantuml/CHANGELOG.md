@@ -5,6 +5,21 @@ All notable changes to the PlantUML plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-09-08
+
+### Changed
+- **Default palette replaced.** Every color now carries three tones instead of two — fill, border, and a third for arrows and text: blue `#CADBFC`/`#6287CD`/`#5A79C4`, green `#BBEECA`/`#4DA64B`/`#479F47`, red `#F6C8C7`/`#C3403C`/`#DE3E31`, yellow `#FDF6BD`/`#99A02C`/`#B88C2E`, purple `#EEDAFC`/`#B56FE7`/`#C673DE`, gray `#E7E7E7`/`#909090`/`#737373`. Fills are lighter and less muted than the previous set, and gray is now neutral rather than cyan-cast
+- Legend background lightened from `#EEEEEE` to `#F4F4F4`. The previous value was chosen to keep the old gray fill (`#D4D9D9`) from dissolving into the panel; the new gray fill sits lighter still, and it is that row's `#909090` border that keeps the swatch legible. The documented ceiling moves accordingly — `#F8F8F8` and up, where the panel stops separating from the white canvas
+- Acceptance test 14.4 no longer asserts luma bands from the old palette, and drops the teal-from-cyan-cast check that only applied to the old gray
+
+### Added
+- Third palette tone as the color for arrows leaving a colored element (`up -[#5A79C4]-> tr`), so a connector between two colored blocks reads as belonging to its source rather than to neither
+- Same tone as the color for text on the white canvas — arrow labels, notes, inline `<color:…>` spans — with line and label sharing one hex (`bl -[#5A79C4]-> gn : <color:#5A79C4>fetch`)
+- Measured WCAG contrast for colored text on white, with the limits stated rather than implied: only gray `#737373` (4.74:1) clears the AA 4.5:1 threshold for normal-size text; blue (4.23:1) and red (4.34:1) fall just short, and green (3.32:1), yellow (3.08:1) and purple (3.04:1) clear only the 3:1 large-text bar. Colored text is documented as suitable for short labels carrying redundant meaning, never as the sole carrier of information
+- Explicit note that the three tones are not a strict light-to-dark ramp — the arrow tone is darker than the border only for gray and blue, and the third column is defined by its role, not by being the darkest value in its row
+- Worked example rendering all six colors with matching arrows and labels
+- Acceptance test 14.5 for arrow and text tone; the former 14.5 (padding) becomes 14.6
+
 ## [1.12.0] - 2026-09-07
 
 ### Added
