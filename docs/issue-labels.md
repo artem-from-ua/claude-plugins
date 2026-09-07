@@ -95,11 +95,12 @@ An ordinary close through a merged PR needs no `reason:*` — the linked PR alre
 
 ## Disambiguation rules
 
+- **A plugin's Markdown is mostly executable, not documentation** — `SKILL.md`, `presets/*.md`, and hook prompts are what the agent reads and acts on, so editing them changes behavior: that is `type:feature` for a rule that did not exist, or `type:bug` when the agent already did the wrong thing against documented expectations. `type:docs` is for the text that *describes* a plugin to a person — README, `docs/`, code comments. Judge by what the edit changes, not by the file extension: most `.md` edits in this repo are functional.
 - **`type:feature` vs `type:refactor`** — only `type:feature` when a plugin's user can observe the change. Renames and internal restructuring are `type:refactor`.
 - **`type:idea` vs `type:feature`** — `type:idea` while the shape is still open ("preset or plugin?", "should this exist?"). Once the form is decided it becomes `type:feature`.
 - **`type:research` vs `type:perf`** — an investigation is `type:research` even when its subject is performance; `type:perf` is for the change that follows.
 - **A proposal gets no label for the thing it proposes** — `plugin:*` and `preset:*` name what exists on disk, so an issue asking for a *new* plugin or preset carries neither, however clearly it describes one. It still gets the address of whatever existing plugin would host it: #332 and #366 propose new playbook presets and carry `type:idea` + `plugin:playbook`, with no `preset:*`. Once the name is settled, add its value to the dictionary and label the originating issue with it — the block lasts only while the name does not exist.
-- **Documentation issues carry `plugin:*` too** — #304 (heading case in the git-branch-naming README) is `type:docs` + `plugin:git-branch-naming`, so that "everything open on this plugin" stays a complete answer.
+- **A plugin's README still carries `plugin:*`** — #304 (heading case in the git-branch-naming README) is genuinely `type:docs`, and it keeps `plugin:git-branch-naming` so that "everything open on this plugin" stays a complete answer.
 - **Provenance is not a type** — an issue filed by automation gets its own `type:*` on merit. A kb-grooming report umbrella is `type:epic` + `by:kb-grooming`; each derived issue is usually `type:docs` + `by:kb-grooming`.
 - **Repo-level work has no `plugin:*`** — issues about `CLAUDE.md`, `CONTRIBUTING.md`, the root README, `docs/`, or the PR template belong to no single plugin and stay without the axis.
 - **`preset:*` implies playbook** — a `preset:*` label always accompanies `plugin:playbook`, never stands alone.
@@ -110,7 +111,7 @@ An ordinary close through a merged PR needs no `reason:*` — the linked PR alre
 |---|---|---|
 | #338 `git-branch-naming: commit/push branch detection reads main-checkout HEAD in a worktree` | `type:bug`, `plugin:git-branch-naming` | Documented behavior (block commits to protected branches) misfires in a worktree. One plugin. |
 | #304 `docs: normalize heading case in git-branch-naming README` | `type:docs`, `plugin:git-branch-naming`, `by:kb-grooming` | Documentation-only change, filed by the automation, still addressed to its plugin. |
-| #365 `playbook/shell-scripting-safety: write scratch files with the Write tool` | `type:docs`, `plugin:playbook`, `preset:shell-scripting-safety` | Preset prose change — the preset axis names which unit of playbook is affected. |
+| #365 `playbook/shell-scripting-safety: write scratch files with the Write tool` | `type:bug`, `plugin:playbook`, `preset:shell-scripting-safety` | A heredoc the sandbox refuses is a real failure the preset should have prevented — editing preset prose is the fix, not the kind of work. |
 | #345 `research: audit plugins/docs against Anthropic's Context Engineering rules` | `type:research` | Investigation with no guaranteed artifact. Touches every plugin, so no single `plugin:*` applies. |
 | #332 `feat: worktree-discipline preset/plugin` | `type:idea`, `plugin:playbook` | Form undecided (preset or plugin), likeliest home known. |
 | #227 `epic: subagent delegation for plugins` | `type:epic` | Umbrella delivered through #221–#225; spans three plugins, so none is labeled. |
