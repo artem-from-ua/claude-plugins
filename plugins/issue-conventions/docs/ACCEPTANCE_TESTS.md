@@ -81,7 +81,7 @@ Tolerant — each must exit **zero**:
 | 2.18 | Extra `###` section inside `## Values` | ignored |
 | 2.21 | `## Rule exceptions` section | parsed; listed issues are exempt from the named cross-axis rule |
 
-**Acceptance criteria:** all eighteen behave as specified. 2.15–2.18 are as important as the negatives — a parser that rejects a human's added column turns the document back into a brittle config, which is the thing markdown-as-truth was chosen to avoid.
+**Acceptance criteria:** all twenty-one behave as specified. 2.15–2.18 are as important as the negatives — a parser that rejects a human's added column turns the document back into a brittle config, which is the thing markdown-as-truth was chosen to avoid.
 
 ### 4.3 Script integration ✅
 
@@ -99,6 +99,7 @@ Tolerant — each must exit **zero**:
 | 3.9 | `test-drift-jq.sh` | 12 tests pass — pins the semantics of the jq expressions in `drift-check.sh` |
 | 3.10 | `test-adr-status.sh` | 6 tests pass — supersession decided by script from three signals, on fixtures copied from the reference project |
 | 3.11 | `test-index-rows.sh` | 8 tests pass — supersession is read from the strikethrough (structure), the successor number from the Status cell (prose) |
+| 3.12 | `test-scale.sh` | 6 tests pass — a synthetic 500-issue dump larger than `ARG_MAX`, asserting the fixture is big enough to be a guard |
 
 **On 3.10.** Supersession detection lived in the subagent template until 0.2.4 — deterministic logic expressed as prose the model had to re-derive each run. The polygon session pointed out the consequence: the tests pinned a bash implementation that shipped nowhere, so rewording a paragraph would change behavior while every test stayed green. The three signals now live in `adr-status.sh`, which the drift check calls and the subagent reads. The template keeps the judgment (what a divergence *means*) and hands over the fact.
 
@@ -165,6 +166,19 @@ After any run that deleted labels, open `ROLLBACK.md` in the backup directory an
 | Drift report full of noise | unused values reported as divergences instead of INFO | `templates/drift-check.md` |
 | Every label reported as drifted | bare `.description` instead of `$l.description` in the `metadataDrift` select | 3.9; cross-check against `label-plan.sh`, which is right when the two disagree |
 | Every value reported as unused | `from_entries` fed `count:` instead of `value:` | 3.9 |
+
+### A tool is tested on a repo smaller than the one it was written for
+
+Two limits in this plugin sat exactly where it starts being useful, and a live run found both:
+
+| Limit | Threshold | Found on |
+|---|---|---|
+| `gh issue list --json` truncates silently | ~60 issues | first polygon |
+| `--argjson` exceeds `ARG_MAX` | ~200 issues with bodies | second polygon |
+
+That is not bad luck. A plugin gets exercised on its author's repository during development, and that repository is always smaller than the backlog the plugin was written to handle — so every size-dependent failure waits for a real run to surface.
+
+`test-scale.sh` is the answer: a synthetic 500-issue, ~2.4 MB dump, deliberately larger than any repo here. It asserts the fixture actually exceeds `ARG_MAX` before asserting anything else — a guard that no longer guards is worse than none, because it reads as coverage.
 
 ### Anchor on structure, not on a word that may appear in prose
 
