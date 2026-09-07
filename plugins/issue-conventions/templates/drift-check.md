@@ -33,11 +33,35 @@ Demanding another fix would be wrong twice over: the work is done, and editing t
 
 1. `status: superseded` in the frontmatter — a record replaced wholesale.
 2. A non-empty `superseded_by` — often present while `status` stays `accepted`.
-3. The index row says "superseded by" — sometimes the *only* place the replacement is recorded, with no `superseded_by` field at all.
+3. The index row contains "superseded by" — sometimes the *only* place the replacement is recorded, with no `superseded_by` field at all.
+
+**Match the index row as a substring, anywhere in the cell, and mind the direction.** Real rows from the reference project:
+
+```
+| ~~24~~ | ~~[Defaults for the safe_speech stage](0024-…md)~~ | accepted (render display superseded by 0025) |
+| 25     | [Silence events: unified pause/muted rendering](0025-…md) | accepted (supersedes 0024 render display) |
+| ~~29~~ | ~~[Issue label taxonomy: 4 axes](0029-…md)~~ | accepted (storage mechanism superseded by 0038; axes still in force) |
+```
+
+Two traps here, and they pull in opposite directions:
+
+- The phrase sits **inside parentheses, mid-cell**, after the word `accepted`. Anything that checks a prefix, or normalizes the cell to its first word, sees only "accepted" and misses every partial supersession.
+- `supersedes` is **not** `superseded by`. Row 25 is the *successor* — it replaces 0024. A naive substring search for "supersede" marks it as replaced when it is the replacement. Match `superseded by` specifically, and read the number that follows it.
 
 **Partial supersession is the common case, and the one that matters most here.** When a record is replaced wholesale, `status` becomes `superseded` and people stop reading it. When only part of it is replaced, the status honestly stays `accepted` — the rest still governs the code — and *that* record keeps being read while its retired half quietly drifts from reality. Exactly the class of stale number this check exists to notice. Reporting it as a defect asks the maintainer to break the immutability convention.
 
-**Parsing `superseded_by` is a trap.** One repo can hold three shapes at once: a YAML list of filenames, a JSON array of strings, and a JSON array of bare numbers. Pull the leading four digits with a regex rather than parsing YAML strictly — strict parsing either throws or silently returns nothing, and silently returning nothing looks exactly like "not superseded".
+**Parsing `superseded_by` is a trap.** One repo holds three shapes at once — all three are live in the reference project:
+
+```yaml
+superseded_by:                                    # YAML list of filenames
+  - 0006-mlx-lm-over-lm-studio.md
+superseded_by: ["0028-proofread-default-on"]      # JSON array of strings
+superseded_by: [0038]                             # JSON array of bare numbers
+```
+
+Pull the leading four digits with a regex rather than parsing YAML strictly — strict parsing either throws or silently returns nothing, and silently returning nothing looks exactly like "not superseded".
+
+The number is the identity; the filename is decoration. If you need the successor's file to read it, resolve by globbing `NNNN-*.md` rather than trusting the recorded name — the bare-number form has no name to trust, and a recorded name can be stale after a rename.
 
 **Frontmatter disagreeing with the index is its own finding.** A record whose frontmatter says `superseded` while the index says `accepted (superseded by NNNN)` — or the reverse — means someone updated one and forgot the other. Report it as **INFO**, separately: it is not a taxonomy problem, but it is the kind of drift that makes every later check unreliable.
 
