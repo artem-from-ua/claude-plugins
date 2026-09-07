@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Palette fills darkened: each is now its border color blended 18% toward the pastel, keeping both halves of a pair in the same hue family. The previous fills (luma 236–248) were too close to white and to the `#EEEEEE` legend background to read as distinct blocks
+- Palette borders derived from their own fill: each border is the fill's hue taken down to roughly one third lightness, replacing the previous unrelated accent colors. A block now reads as one object instead of a pastel patch inside a foreign outline. Soft gray's border is desaturated back to `#4D5656`, since its fill's faint cyan cast would otherwise drive the derived border to teal
+- Soft gray's fill darkened a further step to `#D4D9D9` — as the one neutral in the palette it shares a hue with the `#EEEEEE` legend panel and previously dissolved into it
 - `references/styling.md` — legend guidance moved out of the Color Coding section into a `## Legend` section of its own, since it now covers more than color legends
 - Both legend examples in `references/sequence.md` updated to the skinparam form; the Mixed Sync/Async example's participant fill moved to the darkened palette
 

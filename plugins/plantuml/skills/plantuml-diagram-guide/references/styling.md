@@ -23,9 +23,9 @@ Sequence diagrams use their own skinparam — `ArrowThickness` has no effect the
 title Release Flow
 skinparam ArrowThickness 1.5
 skinparam ActivityBackgroundColor #CFE4F6
-skinparam ActivityBorderColor #5B9BD5
+skinparam ActivityBorderColor #25557E
 skinparam ActivityDiamondBackgroundColor #FDEDC4
-skinparam ActivityDiamondBorderColor #F4B942
+skinparam ActivityDiamondBorderColor #7E6525
 
 start
 :Open PR;
@@ -41,7 +41,7 @@ stop
 @enduml
 ```
 
-![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/VP31QeD048Rl-nG3lPY3XHPJY1wIgbd8eRJOli2YemwkktPsJUhRToiz11fw_VzlFfZ_uBnYFuzQUF8QeKADoY58RI_23MGcnMg4PsPx-UYf7Wmw1m_ts-kozdGcl-Ig7ZgsisaAgot3NI6FYNowHLfka7-fRRxBork-ajHeJVD7AyjZMIJ_75pRPPBlaaSXrZz5-ZgXWRSg4zH2L9oWOqIptu3lGnujw3O28CtdSO8piYDhif_W1Rb3Y6FtEIlNPm9rs2WoTgKbVK6hIC-CRgKhZ7asK9m2Q1fgHVg-c1gqhPM6KL5mEcydSGXjcFuR)
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/VP3BQiCm44Nt-eg1Rfo52mrn0iuYQVo0B4gBsnyGzjWUB4lkI4hglwzgkWWqT7llcGDpZzP9TdvKmf5J21Kgb1QXLEOgx41waYn7U6Osru-Uwa6ZjV3qcDoMjQCBkVaaww5ZutMJ6MKO7hAos9JRUwJX1lcNMYT9iYlkK3d9qUZcZxRCYppR_7DmQzyLssIT2B7yATBN2JMyLNj1BKJP6Jf6r8SLk3xaqOns9G3Ianydk21RCdh_4xmWTmXnR3-zjFrUe0eRHTeiT4bVq4fIdj4kT8KnUmtPEO2weLQaxxEkGPbQAXWb1QTrPXB7q8Rflm40)
 
 ## Color Coding
 
@@ -49,16 +49,20 @@ Use color coding to improve diagram readability. Apply a **muted pastel palette*
 
 **Recommended palette:**
 
-| Color | Hex | Use for |
-|-------|-----|---------|
-| Soft blue | `#CFE4F6` / `#5B9BD5` | Primary elements, main flow |
-| Soft green | `#D2E8CC` / `#70AD47` | Success paths, approved states |
-| Soft red | `#F9CCC9` / `#E74C3C` | Error paths, rejected states |
-| Soft yellow | `#FDEDC4` / `#F4B942` | Warnings, pending states |
-| Soft purple | `#E3CEF0` / `#9B59B6` | External systems, third-party |
-| Soft gray | `#E4E7E7` / `#95A5A6` | Inactive, deprecated |
+| Color | Fill | Border | Use for |
+|-------|------|--------|---------|
+| Soft blue | `#CFE4F6` | `#25557E` | Primary elements, main flow |
+| Soft green | `#D2E8CC` | `#387E25` | Success paths, approved states |
+| Soft red | `#F9CCC9` | `#7E2A25` | Error paths, rejected states |
+| Soft yellow | `#FDEDC4` | `#7E6525` | Warnings, pending states |
+| Soft purple | `#E3CEF0` | `#5C257E` | External systems, third-party |
+| Soft gray | `#D4D9D9` | `#4D5656` | Inactive, deprecated |
 
-Each fill is its border color blended 18% into white-ish pastel, so the two halves of a pair stay in the same hue family. The fills are deliberately darker than a plain pastel: against the `#EEEEEE` legend background (and on white), a fill any lighter stops reading as a distinct block and legend swatches lose their edge.
+**A border is its own fill's hue, taken down to roughly one third lightness** — same color, much darker, never a separate accent color and never plain black. That keeps each block reading as one object rather than a pastel patch inside an unrelated outline, and it lets the border do the work `#000` used to: the edge stays legible without the black frame's weight. The fills sit around luma 220–240 and the borders around 55–110, which is enough separation to survive a downscaled render.
+
+Soft gray is the exception worth noting twice. Its fill carries a faint cyan cast, so deriving the border purely from hue drives it to teal — it is desaturated back to `#4D5656`, dark and slightly cool, still gray. Its fill also sits a step darker than the rest of the palette (`#D4D9D9`, luma 216 against the others' 220–240), because a neutral gray is the one fill that shares a hue with the `#EEEEEE` legend panel and would otherwise dissolve into it.
+
+The fills are deliberately darker than a plain pastel: against the `#EEEEEE` legend background (and on white), a fill any lighter stops reading as a distinct block and legend swatches lose their edge.
 
 **Color support by diagram type:**
 
@@ -102,7 +106,7 @@ Pair the text with `<back:#XXXXXX>   </back>` swatches (three spaces) when the l
 title Ingest Pipeline — Stage Categories
 skinparam ArrowThickness 1.5
 skinparam ComponentBackgroundColor #CFE4F6
-skinparam ComponentBorderColor #5B9BD5
+skinparam ComponentBorderColor #25557E
 skinparam legendBackgroundColor #EEEEEE
 skinparam legendBorderColor transparent
 skinparam LegendFontColor #404040
@@ -110,7 +114,7 @@ skinparam LegendFontColor #404040
 [Uploader] as up #CFE4F6
 [Transcoder] as tr #FDEDC4
 [Classifier] as cl #E3CEF0
-[Archive] as ar #E4E7E7
+[Archive] as ar #D4D9D9
 
 up --> tr
 tr --> cl
@@ -122,12 +126,12 @@ legend right
     <back:#CFE4F6>   </back> in-process step
     <back:#FDEDC4>   </back> external binary
     <back:#E3CEF0>   </back> AI model
-    <back:#E4E7E7>   </back> storage
+    <back:#D4D9D9>   </back> storage
   <size:6> </size>
 end legend
 @enduml
 ```
 
-![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/RPBFQi904CRl-nG3lRI2rLB_K96WYGa8FHHgJw67DOvnSTqDiskhFVKX-eHzakucjcpH1C8myvjlvzl9n5XETh-Jp0eh4UQgH6FXILGeXKBu_lo2PyjBX8HRB3K9DCniXQeuyHrCYVJxOYEAhK9ZuEws7nGJlQkqGcLZNcnBqdkrIhJK15T9blQomKLKqmhfXFNZXtWMAaeiKQtEvDBwEUS2BKjS6LTqHmJSOyrbMjcJKg_hNyRobqfgxhfVWHlOLtyZvmilLEZVadLDsIoT9JsM9v8R8zRYL2gac-m-IRCkowTKRCGRrddk9-wbmtJ8c5DkjoEdmfoGZmh9N9-FE37M-00IvSOoWB4H7pWQH33k-2XoAO1MAzO7M0ifMosuDlMkYcPNnvjHZOoNxiP69mkHJtHy9WAXsXNfmg_EMAn2k34LmdYmI8fBM0h5wHZ2ZSqGdivXvov9_gDgqo5bh2OtxoLhtdTZdqtSn_sXFm00)
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/RPBFQW8n4CRlUOg1Nbh1QbkrABAe-mU47Wgr9-aXhkCQZCaoYQtsr8Ve4_P9cknkIq1tOHbcVlDblinEZELa3tl9hB0IOQuAD1QUHObIA8IVhszuiRn0YBd5GfD0mynEg98JtyEKI7yijYBVAJG6xcxxGJ7M-r8hL7R6yrr1-g3MiPQQu2hEqbusk8XgMYCrs7s_ttzC0qnYWMfz9fTMppaNQ5dYohYYEoBWdYekqyesIhskVnbRlfPISzVz1jp0eVmVURdmGhd-ArdNb2Lf4lVOCfRS6B4HJIcNRhA7ECswR3cbV2lUiSfprvBqac4oPCmfjzkHKs5Eo4UvPAxFHvmOgtq0YM9h6S3OY4yS3I8OTtmKkHH0gpNJHzW8ALijk3RLhl9wLwURKOMCL-x6Hes5o2SwFXE1KEsITEvNPooM8LoR2c4yMYJ59Qo4udGAuTfc24_di7UN94EgDXrIncfoyrwovdtNzjd4VTmV-Wi0)
 
 `legendBackgroundColor` and `legendBorderColor` are not in PlantUML's published skinparam list, but both work on the current server; `LegendFontColor` is documented. All three are skinparams, so they apply on every diagram type that supports `legend`, including those the color table above marks 🟡 Limited.

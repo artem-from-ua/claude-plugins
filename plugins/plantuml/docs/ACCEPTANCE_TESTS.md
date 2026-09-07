@@ -2319,7 +2319,20 @@ Tests that legends carry the three styling skinparams — dark-grey text, no bla
 - ✅ Legend text rendered in `#404040` despite the diagram type's limited color support
 - ✅ Diagram renders without errors
 
-### 14.4 Padding Without Side Effects
+### 14.4 Fill and Border Pairing
+
+**Setup:** Ask Claude to create a diagram using several palette colors.
+
+**Expected behavior:**
+- Each element's border is the dark counterpart of its own fill, taken from the palette table
+
+**Pass criteria:**
+- ✅ Border hex matches the palette row of the fill it encloses — no mixing a blue fill with a green border
+- ✅ No element left on a default black border
+- ✅ Borders are visibly darker than their fills (palette borders sit at luma 55–110, fills at 216–240)
+- ✅ A gray element uses `#4D5656`, not a teal derived from the fill's cyan cast
+
+### 14.5 Padding Without Side Effects
 
 **Setup:** Ask Claude to create any diagram with a padded legend, then compare the rendered element sizes against the same diagram without the legend padding.
 
