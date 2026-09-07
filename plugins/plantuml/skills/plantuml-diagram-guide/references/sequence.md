@@ -48,17 +48,17 @@ skinparam LifeLineBorderColor #C0C0C0
 | Log entry written to sink | ❌ Suppress | Pure side-effect, no branching |
 | Auth token validation result | ✅ Show | `opt [invalid]` branch follows |
 
-When ACK arrows are suppressed, add a legend:
+When ACK arrows are suppressed, add a legend. Every text run is wrapped in `<color:#404040>` — see the Legend section in `references/styling.md` for why:
 
 ```plantuml
 legend right
-  ACK responses omitted for clarity
-  -> sync request  --> sync response
-  ->> async fire-and-forget
+  <color:#404040>ACK responses omitted for clarity</color>
+  <color:#404040>-> sync request  --> sync response</color>
+  <color:#404040>->> async fire-and-forget</color>
 end legend
 ```
 
-![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/HOt13O0W40J_Lh4Dq0A9yMaL10uaGT2xys7t8ZxyJcPt2YMg0PpJfXCmBokOv6XLID3sh4e1iJ5ySPprxewnaBlwxfqNYNRmasyv90itOCnCnjLW-aiYdTvS6TK7)
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/VSwn2W8n30RWtQVumRdeu2H7GHnzYjBcUeLUeqaSxkszgw238Db2lZz_fKmjGKgUR0SCaIlBUNywRkClrnk4zCvDIS5pCQE4aGMn1Ycs38SE_2zr7hgqkFB7azG0zzsy0_zPZz1lnoBaGajk_Pd9FcJhN7lr5m00)
 
 ## Group Fragment Guidance
 
@@ -108,11 +108,11 @@ else result = failure
 end
 
 legend right
-  ACK responses omitted for clarity
-  -> sync  --> sync response
-  ->> async fire-and-forget
+  <color:#404040>ACK responses omitted for clarity</color>
+  <color:#404040>-> sync  --> sync response</color>
+  <color:#404040>->> async fire-and-forget</color>
 end legend
 @enduml
 ```
 
-![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/TLDXQzim4FskNt6mBmuitSOsLWmBTHndbALTe8KonXYgTBP5PCcJvBJvrX-nNxXVihFSf75PCSZMtNllxfxaCn-u2rsZMQqaGcbjkBNtBAYW4RuvYGxMpWhqNfaA_ZxyWGjrZnAkTaQyoJojp6-KQRdZ3NZytQ4Hc3bdxwvh9JQ6YF3kvECHQALAN2c3SzkhvrPR1w_oj_rpXA8rAA5QRiASYqtbR6Va8xWuNNvOBbu07wj-MixVBquPEyf3hXMQC0h5CQ-sOXHSyrr3m2yte-Yb3QhSFSTcdLHXPIl61dMOpWwYARIQ2upRH0Li_8InVfnsNm9-z3P6RxFyA_ZQtfaKf5DRzC1rW5l7ZQX_CZY8zWKE3QOWQkugJ7X39eK9uGuvc8vQSUWx7HWQoLYlFEpXC_XEz6SyBZ5x6ZU5HrzDgLo3CedRSpbvpjXRaOAsLR6b9fBrAikBnMluBuNQ6pnBztc6skDJPoLNkdFu4WdfghbadNs_A2wlVospyrMnc0m3Qgpe3KvLTI1wxosfjjPuyjKsAWIwnoNT4w6vKs5761AEPn5BnAyz8oPdm6EGFC0fDt9Ax0gZdp1KOsUqqD_q3m00)
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/VLFHQjim57tNLrpeYmFBsh6E5TEPEeupojmsqC8OOmnLkhP5PCcJvBHvwqVi2_SbbPp6ZRjr26HBEkVUSu-kpgoZndMD9BNW2ANMxbRV4oUSHBWo70qiZMPehL0L_7du3HVY7ZbSRnGxJAsVYLq9rL936x3ugqF5C3L6tztKWgsK9yAxjn_sG8KeiH0APpf4pxJK1Wwoep3sK7vsWecMAZUZR5KPtId-1CvF5iUB-IlW_QWV5xFtynD2ziuXamAL6strPLwlsMXpIJUD1tx-Ejgzr4wKcvVOjEF25ReYP1iTfiaGD8PMKeRzCX8E6piX99JJxbB0zs1ZxssQVG5RwpiL0pTYZHQeT71hg6Br3m93q91W41W3gwcfCAADDybDF6uuW-b8Ya7RIKTGSK92vEqQFe7jMBZZSOhakTmOddnLfJ0DygXVdlF9IyREYXYahlAr5n4jYpJBvs_WdnGlR-jPl3idA2q-Aokfa9t1rqZeMyr4o_JRHNvvytEHdXVvVB8jK6Bbls14LJjFFsMXAUA3uwCmac2rJz9gPRtDkX7E-ROkVTimIOrmczF3df3yJVNf-nlhXVH_kq3_uoH0Uwmt4ATKyQdFLQ4RA47hLZ8vyvD_aey0)

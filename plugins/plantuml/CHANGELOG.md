@@ -5,6 +5,17 @@ All notable changes to the PlantUML plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-09-07
+
+### Added
+- Legend styling rule: every text run inside a `legend` block is wrapped in `<color:#404040>`. PlantUML's default black outweighs the borders and arrow labels the legend annotates, making a footnote the highest-contrast object on the canvas
+- Guidance on pairing legend text with `<back:#XXXXXX>   </back>` swatches when the legend maps colors to categories, plus a worked component-diagram example
+- Acceptance tests for legend styling (section 14), covering color-coded legends, the sequence ACK legend, and legends on limited-color diagram types
+
+### Changed
+- `references/styling.md` — legend guidance moved out of the Color Coding section into a `## Legend` section of its own, since it now covers more than color legends
+- Both legend examples in `references/sequence.md` updated to the wrapped form
+
 ## [1.11.0] - 2026-09-07
 
 ### Added

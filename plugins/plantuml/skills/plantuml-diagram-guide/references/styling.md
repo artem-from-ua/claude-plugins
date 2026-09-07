@@ -66,10 +66,49 @@ Use color coding to improve diagram readability. Apply a **muted pastel palette*
 | 🟡 Limited | Timing, Network, MindMap, Gantt, WBS |
 | ❌ Not supported | JSON, YAML, Wireframe (Salt) |
 
-**When to add a `legend`:**
-- Colors encode specific meaning (error/success, internal/external, sync/async)
-- Diagram has 5+ elements with distinct color-coded roles
-
 **When NOT to color:**
 - Diagram has only 2–3 simple elements (coloring adds noise)
 - JSON, YAML, or Wireframe diagrams (no skinparam support)
+
+## Legend
+
+**When to add a `legend`:**
+- Colors encode specific meaning (error/success, internal/external, sync/async)
+- Diagram has 5+ elements with distinct color-coded roles
+- Arrow styles carry a convention the diagram does not spell out (see `references/sequence.md` for ACK suppression)
+
+**Wrap every text run in `<color:#404040>`.** PlantUML renders legend text in pure black, which outweighs the diagram it annotates: element borders and arrow labels are drawn in subtler tones, so the legend — a footnote by intent — becomes the highest-contrast object on the canvas and pulls the eye away from the flow. Dark grey stays fully readable while giving the legend the visual weight of a caption.
+
+Pair the text with `<back:#XXXXXX>   </back>` swatches (three spaces) when the legend maps colors to categories — the swatch shows the actual fill, so the reader matches it to the diagram without a color name in between.
+
+```plantuml
+@startuml
+title Ingest Pipeline — Stage Categories
+skinparam ArrowThickness 1.5
+skinparam ComponentBackgroundColor #E8F4FD
+skinparam ComponentBorderColor #5B9BD5
+
+[Uploader] as up #E8F4FD
+[Transcoder] as tr #FFF8E1
+[Classifier] as cl #F3E8FD
+[Archive] as ar #F5F5F5
+
+up --> tr
+tr --> cl
+cl --> ar
+
+legend right
+  <color:#404040>**Box fill** (stage category):</color>
+  <back:#E8F4FD>   </back> <color:#404040>in-process step</color>
+  <back:#FFF8E1>   </back> <color:#404040>external binary</color>
+  <back:#F3E8FD>   </back> <color:#404040>AI model</color>
+  <back:#F5F5F5>   </back> <color:#404040>storage</color>
+end legend
+@enduml
+```
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/VPB1QW8n48RlUOe1B-s2jL8NhCYYkxhWhL1xaXvY7DTWDWcJsEgj3z4dx9CqMQsKLYGGmipy7yb7HivpyhjQCI-zGfZf2fs79sbHIOtmzV49pvvN20NtM1cIw9ZRIcqvyHh6HEPzlf5Ygz4vwDwblvg5gQtHg7tEnROYizEhmYX3q9hsoruvkJXgQ8Lq6alpntoIChPuiShmK7y5xc1dpu35dBXsmloqV0YLPTcVTjcYKDmvkPQdbb2XzH1o8JKciP5lsDHvZAHnCHR8xNOMA2o0uaae5dBnn8anXHNg5P2iDfu134MyvQ3LkuyhIvBSx64jbKeIk76DCt5qThWT33lDT1Ppow1ZS7f21g7GYPNiBr3gjYKZebVdqVud75zwXO1xZwIvWgNKd0uN28sGAuJn3EfWLrs8DiwkH9qt51oSar7TqI0RXIrykMy0)
+
+`#404040` is the standard value. Going lighter (`#808080` and up) makes the legend hard to read at small render sizes; going darker defeats the point.
+
+Legend styling is markup inside the block, not a skinparam — it works on every diagram type that supports `legend` at all, including those the color table above marks 🟡 Limited.

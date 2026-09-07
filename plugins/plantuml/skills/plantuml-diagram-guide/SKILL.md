@@ -16,7 +16,7 @@ Use this guide to choose the right PlantUML diagram type for documentation. When
 
 **IMPORTANT:** Every diagram MUST set a non-default arrow thickness on the next line — `skinparam sequenceArrowThickness 1.5` for sequence, `skinparam ArrowThickness 1.5` for every other supported type. At the default `1` arrows weigh no more than element borders.
 
-> **Visual styling:** Read `references/styling.md` for the arrow thickness table, the muted pastel palette, color support by diagram type, and legend guidance.
+> **Visual styling:** Read `references/styling.md` for the arrow thickness table, the muted pastel palette, color support by diagram type, and legend guidance — including the `<color:#404040>` wrapper every legend text run needs.
 
 ## Behavioral Diagrams (how things work)
 
