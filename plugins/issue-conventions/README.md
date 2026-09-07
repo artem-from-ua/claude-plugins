@@ -21,7 +21,7 @@ Scanned 157 issues (84 closed, 73 open) and 16 labels.
  the kinds of change, the urgency — offered as candidates mined from the scan,
  plus the ambiguous issues it wants you to settle once so it stops asking]
 
-Wrote issue taxonomy proposal to docs/issue-labels.md · created 38 labels · deleted 9 GitHub built-ins
+⏺ Wrote issue taxonomy proposal to docs/issue-labels.md · created 38 labels · deleted 9 GitHub built-ins
 ```
 
 **Applying it to the backlog** — proposes, you review, then it applies:
