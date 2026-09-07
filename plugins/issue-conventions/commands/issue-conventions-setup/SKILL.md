@@ -55,6 +55,8 @@ Propose a path based on what step 2 found (see `repo-scan.md` for the priority o
 
 Render it per `${CLAUDE_PLUGIN_ROOT}/templates/document-schema.md`, using real issues from this repo as the worked examples. Immediately re-read it with `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/parse-taxonomy.py"` and stop loudly if the round-trip does not reproduce the interview — that is where a generator/parser mismatch surfaces.
 
+**Write every label description to fit 100 bytes of UTF-8** — GitHub's cap, and the text is created on the label verbatim. Count bytes as you write, not after: Cyrillic and emoji cost two to four bytes each, so a description that reads short can still be over. One clause naming what the value covers is the right size; a second clause listing what it also includes is what pushes it over, and that belongs in a disambiguation rule instead. Discovering the cap from a parse error means rewriting descriptions already reasoned about.
+
 If the project's `CLAUDE.md` has a label section, show it and ask permission to cut it. **Never write anything to CLAUDE.md automatically.**
 
 ### 9. Record the decision, if the project keeps ADRs
