@@ -81,6 +81,16 @@ jq -n \
         # on GitHub but undeclared (Dependabot and friends) — reported, never auto-deleted
         undeclaredOnGitHub: [ $onGitHub[] | select(. as $g | $declared | index($g) | not) ],
 
+        # a `keep` row that names a color declares the swatch and nothing else,
+        # so only the color is compared: the name and description belong to
+        # whoever created them, and changes there are not drift.
+        recolorDrift: [
+          ($model.legacyMapping // [])[] | select(.action == "keep" and .recolor) as $r
+          | ($live[] | select(.name == $r.old)) as $l
+          | select(($l.color | ascii_downcase) != ($r.recolor | ltrimstr("#") | ascii_downcase))
+          | {label: $r.old, live: $l.color, declared: ($r.recolor | ltrimstr("#"))}
+        ],
+
         # color or description drift (someone edited in the UI)
         metadataDrift: [
           $model.axes[] | .values[] as $v

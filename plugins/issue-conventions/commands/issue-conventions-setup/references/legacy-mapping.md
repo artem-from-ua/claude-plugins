@@ -10,6 +10,12 @@ Every label that exists before the taxonomy needs a decision. Build the table `o
 | `split` | the old label covers several new values; each issue needs deciding | `enhancement` → feature vs refactor vs chore, by whether a user can observe the change |
 | `delete` | no replacement — the label carried no information worth keeping | `wip`, superseded by issue state |
 | `keep` | the label is not ours: another tool created and maintains it | `dependencies`, `python:uv` from Dependabot |
+
+**A `keep` row may name a color** in the New label column — `| \`dependencies\` | keep | \`#cccccc\` | ... |`. The label stays foreign: never renamed, never deleted, never stripped from an issue. Only its swatch changes.
+
+Offer this whenever a foreign label sits close to an axis color. One-color-per-axis only works if the color tells you which axis a label belongs to, and a Dependabot blue next to a structural blue breaks exactly that — on an issue carrying several labels, the foreign one reads as one of yours. Neutral grey says "outside the taxonomy" the same way it does for the metadata axes.
+
+The color is compared on every drift check; the name and description are not, since they belong to whoever created the label.
 | `migrate` | the label expresses something GitHub has its own mechanism for | `phase-1` is a roadmap stage, i.e. a milestone |
 
 A `split` row has no target value. It is passed to the classifier as a criterion, and `/issue-conventions-relabel` decides issue by issue — write the criterion in the row's Why column, because that is what the classifier reads.

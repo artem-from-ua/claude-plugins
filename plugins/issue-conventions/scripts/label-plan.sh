@@ -46,6 +46,8 @@ PLAN=$(jq -n --argjson model "$MODEL" --argjson live "$LIVE" '
   | ($live | map({name, color: (.color | ascii_downcase), description: (.description // "")})) as $have
   | ($want | map(.name)) as $wantNames
   | ($have | map(.name)) as $haveNames
+  | ($model.legacyMapping // [] | map(select(.action == "keep" and .recolor))) as $recolor
+  | ($recolor | map(.old)) as $recolorNames
   | {
       create: [ $want[] | select(.name as $n | $haveNames | index($n) | not) ],
       update: [ $want[] as $w
@@ -53,7 +55,18 @@ PLAN=$(jq -n --argjson model "$MODEL" --argjson live "$LIVE" '
                 | select(($h.color != ($w.color | ascii_downcase)) or ($h.description != $w.description))
                 | {name: $w.name, from: {color: $h.color, description: $h.description},
                    to: {color: $w.color, description: $w.description}} ],
-      unknown: [ $have[] | select(.name as $n | $wantNames | index($n) | not) | .name ]
+      unknown: [ $have[] | select(.name as $n | $wantNames | index($n) | not)
+                 | select(.name as $n | $recolorNames | index($n) | not) | .name ],
+      # A `keep` row with a color: the label stays foreign — same name, same
+      # description — and only its swatch changes, so it stops reading as one
+      # of our axes. Its live description is carried through deliberately:
+      # `gh label create --force` without --description blanks it.
+      recolor: [ $recolor[] as $r
+                 | ($have[] | select(.name == $r.old)) as $h
+                 | select($h.color != ($r.recolor | ltrimstr("#") | ascii_downcase))
+                 | {name: $h.name, from: $h.color,
+                    to: ($r.recolor | ltrimstr("#") | ascii_downcase),
+                    description: $h.description} ]
     }
 ')
 
@@ -73,7 +86,9 @@ if [[ "$APPLY" -eq 1 ]]; then
       echo "  failed: $name" >&2
     fi
     sleep 0.3
-  done < <(echo "$PLAN" | jq -r '(.create + (.update | map({name, color: .to.color, description: .to.description})))[]
+  done < <(echo "$PLAN" | jq -r '(.create
+                                  + (.update | map({name, color: .to.color, description: .to.description}))
+                                  + (.recolor | map({name, color: .to, description})))[]
                                  | [.name, .color, .description] | @tsv')
 
   echo "applied $applied label(s)"
@@ -82,7 +97,7 @@ if [[ "$APPLY" -eq 1 ]]; then
 fi
 
 if [[ "$SUMMARY" -eq 1 ]]; then
-  echo "$PLAN" | jq -r '"Create \(.create | length) · Update \(.update | length) · Undeclared on GitHub \(.unknown | length)"'
+  echo "$PLAN" | jq -r '"Create \(.create | length) · Update \(.update | length) · Recolor \(.recolor | length) · Undeclared on GitHub \(.unknown | length)"'
 else
   echo "$PLAN"
 fi

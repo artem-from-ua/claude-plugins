@@ -137,7 +137,7 @@ Kinds like `epic` and `research` can be **title-only** — a prefix with no matc
 | `documentation` | map | `type:docs` | Direct equivalent. |
 | `enhancement` | split | — | Feature vs refactor vs chore depends on user visibility. |
 | `wip` | delete | | Superseded by issue state. |
-| `dependencies` | keep | | Created by Dependabot; not ours to manage. |
+| `dependencies` | keep | `#cccccc` | Created by Dependabot; not ours to manage, but recolored so it stops reading as one of our axes. |
 | `phase-1` | migrate | | Roadmap stage — a milestone, not a label. |
 
 ## GitHub built-in labels
@@ -173,6 +173,7 @@ Policy: **delete**. Exceptions kept: none.
 | Values sections | Every row of the Axes table must have a matching `### ` section. Extra `### ` sections are ignored. |
 | Cross-axis rules | Machine-readable, since axis names are project-specific: `- at-least-one: a, b`, `- soft-limit: N`, `- mutually-exclusive: a, b`. Lines not starting with a known key are prose and are ignored. |
 | `<!-- source: ... -->` | Optional, under an axis `### ` heading. Key `source` is required, value `modules` or `manual`. For `modules`, `path=<repo-relative path>` is required (one path) and `ignore=<comma list>` is optional — modules deliberately left out of the axis; drift check skips them. An unknown `source` value is treated as `manual`, without error. |
+| `keep` with a color | In `## Legacy label mapping`, a `keep` row may put a `#rrggbb` in the New label column. The label is still never renamed, deleted, or stripped from an issue — only its color changes, so a foreign label stops wearing an axis color. A color on any other action is a parse error: `map` to `#cccccc` would otherwise create a label named `#cccccc`. |
 | Rule exceptions | Optional `## Rule exceptions` section with columns `Issue`, `Rule`, `Why`. Names issues that deliberately break a cross-axis rule. Without it, a decided exception is reported as a violation on every run — one permanent false positive, which is how a report earns being ignored. |
 | Allowed scopes | Optional table under `## Title format`, headed "Allowed scopes beyond the axis values", with columns `Scope` and `Why`. Scopes listed there are valid in titles even though no axis value carries the name — typically an issue proposing a component that does not exist yet. Without this table the rule lives only in prose, and the drift check reports every such title as a defect. |
 | Tolerance | **Unknown columns and unknown sections are ignored, not errors.** Someone adding an `Owner` column or a `## Notes` section must still get a working document. Strictness applies only where it is unavoidable: cardinality vocabulary, prefix match, description presence. |
