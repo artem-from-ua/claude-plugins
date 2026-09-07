@@ -103,7 +103,18 @@ Pair the text with `<back:#XXXXXX>   </back>` swatches (three spaces) when the l
 
 **Padding.** PlantUML has no legend-specific padding skinparam. Indent the content lines by four spaces and bracket the block with `<size:6> </size>` lines — that buys a left inset and vertical breathing room without touching anything else. Do not reach for the global `skinparam Padding`: it inflates every element on the diagram, not just the legend. Do not use `&nbsp;` either — PlantUML renders it literally, as the text `&nbsp;`.
 
-**Line spacing.** There is no skinparam for the gap between legend lines either. Put a `<size:5> </size>` line between entries: each one adds roughly a full line box, taking the step from ~16px to ~33px, which is what keeps a list of swatches from reading as one solid block. The effect is quantized, not continuous — the number on `<size:>` barely matters (a `5` and a `9` spacer produce the same legend height), so tune the gap by how many spacer lines you insert, not by their size. Two spacers between entries roughly doubles the legend's height; one is usually enough.
+**Line spacing.** There is no skinparam for the gap between legend lines either. End each entry with an oversized blank — `<back:#CFE4F6>   </back> in-process step<size:17> </size>` — which stretches that line's box while leaving the text at its normal size. The gap scales smoothly with the number:
+
+| Ending | Step between entries | Legend height |
+|--------|---------------------|---------------|
+| nothing | 16px | 111px |
+| `<size:17> </size>` | 20px | 125px |
+| `<size:20> </size>` | 23px | 139px |
+| `<size:26> </size>` | 30px | 167px |
+
+`<size:17>` is the default choice: enough that a column of swatches stops reading as one solid block, not so much that the legend competes with the diagram.
+
+Do **not** use a standalone spacer line (`<size:5> </size>` on its own line) between entries. It adds a whole line box — the step jumps straight from 16px to 33px with nothing in between, and the size number has no effect at all: a `5` and a `9` spacer produce byte-identical legend heights. The standalone form is right only for the top and bottom padding, where a full line is what you want.
 
 ```plantuml
 @startuml
@@ -125,19 +136,15 @@ cl --> ar
 legend right
   <size:6> </size>
     **Box fill** (stage category):
-    <size:5> </size>
-    <back:#CFE4F6>   </back> in-process step
-    <size:5> </size>
-    <back:#FDEDC4>   </back> external binary
-    <size:5> </size>
-    <back:#E3CEF0>   </back> AI model
-    <size:5> </size>
-    <back:#D4D9D9>   </back> storage
+    <back:#CFE4F6>   </back> in-process step<size:17> </size>
+    <back:#FDEDC4>   </back> external binary<size:17> </size>
+    <back:#E3CEF0>   </back> AI model<size:17> </size>
+    <back:#D4D9D9>   </back> storage<size:17> </size>
   <size:6> </size>
 end legend
 @enduml
 ```
 
-![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/XPBRIWCn48RlynG3tcYX7kfcnLeMwnv0y4AmNXKludRSXgR9CaazNVaGFg5FOhAfiABGNLY6oVV_IVxPI-i4kSrQCIUTGhZM3Le7jx959JN2rySdt3dH8EJ2OMD8ecLs9NKhIAnXIcHUPajPhpHQ2oU7lBUei46zk1BrgY6pqOlSA4EmLtRFNyxG0YaoZeIsVX6rwt4t7LSPxRPEoN5u6PlVjye8htu0OM7JmbvUbKcLNeGhZ4USyxEIpMV1j3O_cFC6LL4MUHAnipBb8yxckHBMoYUvnMhbJtoQbzLnn7W-wjocL2_bCtQCy5P5KfmNvv592fxob35_ak4mypinlrceQiMyNwW4CHRl3IIRfMC04olVSPncC3aALUPR08F1bNc59wdKO03xjfj47IVnTZ3kaAZZltMJHn_xU9j35Xf7ePE1rCEMJ1scPHssEnrYH7q7V7L8MYXub5hGsqw7c5xVONeDQpy7jLCQG-rBhJFaC_Wlhf1bZ9HT-e__fxy1)
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/VPBRIWCn48RlynG3tcYX7kfcYxKirZs0u8LWlIfUnEsu3KsJPP9wkl8XV4AVn6HJOKLn5vOm-Vu_cN_smZf1RhjHp4cd4AvqWzR1ZMnHIOtm-Vu1jquq2Bbms1YIQ9bTIzqA4XkO4Pdd-KhMQutMmiaXxsqgR50lBqMzRiXizJ8toX3ibTtpcpEqH8gC8w6jtqJjUjnrnrL6kvrJSXnUnXPthJB2g-z1MDYsi9TNPLAbvw65oOXpFYxPOXvCQ_EDEMzG5MMH9n4RboaVSRR8bR1MFieTLYj_uzEyh8uZnlDHvpQZUYMVi6E4jogIugmuYqnIy9IdZFcR38UPFudvmyAgLipxXPKWncBVGB9PEGOmjV8D9sa6qwEmodm9O32uD2_mA9KQ363VTfEeuoHU3oOTCdtm2KzsBMUXS1Gg6KWzRCdKOJ3MOHlzJyO_3zYfOn9zDRuu92qKF4WjwFLVTGoehvvTmSP7hVwLnSpwCkiC-HR_KlsA9sGN8sGN_kF_uIy0)
 
 `legendBackgroundColor` and `legendBorderColor` are not in PlantUML's published skinparam list, but both work on the current server; `LegendFontColor` is documented. All three are skinparams, so they apply on every diagram type that supports `legend`, including those the color table above marks 🟡 Limited.

@@ -57,15 +57,14 @@ skinparam LegendFontColor #404040
 
 legend right
   <size:6> </size>
-    ACK responses omitted for clarity
-    <size:5> </size>
+    ACK responses omitted for clarity<size:17> </size>
     -> sync request  --> sync response
     ->> async fire-and-forget
   <size:6> </size>
 end legend
 ```
 
-![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/ROxB2i8m44Nt_Oe1rqKNwa9AG8jkz2T2CwsXxQJEf8lwzQP9mGScct1pxk5AQsdGh7lei44o9rsr3RkHJEawnx0wnvF9B-VO82V6ioO9dqZ-Wxj5xkB8BwRjPhvPbWJ0jhdx3A0G-yJ3Na6ndbygH037yWgCCZWI572zzHuDr45JTPgjdoALghllQgv09gf2_J6Y-12yaoHSC0KwnhLbp3MPFEWR_3jftfjclm00)
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/ROxB2i8m44Nt_Oe1rqK5KP0IqA8R_OdGJ6DedTIPT56_thGf-C1a4sxEFLnf77MQzHrQj4ZcgAl6ik_9bBxr38lJT3BvvJmRvCG4rYJn4obySDU9EtiAiscp6c-M9G6mixUG0HJYdhZVAYYMuql52E1GNe1HEa-20lxkGa03TTHKhMONXjHQxxvhkG8Pg8hLHuyIOl1Eacp65EWfhXrZhidaKMtnxvnnQvhy0W00)
 
 ## Group Fragment Guidance
 
@@ -119,8 +118,7 @@ end
 
 legend right
   <size:6> </size>
-    ACK responses omitted for clarity
-    <size:5> </size>
+    ACK responses omitted for clarity<size:17> </size>
     -> sync  --> sync response
     ->> async fire-and-forget
   <size:6> </size>
@@ -128,4 +126,4 @@ end legend
 @enduml
 ```
 
-![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/TLJjQjim5FslfxYmFmuiQpUQ3amNwgREA4kxG0jZZ35K-TeMaQLCajEcl_OGUy8zoQxa97NwOO6mhiuzElVesgVES-lRHh5Q5WYbCVxMt3CllKBuQWkqCBT6e7DIL_3lpr-ubFTOmFLQYuFCqSpSGkebjxm1XxzRr08pQytTJIt5GbCYl7ytwe5ciiIPr7Xc0ll4A6FXpUGmZ1wAPY-5N7BjpxXOLDQqkjY2f_dHzFWLS9_rmsWq-fZtW0ehrCKpmZm-pt4zBc-vThI9slThYRYfqNx3T7GO1cCzHJ1HCcJrGz7OwvNO2yxvkY7WvszxqIlZPRb-YitQGlgPgHZhs64utf6ci5HSO5mcqcFZ1eo5UfVR8-17kBXuczda2xZQtEaK2YjNw80h3xTKhQX_CjYHXWDs0bCGDRSL9hmX5_s0SBiz6Ev9iUXQvHcvn5XWxjRm2LmhGbVj7p5-B3U5ZVkwbBR18edBYsBmD6DhHGhALFcAH2JpMJR9pz_2Yoaah_CitUupL0uVbPLSgjRYQqb8pMsJUVRzCh-w-JNDBcRv-Q0hi6iRiBAgFQMVEFc0wV4OJWx2svX240sdevP6EpBRDD9x-fnAQXwXk9L-7L5TwcW_bKJ4UujoujkMQBCz1Xx3v1WEkIw6H5lXYrA2paukEwM9VW3_0G00)
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/TLFjQjim5FslfxYmFmaiQpkQ5amNwgREA4lRG0jZZ35K-TeMaQLCajEcl_OGUy8-oQxa97NwOOEGhiuzElVewjHvRdrJArR97A4mnj-P1-QbLmZNDaSBCsi4EYTr2Kz__y6bVC0SRbPQxAMEHkRcKY-uvJKu_DEW5fXQQ-vlAodccXBXuDEm0vhA0gTIuva9x6EZZ8KFu_tmTr0qUYdaWcj_niMyjARH-GOyoGudH--0kwoVXyFXSTO1AYnHvwy8i_YzndMulENQqIPgtwqbuYP6-pNJuNxu6UieWh6I8QiRYiRUBCLESCPNDG6_Vj-9NXalYzLBRDhaqazDoLZB3eFHbZI1XU82ux8dFTQkprYeTx4v0dw6YuktcOw_WQlClKuWjtA93hZoS4VLYkeNWorfE60hC05HSLjYZzVaekyJRhi7Wnqf5bsZF2EN60lCxHg-W6j4wAhT8qRFvIQmTbyNqjQOz-Bo8k-_pDXOaO0oPROa4RtPD1rdvn_XpHIIrtgMRFOPAeVFoWekLMFnlIIavhQzMVhZChkw_Jr9BwRPURyji6qRiBAiFAMVEFc8oT48JlR2R4GXY8RJKGkZ7PbjQkazFQU2caSeRgLVjLa7nxjf923UMPGIPnkIzVO8U0oJMpZWEXyGPObloWWQMwdib0Pw_Fy1)

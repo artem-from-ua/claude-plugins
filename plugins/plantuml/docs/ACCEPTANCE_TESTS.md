@@ -2426,7 +2426,8 @@ Tests that legends carry the three styling skinparams — dark-grey text, no bla
 - ✅ No global `skinparam Padding` — it inflates every element on the diagram, not just the legend
 - ✅ No `&nbsp;` used for spacing — PlantUML renders it literally as the text `&nbsp;`
 - ✅ Non-legend element dimensions unchanged versus the unpadded diagram
-- ✅ A legend listing swatches carries a `<size:5> </size>` line between entries; measured on the rendered SVG, consecutive legend text baselines sit ~33px apart rather than ~16px
+- ✅ A legend listing swatches ends each entry with `<size:17> </size>`; measured on the rendered SVG, consecutive legend baselines sit ~20px apart rather than the default ~16px, and the entry text itself is still `font-size="14"`
+- ✅ No standalone `<size:N> </size>` spacer lines *between* entries — those add a full line box (~33px step) and are reserved for the block's top and bottom padding
 
 ---
 
