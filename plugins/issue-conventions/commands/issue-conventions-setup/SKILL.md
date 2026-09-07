@@ -67,7 +67,11 @@ Back up first: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/backup.sh"` — deletion is 
 
 Then `bash "${CLAUDE_PLUGIN_ROOT}/scripts/label-plan.sh" <document> --summary`, show the itemized plan, and take **one** `AskUserQuestion` (Apply / Show details / Cancel). Apply with `bash "${CLAUDE_PLUGIN_ROOT}/scripts/label-plan.sh" <document> --apply`. Labels reported as undeclared are never auto-deleted — report them and let the user decide.
 
-**Create labels now; delete the legacy ones only after `/issue-conventions-relabel` has run.** `gh label delete` strips the label from every issue that carried it, permanently — and `relabel` classifies *from* those labels. The legacy mapping's `split` action is entirely dependent on them: without `enhancement` on an issue, the classifier has only the title to go on and the criterion in the Why column has nothing to apply to.
+**Create labels now; delete nothing until `/issue-conventions-relabel` has run.** That covers legacy labels **and the GitHub built-ins** — `bug`, `enhancement`, `documentation` are usually the most informative input the classifier gets, and they are built-ins rather than custom labels, so a rule mentioning only "legacy" would read as permission to remove them.
+
+`gh label delete` strips the label from every issue that carried it, permanently, and `relabel` classifies *from* those labels. The `split` action depends on them entirely: without `enhancement` on an issue, the classifier has only the title, and the criterion in the Why column has nothing to apply to.
+
+If the built-ins are unused — the second polygon's nine were all empty — deleting them early costs nothing. Check the usage counts from step 2 before deciding, rather than assuming either way.
 
 So: create and update here, and say plainly that removing the old labels is the last step of the migration, not part of this one.
 

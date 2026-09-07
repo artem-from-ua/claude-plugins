@@ -30,17 +30,44 @@ MODEL=$(python3 "$SCRIPT_DIR/parse-taxonomy.py" "$DOC")
 # ADR supersession status, decided by script rather than re-derived from prose
 # each run. The subagent still judges what a divergence *means*; this settles
 # the fact it reasons from. Path comes from the config, if there is one.
-ADR_STATUS="null"
+# Reports *why* there is nothing to compare, never a bare null: "not configured"
+# and "configured but the file is missing" look identical otherwise, and the
+# second is a broken setup reading as a clean one.
+ADR_STATE="not-configured"
+ADR_RECORDS="[]"
+ADR_MISSING="[]"
+
 CONFIG="${CLAUDE_PROJECT_DIR:-.}/.claude-plugin/issue-conventions.json"
 [[ -f "$CONFIG" ]] || CONFIG="${CLAUDE_PROJECT_DIR:-.}/.claude/issue-conventions.json"
 if [[ -f "$CONFIG" ]]; then
   ADR_PATHS=$(jq -r '(.adr // empty) | if type == "array" then .[] else . end' "$CONFIG" 2>/dev/null || true)
   if [[ -n "$ADR_PATHS" ]]; then
-    ADR_STATUS=$(while IFS= read -r p; do
-      [[ -f "$p" ]] && bash "$SCRIPT_DIR/adr-status.sh" "$p" 2>/dev/null
-    done <<< "$ADR_PATHS" | jq -sc . 2>/dev/null || echo 'null')
+    found=""
+    missing=""
+    while IFS= read -r p; do
+      [[ -z "$p" ]] && continue
+      if [[ -f "$p" ]]; then
+        found+="$(bash "$SCRIPT_DIR/adr-status.sh" "$p" 2>/dev/null)"$'\n'
+      else
+        missing+="$p"$'\n'
+      fi
+    done <<< "$ADR_PATHS"
+
+    [[ -n "$found" ]] && ADR_RECORDS=$(printf '%s' "$found" | jq -sc . 2>/dev/null || echo '[]')
+    [[ -n "$missing" ]] && ADR_MISSING=$(printf '%s' "$missing" | jq -R 'select(length > 0)' | jq -sc .)
+
+    if [[ "$ADR_MISSING" != "[]" ]]; then
+      ADR_STATE="configured-but-missing"
+    else
+      ADR_STATE="checked"
+    fi
   fi
 fi
+
+ADR_STATUS=$(jq -n --arg state "$ADR_STATE" \
+                   --argjson records "$ADR_RECORDS" \
+                   --argjson missing "$ADR_MISSING" \
+                   '{state: $state, records: $records, missingPaths: $missing}')
 LIVE=$(gh label list --limit 500 --json name,color,description)
 # The dump stays on disk and reaches jq through --slurpfile. Passing it via
 # --argjson puts the whole thing on argv, which dies with "Argument list too

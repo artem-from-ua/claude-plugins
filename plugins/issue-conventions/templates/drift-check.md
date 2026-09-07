@@ -28,13 +28,24 @@ Report these as they are — no re-derivation:
 **The script has already decided whether the ADR was superseded** — read `forSubagent.adrStatus`, do not re-derive it:
 
 ```json
-{ "number": "0029", "status": "accepted", "superseded": true, "partial": true,
-  "supersededBy": ["0038"], "signals": ["index-strikethrough", "superseded_by"] }
+{ "state": "checked",
+  "records": [{ "number": "0029", "status": "accepted", "superseded": true,
+                "partial": true, "supersededBy": ["0038"],
+                "signals": ["index-strikethrough", "superseded_by"] }],
+  "missingPaths": [] }
 ```
 
-`superseded` is the verdict, `partial` distinguishes a record replaced wholesale from one that gave up only part of itself, and `supersededBy` names the successor. What remains yours is the judgment: **if the record was superseded and its successor documents the same drift, the prescribed fix has already been carried out.** Report it as INFO, naming the successor — "ADR 0029 states 7 area values against 8 in the document; superseded in part by ADR 0038, which cites this drift as evidence."
+Per record: `superseded` is the verdict, `partial` distinguishes one replaced wholesale from one that gave up only part of itself, and `supersededBy` names the successor. What remains yours is the judgment: **if the record was superseded and its successor documents the same drift, the prescribed fix has already been carried out.** Report it as INFO, naming the successor — "ADR 0029 states 7 area values against 8 in the document; superseded in part by ADR 0038, which cites this drift as evidence."
 
-If `adrStatus` is absent, no ADR is configured and there is nothing to compare against.
+**`state` says why there may be nothing to compare, and the three cases are not the same finding:**
+
+| `state` | Meaning | Report |
+|---|---|---|
+| `checked` | An ADR is configured and was read | judge the records as above |
+| `not-configured` | The config names no ADR | nothing — say so once, do not treat it as a defect |
+| `configured-but-missing` | The config names a path that does not exist | **a divergence.** `missingPaths` lists them; the fix is to correct the config or restore the file |
+
+The third case is why `state` exists. A missing ADR file used to produce the same empty result as no ADR at all, so a broken configuration read as a clean one — the quietest kind of failure this report can have.
 
 **Only the taxonomy's own ADR is read, never the directory.** This check asks whether the taxonomy agrees with the record that decided it — not whether the project's ADR corpus is healthy. A repo may hold a hundred other ADRs; none of them are about labels, so none are relevant here regardless of how cheap they would be to read.
 
