@@ -15,7 +15,7 @@ Your issue tracker has labels nobody agrees on: the ones in heavy use narrow not
 ```markdown
 > /issue-conventions-setup
 
-Scanned 157 issues (84 closed, 73 open) and 16 labels.
+Scanned 152 issues (77 closed, 75 open) and 16 labels.
 
 [a short interview: which axes describe your work — the parts of the product,
  the kinds of change, the urgency — offered as candidates mined from the scan,
@@ -29,7 +29,7 @@ Scanned 157 issues (84 closed, 73 open) and 16 labels.
 ```markdown
 > /issue-conventions-relabel
 
-Classified 157 issues in 9 batches. Review at /tmp/relabel-review.md.
+Classified 152 issues in 9 batches. Review at /tmp/relabel-review.md.
 
 Batch 1 of 9
 
@@ -49,11 +49,11 @@ None of those three ended up as `type:docs`, though every title says documentati
 
 ### Live example
 
-This repository was labelled by the plugin itself — 157 issues, 16 ad-hoc labels replaced by 38 across five axes. Everything below is what the two commands produced, unedited afterwards:
+This repository was labelled by the plugin itself — 152 issues, 16 ad-hoc labels replaced by 38 across five axes. Everything below is what the two commands produced, unedited afterwards:
 
 - [`docs/issue-labels.md`](../../docs/issue-labels.md) — the taxonomy document: axes, dictionaries, colors, disambiguation rules, and the mapping from the old labels
 - [The labelled issues](https://github.com/artem-from-ua/claude-plugins/issues) — the result on the backlog; filter by any prefix to see what the axes buy
-- [PR #393](https://github.com/artem-from-ua/claude-plugins/pull/393) — the migration itself, including [ADR 0001](../../docs/adr/0001-issue-taxonomy-lives-in-a-versioned-document.md) recording where the taxonomy lives
+- [The relabel review](https://claude.ai/code/artifact/360f6c4b-eb7f-4bc2-9470-2562e58596f1) — every issue with its labels and title before and after, the way the command presented them for approval
 
 ## 📦 Installation <a name="installation"></a>
 
