@@ -66,3 +66,7 @@ TODO after applying to the backlog:
 If `docs/adr/README.md` exists, add the row in its existing format. If an ADR about the label taxonomy is already there, do **not** write a second one: propose superseding it, set `superseded_by` on the old record, add a one-line postscript at its top pointing at the replacement, and strike through both the number and the title link in the index table — leaving the Status cell readable.
 
 If the project has no `docs/adr/`, ask whether to start the practice rather than creating the directory unasked.
+
+**Point the config at the successor, not the superseded record.** After writing a superseding ADR, update `adr` in `.claude-plugin/issue-conventions.json` to the new file. A config still naming the old one makes every tool that reads that field quote numbers the ADR itself has disowned — and the drift check will keep comparing the document against a record that was deliberately retired.
+
+**Extend the postscript, do not edit the numbers.** Stale figures usually live in the superseded ADR's Decision tables, *above* wherever a postscript at the top would sit — so a reader arriving from search sees "7 values" with no indication it is historical. Say in the postscript which specific claims are now wrong and what replaced them. The numbers in the body stay untouched: an ADR records a decision as it was made, not current state.

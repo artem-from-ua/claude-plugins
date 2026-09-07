@@ -25,9 +25,19 @@ Report these as they are — no re-derivation:
 
 **ADR vs document.** Read the ADR if there is one. Does it still describe the taxonomy in the document — same axes, same value counts, same rules? Prose counts ("seven values", "a dictionary of 13") are the most common drift: they are written once and never updated. Report a mismatch as a divergence whose fix is "update the ADR, or supersede it with a new one" — never "edit the document to match the ADR". If parsing a stated count is ambiguous, report it as INFO rather than guessing.
 
+**Check the ADR's status first.** If it carries `status: superseded` (or `superseded in part`) and its successor documents the same drift, the prescribed fix has *already been carried out* — the divergence is a historical record, not an outstanding defect. Report it as **INFO**, naming the successor: "ADR 0029 states 7 area values against 8 in the document; already superseded by ADR 0038, which cites this drift as evidence."
+
+Demanding another fix there would be wrong twice over: the work is done, and editing the numbers in place would violate the immutability convention that the successor ADR itself records. An ADR is a decision as it was made, not a mirror of current state — stale numbers inside a superseded record are expected, and a report that treats them as defects teaches people to skip it.
+
 **Documented norm vs the corpus.** Compare `softLimit` against `labelCountDistribution`. A soft limit of 5 with a median of 4 is healthy. A limit of 5 where most issues carry 6 means the limit is fiction. State it as INFO with the actual median, and let the user choose between restating the limit and accepting the de-facto norm.
 
 **Modules without an axis** (only when `moduleAxis` is set). Compare `modulesOnDisk` against the values of that axis. A module is covered when it matches a value's name, **is mentioned in a value's description** (one value often covers two or three modules), or appears in `modulesIgnored`. Only genuinely uncovered modules are a finding, and the fix is "add a value, or add it to `ignore=`". Read the descriptions before reporting — this is where false positives come from.
+
+**Title scopes that name nothing** (`titleScopes`). The title-format regex accepts any word between the parentheses, so `feat(whatever): …` is well-formed while naming a scope that does not exist in any axis. The script lists these; you decide what each one means. There are three kinds, and only the first is a defect:
+
+- **A scope that will never exist** — it names infrastructure the taxonomy deliberately excluded, something in the axis's `ignore=`, or a typo. Finding: propose the closest real value. (Seen in practice: `research(pipeline)` where `pipeline` was ignored as infrastructure.)
+- **A scope that does not exist *yet*** — the issue is *proposing* the very thing it names, typically a new pipeline stage or component. `feat(followup): add a follow-up stage` reads better than forcing it onto an existing value, and the labels can carry a cross-cutting axis until the stage ships. **INFO, not a defect** — unless the project has decided otherwise in its disambiguation rules. Any pipeline-shaped project accumulates these.
+- **A scope the document allows by rule** — check the disambiguation rules before reporting; a project may have settled this case already.
 
 **Footer freshness.** `footer.lastSynced` against the document's last commit date (`git log -1 --format=%cI -- <document>`). Do not use file mtime: in a fresh clone every file looks modified. A document edited after the last sync means GitHub may not have caught up — INFO, with `/issue-conventions-drift` or `/issue-conventions-setup` as the fix.
 

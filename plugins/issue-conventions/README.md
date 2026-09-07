@@ -83,7 +83,7 @@ The disambiguation pass near the end is the highest-value step. It picks genuine
 {
   "version": 1,
   "taxonomyDocument": "docs/issue-labels.md",
-  "adr": "docs/adr/0029-issue-label-taxonomy.md",
+  "adr": "docs/adr/0038-taxonomy-storage.md",
   "titleFormat": { "enabled": true, "rewriteExisting": false },
   "thresholds": { "minIssues": 30 },
   "models": { "classifyNew": "sonnet", "reclassify": "sonnet",
@@ -96,6 +96,8 @@ The disambiguation pass near the end is the highest-value step. It picks genuine
 ```
 
 `titleFormat` splits deliberately: `enabled` makes title rules apply to new issues, while `rewriteExisting` controls mass renaming of the existing backlog — the least reversible thing this plugin can do, so it stays off until you turn it on.
+
+`adr` accepts a single path or an array. Point it at the **current** record, not the one that started the chain: ADRs supersede each other, and a config still naming a superseded record makes every tool that reads it quote outdated numbers. With an array, the first entry is the current one and the rest are history.
 
 Resolution order: `.claude-plugin/issue-conventions.json` → `.claude/issue-conventions.json` → `~/.claude/issue-conventions.json` → the plugin's `templates/issue-conventions.json`.
 

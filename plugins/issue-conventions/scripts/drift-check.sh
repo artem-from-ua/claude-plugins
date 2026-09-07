@@ -55,6 +55,7 @@ jq -n \
   --argjson modules "$MODULES" \
   --arg doc "$DOC" '
   ($model.axes | map(.values[].label)) as $declared
+  | ([$model.axes[] | .values[] | .name]) as $knownScopes
   | ($live | map(.name)) as $onGitHub
   | ($model.builtins.canonical) as $builtins
   | ($model.softLimit // 5) as $softLimit
@@ -121,6 +122,20 @@ jq -n \
         modulesOnDisk: $modules,
         modulesIgnored: [ $model.axes[] | select(.source.kind == "modules") | .source.ignore[] ],
         moduleAxis: ([ $model.axes[] | select(.source.kind == "modules") ][0].name // null),
+
+        # Scopes used in titles that match no axis value. The title-format regex
+        # accepts any word inside the parentheses, so a scope can be well-formed
+        # and still name something that does not exist. Provenance-labelled issues
+        # are exempt: their titles belong to the automation that filed them.
+        titleScopes: [
+          $issues[]
+          | select([.labels[] | startswith("by:")] | any | not)
+          | select(.title | test("^(?:CRITICAL )?[a-z]+\\([^)]+\\):"))
+          | {number, title,
+             scope: (.title | capture("^(?:CRITICAL )?[a-z]+\\((?<s>[^)]+)\\):") | .s)}
+          | .scope as $s
+          | select($knownScopes | index($s) | not)
+        ],
         footer: $model.footer,
         warnings: $model.warnings
       }
