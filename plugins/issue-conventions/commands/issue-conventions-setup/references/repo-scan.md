@@ -2,6 +2,8 @@
 
 The interview must never open with an empty prompt. This scan produces the candidates every question offers.
 
+**Get the dump first.** `bash "${CLAUDE_PLUGIN_ROOT}/scripts/fetch-issues.sh"` writes every issue to a file and **prints that file's path, not its contents** — it is a full corpus and belongs on disk, not in the session. Capture the path and read the file; piping the script's own output into a parser gets you one line containing a filename. Sections 2, 3 and 4 below all read this file.
+
 ## 1. Structural candidates, and what to call the axis
 
 The axis name comes from how the product is built, not from a fixed vocabulary. Detect the layout, then propose both a name and its dictionary:
@@ -29,17 +31,25 @@ Present each with two real issue numbers as evidence — `llm — seen in #122, 
 
 **Always offer a housekeeping value** (`repo`, `meta`, or similar) explicitly. Without one, repo-maintenance issues drift into the nearest product-facing value and quietly turn it into a catch-all — the single most common way these taxonomies rot.
 
-## 3. Existing labels
+## 3. Title prefixes already in use
+
+Extract the leading `word:` or `word(scope):` from every title in the dump and count them. A prefix a maintainer has been typing by hand is a distinction they already make, and nobody types one by accident — this is evidence of the same weight as an existing label, arguably better, since a label can be applied once and forgotten while a prefix has to be retyped every time.
+
+Offer any prefix seen three or more times as a candidate `type:*` value beyond the seven Conventional Commits defaults. The third polygon's backlog carried `spike:`, `epic:`, `research:` and `idea:`; all four were real kinds of work the default dictionary had no home for, and they surfaced only in the gap check after the dictionary was already drafted.
+
+Prefixes matching the seven defaults are confirmation, not candidates — note the counts and move on.
+
+## 4. Existing labels
 
 `gh label list --limit 200 --json name,description,color` plus usage counts from the dump. This feeds the legacy mapping in step 5.
 
 Flag the nine GitHub built-ins (`bug`, `enhancement`, `documentation`, `duplicate`, `invalid`, `wontfix`, `question`, `good first issue`, `help wanted`) separately from custom ones — they need a policy decision, not a per-label one.
 
-## 4. Provenance sources
+## 5. Provenance sources
 
 Look for automation that files issues, and propose a provenance value for each: `.github/dependabot.yml`, workflows under `.github/workflows/`, an existing `kb-grooming` label or `.claude-plugin/kb-grooming.json`.
 
-## 5. Where the document should live
+## 6. Where the document should live
 
 | Detected | Proposal |
 |---|---|

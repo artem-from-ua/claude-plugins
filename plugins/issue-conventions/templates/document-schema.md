@@ -118,7 +118,7 @@ Every issue needs at least one `plugin:*` or `topic:*`; beyond five labels an is
 | `<subject>` | — | what the user gets, not how it is implemented |
 | `CRITICAL` | `priority:critical` | optional prefix modifier |
 
-`epic` and `research` are title-only types: they have no `type:*` label, and the underlying work is still classified by its base type.
+Kinds like `epic` and `research` can be **title-only** — a prefix with no matching `type:*` label, leaving the work classified by its base type — or ordinary axis values. Either works; the trade-off is what the axis is for. Title-only keeps `type:*` answering "what kind of change is this" and nothing else, at the cost of not being able to filter for umbrellas. As values they are filterable and `type:*` becomes "what kind of work is this", which stretches the axis but answers a question maintainers actually ask. One project ran them title-only, another as values across 9 epics and 13 research issues; neither arrangement caused trouble. Decide it in the interview rather than inheriting a default.
 
 **Length:** 60–80 characters, soft. Self-containment beats brevity — if trimming a word makes the title ambiguous without reading the labels, keep the word.
 
