@@ -31,6 +31,12 @@ Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/label-plan.sh" <document> --summary`. I
 
 `bash "${CLAUDE_PLUGIN_ROOT}/scripts/fetch-issues.sh"` writes the dump and prints its path. Comments are fetched lazily — only for issues the classifier flags with `needsComments`, via `gh api repos/{owner}/{repo}/issues/N/comments`, because `--json comments` returns empty for some issues.
 
+Then, unless `prEvidence.mode` is `off`, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/pr-evidence.sh" --mode <mode> --from-dump <dump>`. It writes one JSON line per issue naming the merged PR that answered it and the files it changed; merge each line into its issue as `prEvidence` before classifying.
+
+It costs two API calls per issue and buys what a title cannot: on the third polygon five labels were wrong because the title described a documentation symptom while the fix changed script logic. `paths` (the default) carries the files alone at roughly a third the size of `full`, which adds the PR's own words.
+
+The mode is set during setup and lives in the config. Do not override it here — a run that quietly reads more than the maintainer agreed to is worse than a cheaper classification.
+
 ### 4. Back up, and settle the title question
 
 `bash "${CLAUDE_PLUGIN_ROOT}/scripts/backup.sh"` — prints the backup directory with a ready `ROLLBACK.md`.

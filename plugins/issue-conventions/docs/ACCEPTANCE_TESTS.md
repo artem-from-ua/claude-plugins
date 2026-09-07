@@ -98,6 +98,20 @@ Tolerant — each must exit **zero**:
 | 3.8 | `inject-rules.sh` twice in a row with a config | byte-identical output (determinism) |
 | 3.9 | `test-drift-jq.sh` | 12 tests pass — pins the semantics of the jq expressions in `drift-check.sh` |
 | 3.10 | `test-scale.sh` | 5 tests pass — a synthetic 500-issue dump; asserts the old form still fails with the exact error, so a stale fixture announces itself |
+| 3.11 | `test-pr-evidence.sh` | 11 tests pass — pins which PR counts as evidence for an issue |
+
+**On 3.11.** Selecting "the PR that fixed this issue" looks like one API call and is four filters, each of which was wrong first and each of which fails by returning a confident wrong answer rather than an error:
+
+| Filter | What it drops | Measured on |
+|---|---|---|
+| `pull_request != null` | plain issue cross-references | #285 collects four, and two were filed by this plugin while discussing the bug |
+| `merged_at != null` | proposals nobody accepted | a closed-unmerged PR is not the answer |
+| same repository | another project's PR entirely | #368 references `tokenpace#377`, and `gh pr view 377` answers from *this* repo — different PR, different files |
+| merged at or before the close | later unrelated touches | #100 carries both #101 (its fix) and #393 (a label migration seven months on) |
+
+The close-time filter needs a grace window: GitHub closes the issue after the merge lands, observed at one and two seconds here with no documented bound, so a strict comparison drops the fix by seconds.
+
+A fifth rule is not a filter but a ranking: files under three lines changed are version bumps and lockfile churn. On PR #292 that is six `plugin.json` bumps at `+1/-1`, 46% of the diff, which would otherwise argue for six values of a directory-derived axis on an issue belonging to one.
 
 **On 3.9.** Two bugs shipped in 0.1.0 and were caught on the first polygon: `from_entries` fed `{key, count}` instead of `{key, value}` (so every declared value looked unused — 36 of 36, burying the five real ones), and a bare `.description` where `$l.description` was meant (so every label looked drifted, while `label-plan.sh` correctly reported zero updates on the same data). Both are the same shape: jq stayed silent and returned plausible output, so `bash -n` could not catch them. These tests pin behavior rather than syntax.
 

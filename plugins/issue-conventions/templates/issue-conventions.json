@@ -5,6 +5,9 @@
     "enabled": true,
     "rewriteExisting": false
   },
+  "prEvidence": {
+    "mode": "paths"
+  },
   "thresholds": {
     "minIssues": 30
   },

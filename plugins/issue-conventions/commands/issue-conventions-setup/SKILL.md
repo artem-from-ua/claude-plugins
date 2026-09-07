@@ -51,6 +51,12 @@ Follow `${SKILL_DIR}/references/legacy-mapping.md`. Build the `old label (usage)
 
 Propose a path based on what step 2 found (see `repo-scan.md` for the priority order) and confirm it. One document, never two: if `docs/conventions.md` exists it gets a two-line pointer, not a copy of the dictionaries.
 
+Then ask what the classifier may read from the PRs that closed the issues, and write it to `prEvidence.mode`. Say what it buys, since the option names do not: a title records the reported symptom, the diff records the work that answered it, and for a whole class of issues those disagree.
+
+- **`paths`** (default) — files changed, ranked by churn. ~300 characters per issue. For a directory-derived axis this is not evidence but the answer: a change under `plugins/retroscope/` *is* `plugin:retroscope`.
+- **`full`** — adds the PR title, the head of its body, and the `Closes #N` / `Refs #N` line. ~900 characters, three times the cost, earned mainly on the type axis where the author's own words settle what the paths imply.
+- **`off`** — title and body only. Right for a repo whose issues are rarely closed by PRs, or where two API calls per issue is not worth it — count the closed issues in the dump and say so if that is the case.
+
 ### 8. Write the document
 
 Render it per `${CLAUDE_PLUGIN_ROOT}/templates/document-schema.md`, using real issues from this repo as the worked examples. Immediately re-read it with `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/parse-taxonomy.py"` and stop loudly if the round-trip does not reproduce the interview — that is where a generator/parser mismatch surfaces.

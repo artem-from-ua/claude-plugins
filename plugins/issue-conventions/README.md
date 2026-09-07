@@ -61,6 +61,8 @@ The `issue-conventions-guide` skill runs on its own before any `gh issue create`
 
 Classifying a backlog is not the expensive part — reviewing it is. So when you rewrite a proposed classification, the command asks whether it was a one-off or a rule. A rule gets written into the document's disambiguation section and **re-applied to the already-classified issues immediately**, without re-running classification. Rules accumulated this way make the next run cheaper and bind the skill for every new issue.
 
+It also reads the pull request that closed each issue, not just the title and body. A title records the symptom someone reported; the diff records the work that answered it, and those disagree more often than they look like they would — "Fix 2 broken documentation links" turned out to be a fix to a scanner that was emitting false positives, which makes it a bug, not documentation. For an axis derived from directories the paths settle the label outright: a change under `plugins/retroscope/` *is* `plugin:retroscope`.
+
 ## ⚙️ Setup <a name="setup"></a>
 
 ```bash
@@ -80,6 +82,7 @@ The disambiguation pass near the end is the highest-value step. It picks genuine
   "version": 1,
   "taxonomyDocument": "docs/issue-labels.md",
   "titleFormat": { "enabled": true, "rewriteExisting": false },
+  "prEvidence": { "mode": "paths" },
   "thresholds": { "minIssues": 30 },
   "models": { "classifyNew": "sonnet", "reclassify": "sonnet",
               "batchClassify": "sonnet", "driftCheck": "haiku" },
@@ -91,6 +94,8 @@ The disambiguation pass near the end is the highest-value step. It picks genuine
 ```
 
 `titleFormat` splits deliberately: `enabled` makes title rules apply to new issues, while `rewriteExisting` controls mass renaming of the existing backlog — the least reversible thing this plugin can do, so it stays off until you turn it on.
+
+`prEvidence.mode` decides how much of a closed issue's pull request the classifier sees, and setup asks for it rather than assuming. `paths` (the default) passes the changed files ranked by size — about 300 characters per issue, and for an axis derived from directories it is not evidence but the answer. `full` adds the PR's title, the head of its description, and its `Closes #N` line: three times the size, worth it mainly on the type axis, where the author's own words settle what the paths only imply. `off` classifies from the title and body alone, which is the right call for a backlog whose issues are rarely closed by PRs.
 
 Resolution order: `.claude-plugin/issue-conventions.json` → `.claude/issue-conventions.json` → `~/.claude/issue-conventions.json` → the plugin's `templates/issue-conventions.json`.
 
