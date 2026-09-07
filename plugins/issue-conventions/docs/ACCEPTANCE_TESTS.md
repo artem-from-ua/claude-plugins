@@ -87,7 +87,7 @@ Tolerant — each must exit **zero**:
 
 | # | Check | Expected |
 |---|---|---|
-| 3.0 | `drift-check.sh` on a repo with ~200+ issues | completes — the dump reaches jq via `--slurpfile`, not argv. `--argjson` dies with "Argument list too long" past ARG_MAX (1 MB), which is exactly the corpus size this plugin is for |
+| 3.0 | `drift-check.sh` on a repo with ~200+ issues | completes — the dump reaches jq via `--slurpfile`, not argv. `--argjson` dies with "Argument list too long" past the execve argument limit, which is exactly the corpus size this plugin is for |
 | 3.1 | `fetch-issues.sh --count-only` on a repo with >60 issues | returns the true count, **not ~60** — the regression guard against `gh issue list --json` truncation |
 | 3.2 | `fetch-issues.sh` filters PRs | no entry has a `pull_request` field |
 | 3.3 | `label-plan.sh` against a synced document | empty create and update groups (idempotent) |
@@ -99,7 +99,7 @@ Tolerant — each must exit **zero**:
 | 3.9 | `test-drift-jq.sh` | 12 tests pass — pins the semantics of the jq expressions in `drift-check.sh` |
 | 3.10 | `test-adr-status.sh` | 6 tests pass — supersession decided by script from three signals, on fixtures copied from the reference project |
 | 3.11 | `test-index-rows.sh` | 8 tests pass — supersession is read from the strikethrough (structure), the successor number from the Status cell (prose) |
-| 3.12 | `test-scale.sh` | 6 tests pass — a synthetic 500-issue dump larger than `ARG_MAX`, asserting the fixture is big enough to be a guard |
+| 3.12 | `test-scale.sh` | 5 tests pass — a synthetic 500-issue dump; asserts the old form still fails with the exact error, so a stale fixture announces itself |
 
 **On 3.10.** Supersession detection lived in the subagent template until 0.2.4 — deterministic logic expressed as prose the model had to re-derive each run. The polygon session pointed out the consequence: the tests pinned a bash implementation that shipped nowhere, so rewording a paragraph would change behavior while every test stayed green. The three signals now live in `adr-status.sh`, which the drift check calls and the subagent reads. The template keeps the judgment (what a divergence *means*) and hands over the fact.
 
@@ -178,7 +178,11 @@ Two limits in this plugin sat exactly where it starts being useful, and a live r
 
 That is not bad luck. A plugin gets exercised on its author's repository during development, and that repository is always smaller than the backlog the plugin was written to handle — so every size-dependent failure waits for a real run to surface.
 
-`test-scale.sh` is the answer: a synthetic 500-issue, ~2.4 MB dump, deliberately larger than any repo here. It asserts the fixture actually exceeds `ARG_MAX` before asserting anything else — a guard that no longer guards is worse than none, because it reads as coverage.
+`test-scale.sh` is the answer: a synthetic 500-issue, ~2.4 MB dump, deliberately larger than any repo here.
+
+**It observes rather than calculates, and that distinction is the point.** The first version asserted the fixture exceeded `getconf ARG_MAX`. But `getconf` is an upper bound, not the limit `execve` enforces — the real ceiling also counts the environment and the argv pointer array, so it moves with however many variables the user exports. Measured on one machine: `getconf` reported 1 048 576 while `jq` actually failed at ~1 040 234, a gap of roughly the environment's own size.
+
+A guard comparing against `getconf` can therefore claim the fixture is big enough when it no longer is. So the test runs the failing form and requires it to fail with the exact error. If it ever stops failing, the fixture has gone stale and says so — a signal rather than an estimate. The same shape applies to any guard: assert the bug reproduces, not that some proxy for it is large enough.
 
 ### Anchor on structure, not on a word that may appear in prose
 

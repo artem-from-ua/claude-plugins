@@ -5,12 +5,18 @@
 # useful, and both times a live run found it rather than a test:
 #
 #   `gh issue list --json` silently truncates at ~60 issues
-#   `--argjson` dies at ARG_MAX (1 MB), around 200 issues with bodies
+#   `--argjson` exceeds the execve argument limit, around 200 issues with bodies
 #
 # That is not coincidence. A plugin gets exercised on its author's repository,
 # which is always smaller than the backlog it was written for. So the fixture is
-# deliberately larger than any real repo here: 500 issues, ~2.5 MB — comfortably
-# past ARG_MAX, and past whatever the next paging limit turns out to be.
+# deliberately larger than any real repo here: 500 issues, ~2.4 MB.
+#
+# The tests observe rather than calculate. Each one runs the failing form and
+# requires it to fail — so a fixture that has gone stale announces itself instead
+# of quietly passing. That matters most for the argv limit, which is not a fixed
+# number: `getconf ARG_MAX` is an upper bound, while execve also counts the
+# environment and the argv pointers, so the real ceiling moves with the user's
+# shell.
 #
 # Usage: test-scale.sh [path-to-scripts-dir]
 
@@ -42,23 +48,29 @@ json.dump(issues, open(sys.argv[1], "w"))
 PY
 
 SIZE=$(wc -c < "$DUMP" | tr -d ' ')
-ARGMAX=$(getconf ARG_MAX)
-echo "fixture: $SIZE bytes, 500 issues (ARG_MAX: $ARGMAX)"
+echo "fixture: $SIZE bytes, 500 issues"
 echo
 
-if [ "$SIZE" -gt "$ARGMAX" ]; then
-  ok "fixture exceeds ARG_MAX — the limit is actually exercised"
-else
-  bad "fixture is smaller than ARG_MAX ($SIZE ≤ $ARGMAX); it proves nothing"
-fi
+echo "=== the bug still reproduces at this size ==="
 
-echo
-echo "=== the old failure mode still fails ==="
+# Observe, do not compute. `getconf ARG_MAX` is an upper bound, not the limit
+# execve enforces: the real ceiling also counts the environment and the argv
+# pointer array, so it moves with however many variables the user exports.
+# Measured here: getconf reported 1048576 while jq actually failed at ~1040234,
+# a gap of roughly the environment's own size.
+#
+# A guard that compares against getconf can therefore claim the fixture is large
+# enough when it no longer is. Running the old form and requiring it to fail is
+# exact: if it ever stops failing, the fixture has gone stale, and that is the
+# signal — not an estimate of one.
 BIG=$(cat "$DUMP")
-if jq -n --argjson issues "$BIG" '$issues | length' >/dev/null 2>&1; then
-  bad "--argjson accepted $SIZE bytes; the fixture is too small to be a guard"
+err=$(jq -n --argjson issues "$BIG" '$issues | length' 2>&1)
+if [ -n "$err" ] && printf '%s' "$err" | grep -qi 'argument list too long'; then
+  ok "--argjson dies with 'Argument list too long', as on the second polygon"
+elif [ -z "$err" ]; then
+  bad "--argjson accepted $SIZE bytes — the fixture no longer reproduces the bug; enlarge it"
 else
-  ok "--argjson still dies at this size, as it did on the second polygon"
+  bad "--argjson failed for an unexpected reason: $err"
 fi
 
 echo
@@ -76,10 +88,11 @@ fi
 
 echo
 echo "=== fetch-issues.sh pages rather than truncating ==="
-# Strip comments first: the script mentions `gh issue list` precisely to explain
-# why it does not use it. Matching the word rather than the code is the same trap
-# the regression guide is about.
-if grep -vE '^\s*#' "$DIR/fetch-issues.sh" | grep -q 'gh issue list'; then
+# Match a call, not a mention. The script names `gh issue list` precisely to
+# explain why it does not use it — the most conscientiously written file defeats
+# the simplest check. `^[^#]*` anchors on the line up to any comment, which also
+# catches a trailing comment on a line of real code.
+if grep -qE '^[^#]*gh issue list' "$DIR/fetch-issues.sh"; then
   bad "fetch-issues.sh calls gh issue list, which caps around 60"
 else
   ok "fetch-issues.sh uses the REST API"
