@@ -52,8 +52,9 @@ None of those three ended up as `type:docs`, though every title says documentati
 This repository was labelled by the plugin itself — 152 issues, 16 ad-hoc labels replaced by 38 across five axes. Everything below is what the two commands produced, unedited afterwards:
 
 - [`docs/issue-labels.md`](../../docs/issue-labels.md) — the taxonomy document: axes, dictionaries, colors, disambiguation rules, and the mapping from the old labels
+- [ADR 0001](../../docs/adr/0001-issue-taxonomy-lives-in-a-versioned-document.md) — an Architecture Decision Record, the short note a project keeps when it settles something worth not re-arguing. This one records that the taxonomy now lives in a versioned document and which one, so the next reader finds the decision rather than inferring it from the labels
 - [The labelled issues](https://github.com/artem-from-ua/claude-plugins/issues) — the result on the backlog; filter by any prefix to see what the axes buy
-- [The relabel review](https://claude.ai/code/artifact/360f6c4b-eb7f-4bc2-9470-2562e58596f1) — every issue with its labels and title before and after, the way the command presented them for approval
+- [The relabel report to review](https://claude.ai/code/artifact/360f6c4b-eb7f-4bc2-9470-2562e58596f1) — every issue with its labels and title before and after, the way the command presented them for approval
 
 ## 📦 Installation <a name="installation"></a>
 
