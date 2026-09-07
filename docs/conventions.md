@@ -341,3 +341,7 @@ cp -r plugins/<name> ~/.claude/plugins/marketplaces/artem-from-ua/plugins/<name>
 
 **Why this works:** Claude Code resolves plugin `"source"` paths relative to `~/.claude/plugins/marketplaces/<marketplace>/`. So `"source": "./plugins/ai-fortune"` resolves to `~/.claude/plugins/marketplaces/artem-from-ua/plugins/ai-fortune`. Placing files there makes the plugin discoverable without pushing to remote.
 
+
+## Issue Labels
+
+Issue labels and title format follow a taxonomy of their own, maintained by the `issue-conventions` plugin. See [`issue-labels.md`](issue-labels.md) — that document is the source of truth; do not duplicate its dictionaries here.
