@@ -25,47 +25,22 @@ Report these as they are — no re-derivation:
 
 **ADR vs document.** Read the ADR if there is one. Does it still describe the taxonomy in the document — same axes, same value counts, same rules? Prose counts ("seven values", "a dictionary of 13") are the most common drift: they are written once and never updated. Report a mismatch as a divergence whose fix is "update the ADR, or supersede it with a new one" — never "edit the document to match the ADR". If parsing a stated count is ambiguous, report it as INFO rather than guessing.
 
-**Check whether the ADR has been superseded — in whole or in part.** If it has, and its successor documents the same drift, the prescribed fix has *already been carried out*: the divergence is a historical record, not an outstanding defect. Report it as **INFO**, naming the successor — "ADR 0029 states 7 area values against 8 in the document; superseded in part by ADR 0038, which cites this drift as evidence."
+**The script has already decided whether the ADR was superseded** — read `forSubagent.adrStatus`, do not re-derive it:
+
+```json
+{ "number": "0029", "status": "accepted", "superseded": true, "partial": true,
+  "supersededBy": ["0038"], "signals": ["index-strikethrough", "superseded_by"] }
+```
+
+`superseded` is the verdict, `partial` distinguishes a record replaced wholesale from one that gave up only part of itself, and `supersededBy` names the successor. What remains yours is the judgment: **if the record was superseded and its successor documents the same drift, the prescribed fix has already been carried out.** Report it as INFO, naming the successor — "ADR 0029 states 7 area values against 8 in the document; superseded in part by ADR 0038, which cites this drift as evidence."
+
+If `adrStatus` is absent, no ADR is configured and there is nothing to compare against.
 
 Demanding another fix would be wrong twice over: the work is done, and editing the numbers in place would violate the immutability convention the successor itself records. An ADR is a decision as it was made, not a mirror of current state.
 
-**Three signals, any one of which counts.** Checking only `status:` is not enough, and the miss is not an edge case — in the reference project just 3 of 9 superseded records carry that status:
+**Why the script decides this and not you.** The three signals are deterministic — `status: superseded`, a non-empty `superseded_by`, or the number and title struck through in the index — so they live in `adr-status.sh`, where a test can pin them. Prose in this file cannot be regression-tested: reword a paragraph and the behavior changes while every test stays green.
 
-1. `status: superseded` in the frontmatter — a record replaced wholesale.
-2. A non-empty `superseded_by` — often present while `status` stays `accepted`.
-3. The index row has the number and title **struck through** (`~~N~~`) — sometimes the only place the replacement is recorded, with no `superseded_by` field at all.
-
-**Read the strikethrough for *whether*, the Status cell for *by whom*.** Real rows from the reference project:
-
-```
-| ~~24~~ | ~~[Defaults for the safe_speech stage](0024-…md)~~ | accepted (render display superseded by 0025) |
-| 25     | [Silence events: unified pause/muted rendering](0025-…md) | accepted (supersedes 0024 render display) |
-| ~~29~~ | ~~[Issue label taxonomy: 4 axes](0029-…md)~~ | accepted (storage mechanism superseded by 0038; axes still in force) |
-```
-
-The strikethrough is a **structural** marker on the record itself: this row is about a decision that has been replaced. It lives in the first two columns only — the Status cell is deliberately left readable, so that a reader can still scan which record superseded which. The Status cell is **prose**, written by hand in whatever wording fits.
-
-So anchor on the structure and let the prose supply the detail. Verified across all 37 rows of the reference index, both signals agree exactly — but they are not equally safe:
-
-- `supersedes` is not `superseded by`, and the successors are not rare. Five rows say `supersedes`; a naive substring search for "supersede" returns 10 of 37 rows instead of 5, marking every replacement as replaced.
-- Even matching `superseded by` exactly depends on a phrasing nobody has promised. "accepted (0029 superseded by this record)" would read naturally on a *successor* row and would fool the phrase check. The strikethrough cannot be fooled that way, because it says something about the row rather than about a relationship.
-
-Take the number from the Status cell once the strikethrough has established that the record was replaced — matching `superseded by NNNN` as a substring anywhere in the cell, since the phrase sits mid-cell inside parentheses and any prefix check would miss it.
-
-**Partial supersession is the common case, and the one that matters most here.** When a record is replaced wholesale, `status` becomes `superseded` and people stop reading it. When only part of it is replaced, the status honestly stays `accepted` — the rest still governs the code — and *that* record keeps being read while its retired half quietly drifts from reality. Exactly the class of stale number this check exists to notice. Reporting it as a defect asks the maintainer to break the immutability convention.
-
-**Parsing `superseded_by` is a trap.** One repo holds three shapes at once — all three are live in the reference project:
-
-```yaml
-superseded_by:                                    # YAML list of filenames
-  - 0006-mlx-lm-over-lm-studio.md
-superseded_by: ["0028-proofread-default-on"]      # JSON array of strings
-superseded_by: [0038]                             # JSON array of bare numbers
-```
-
-Pull the leading four digits with a regex rather than parsing YAML strictly — strict parsing either throws or silently returns nothing, and silently returning nothing looks exactly like "not superseded".
-
-The number is the identity; the filename is decoration. If you need the successor's file to read it, resolve by globbing `NNNN-*.md` rather than trusting the recorded name — the bare-number form has no name to trust, and a recorded name can be stale after a rename.
+The one thing worth knowing about that logic: **partial supersession is the common case here.** In the reference project only 3 of 9 superseded records carry `status: superseded`; the rest stay `accepted` because just part of them was replaced, and one names its successor solely through the index strikethrough. Those are the records that keep being read while their retired half drifts — exactly what this check exists to notice.
 
 **Frontmatter disagreeing with the index is its own finding.** A record whose frontmatter says `superseded` while the index says `accepted (superseded by NNNN)` — or the reverse — means someone updated one and forgot the other. Report it as **INFO**, separately: it is not a taxonomy problem, but it is the kind of drift that makes every later check unreliable.
 
