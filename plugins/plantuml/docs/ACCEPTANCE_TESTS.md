@@ -2278,19 +2278,22 @@ Tests that the non-default arrow thickness rule is applied to every supported di
 
 ## Test 14: Dark-Grey Legend Text
 
-Tests that legend text is wrapped in `<color:#404040>` instead of being left at PlantUML's default black.
+Tests that legends carry the three styling skinparams — dark-grey text, no black frame, light background — instead of PlantUML's defaults.
 
 ### 14.1 Color-Coded Legend
 
 **Setup:** Ask Claude to create a component diagram whose boxes are filled by category, with a legend mapping each fill to its meaning.
 
 **Expected behavior:**
-- Every text run inside the `legend` block wrapped in `<color:#404040>...</color>`
+- All three skinparams present: `legendBackgroundColor #EEEEEE`, `legendBorderColor transparent`, `LegendFontColor #404040`
 - Category swatches rendered as `<back:#XXXXXX>   </back>`, matching the fills actually used in the diagram
+- Content lines indented four spaces, block bracketed by `<size:6> </size>` lines
 
 **Pass criteria:**
-- ✅ No unwrapped text left inside the `legend` block
-- ✅ Wrapper color is `#404040`, not a lighter grey and not left at the default black
+- ✅ Legend text rendered in `#404040` — check the SVG for `fill="#404040"` on the legend's `<text>` elements
+- ✅ Legend box has `stroke:none` — no black frame
+- ✅ Legend box fill is `#EEEEEE`, not the default `#DDD` and not `#F5F5F5` or lighter
+- ✅ No per-line `<color:#404040>` wrappers — the skinparam does that job
 - ✅ Swatch hex values match the box fills they describe
 - ✅ Diagram renders without a warning box (`--check` reports clean)
 
@@ -2299,22 +2302,34 @@ Tests that legend text is wrapped in `<color:#404040>` instead of being left at 
 **Setup:** Ask Claude to create a sequence diagram with suppressed fire-and-forget ACKs, which triggers the "ACK responses omitted for clarity" legend.
 
 **Expected behavior:**
-- The ACK legend lines are wrapped in `<color:#404040>`, same as any other legend
+- The legend skinparams sit alongside `sequenceArrowThickness` and `LifeLineBorderColor`
 
 **Pass criteria:**
-- ✅ Each of the legend's lines individually wrapped — arrow-convention lines included
-- ✅ Arrow markup (`->`, `-->`, `->>`) inside the wrapper still renders as literal text, not as an arrow
+- ✅ All three legend skinparams present
+- ✅ Arrow markup (`->`, `-->`, `->>`) inside the legend still renders as literal text, not as an arrow
 
 ### 14.3 Legend on a Limited-Color Diagram Type
 
 **Setup:** Ask Claude to create a diagram of a type the color table marks 🟡 Limited (e.g. a mindmap) that carries a legend.
 
 **Expected behavior:**
-- The `<color:#404040>` wrapper is still applied — it is inline markup, not a skinparam, so limited skinparam support does not exempt it
+- The legend skinparams still apply — legend styling is independent of the diagram type's own color support
 
 **Pass criteria:**
-- ✅ Legend text wrapped despite the diagram type's limited color support
+- ✅ Legend text rendered in `#404040` despite the diagram type's limited color support
 - ✅ Diagram renders without errors
+
+### 14.4 Padding Without Side Effects
+
+**Setup:** Ask Claude to create any diagram with a padded legend, then compare the rendered element sizes against the same diagram without the legend padding.
+
+**Expected behavior:**
+- Padding achieved with four-space indentation and `<size:6> </size>` bracket lines only
+
+**Pass criteria:**
+- ✅ No global `skinparam Padding` — it inflates every element on the diagram, not just the legend
+- ✅ No `&nbsp;` used for spacing — PlantUML renders it literally as the text `&nbsp;`
+- ✅ Non-legend element dimensions unchanged versus the unpadded diagram
 
 ---
 

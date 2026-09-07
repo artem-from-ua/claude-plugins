@@ -8,13 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.12.0] - 2026-09-07
 
 ### Added
-- Legend styling rule: every text run inside a `legend` block is wrapped in `<color:#404040>`. PlantUML's default black outweighs the borders and arrow labels the legend annotates, making a footnote the highest-contrast object on the canvas
+- Legend styling rule — three skinparams on every legend: `LegendFontColor #404040` (PlantUML's default black outweighs the borders and arrow labels the legend annotates, making a footnote the highest-contrast object on the canvas), `legendBorderColor transparent` (drops the black frame, the heaviest stroke on most diagrams), and `legendBackgroundColor #EEEEEE` (keeps the panel distinct once the frame is gone, lighter than the default `#DDD`)
 - Guidance on pairing legend text with `<back:#XXXXXX>   </back>` swatches when the legend maps colors to categories, plus a worked component-diagram example
-- Acceptance tests for legend styling (section 14), covering color-coded legends, the sequence ACK legend, and legends on limited-color diagram types
+- Legend padding recipe: four-space indentation plus `<size:6> </size>` bracket lines, with the two traps documented — global `skinparam Padding` inflates every element on the diagram, and `&nbsp;` renders literally as text
+- Acceptance tests for legend styling (section 14), covering color-coded legends, the sequence ACK legend, legends on limited-color diagram types, and padding side effects
 
 ### Changed
+- Palette fills darkened: each is now its border color blended 18% toward the pastel, keeping both halves of a pair in the same hue family. The previous fills (luma 236–248) were too close to white and to the `#EEEEEE` legend background to read as distinct blocks
 - `references/styling.md` — legend guidance moved out of the Color Coding section into a `## Legend` section of its own, since it now covers more than color legends
-- Both legend examples in `references/sequence.md` updated to the wrapped form
+- Both legend examples in `references/sequence.md` updated to the skinparam form; the Mixed Sync/Async example's participant fill moved to the darkened palette
 
 ## [1.11.0] - 2026-09-07
 

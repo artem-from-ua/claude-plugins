@@ -22,9 +22,9 @@ Sequence diagrams use their own skinparam — `ArrowThickness` has no effect the
 @startuml
 title Release Flow
 skinparam ArrowThickness 1.5
-skinparam ActivityBackgroundColor #E8F4FD
+skinparam ActivityBackgroundColor #CFE4F6
 skinparam ActivityBorderColor #5B9BD5
-skinparam ActivityDiamondBackgroundColor #FFF8E1
+skinparam ActivityDiamondBackgroundColor #FDEDC4
 skinparam ActivityDiamondBorderColor #F4B942
 
 start
@@ -41,7 +41,7 @@ stop
 @enduml
 ```
 
-![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/VP31QeD048Rl-nG3lPY3XHG3YJaaLREGGscnVO55HnrST-ticjItxrPw23Jq-l_VV33_qNd5VXgqyEGrGeaQbKEGsbw5wycCYjK0pyps-j5HrHjq3jQFczkoydGXFsUgwbksawbpgot3msah4rdS8otNoB_K9jjbnJrVGMgmflwZbL9kJ-j_3cxjCibsoPCGovyYVHtHm5kv5zH0b9-XPKHpM87lGXxDw5O28CscOOGBiYDhzZ_12tAB4CVkSrAksmlKOQF8s8MMz0MD8ZqnkeKkCUR9G7uEeAcf4UdxR2hGjb8Q1aN1wRmTnJ6qOVfl)
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/VP31QeD048Rl-nG3lPY3XHPJY1wIgbd8eRJOli2YemwkktPsJUhRToiz11fw_VzlFfZ_uBnYFuzQUF8QeKADoY58RI_23MGcnMg4PsPx-UYf7Wmw1m_ts-kozdGcl-Ig7ZgsisaAgot3NI6FYNowHLfka7-fRRxBork-ajHeJVD7AyjZMIJ_75pRPPBlaaSXrZz5-ZgXWRSg4zH2L9oWOqIptu3lGnujw3O28CtdSO8piYDhif_W1Rb3Y6FtEIlNPm9rs2WoTgKbVK6hIC-CRgKhZ7asK9m2Q1fgHVg-c1gqhPM6KL5mEcydSGXjcFuR)
 
 ## Color Coding
 
@@ -51,12 +51,14 @@ Use color coding to improve diagram readability. Apply a **muted pastel palette*
 
 | Color | Hex | Use for |
 |-------|-----|---------|
-| Soft blue | `#E8F4FD` / `#5B9BD5` | Primary elements, main flow |
-| Soft green | `#E8F5E9` / `#70AD47` | Success paths, approved states |
-| Soft red | `#FDE8E8` / `#E74C3C` | Error paths, rejected states |
-| Soft yellow | `#FFF8E1` / `#F4B942` | Warnings, pending states |
-| Soft purple | `#F3E8FD` / `#9B59B6` | External systems, third-party |
-| Soft gray | `#F5F5F5` / `#95A5A6` | Inactive, deprecated |
+| Soft blue | `#CFE4F6` / `#5B9BD5` | Primary elements, main flow |
+| Soft green | `#D2E8CC` / `#70AD47` | Success paths, approved states |
+| Soft red | `#F9CCC9` / `#E74C3C` | Error paths, rejected states |
+| Soft yellow | `#FDEDC4` / `#F4B942` | Warnings, pending states |
+| Soft purple | `#E3CEF0` / `#9B59B6` | External systems, third-party |
+| Soft gray | `#E4E7E7` / `#95A5A6` | Inactive, deprecated |
+
+Each fill is its border color blended 18% into white-ish pastel, so the two halves of a pair stay in the same hue family. The fills are deliberately darker than a plain pastel: against the `#EEEEEE` legend background (and on white), a fill any lighter stops reading as a distinct block and legend swatches lose their edge.
 
 **Color support by diagram type:**
 
@@ -77,38 +79,55 @@ Use color coding to improve diagram readability. Apply a **muted pastel palette*
 - Diagram has 5+ elements with distinct color-coded roles
 - Arrow styles carry a convention the diagram does not spell out (see `references/sequence.md` for ACK suppression)
 
-**Wrap every text run in `<color:#404040>`.** PlantUML renders legend text in pure black, which outweighs the diagram it annotates: element borders and arrow labels are drawn in subtler tones, so the legend — a footnote by intent — becomes the highest-contrast object on the canvas and pulls the eye away from the flow. Dark grey stays fully readable while giving the legend the visual weight of a caption.
+Every legend gets these three skinparams:
+
+```
+skinparam legendBackgroundColor #EEEEEE
+skinparam legendBorderColor transparent
+skinparam LegendFontColor #404040
+```
+
+**`LegendFontColor #404040`** — PlantUML renders legend text in pure black, which outweighs the diagram it annotates: element borders and arrow labels are drawn in subtler tones, so the legend — a footnote by intent — becomes the highest-contrast object on the canvas and pulls the eye away from the flow. Dark grey stays fully readable while giving the legend the visual weight of a caption. Set it as a skinparam rather than wrapping each line in `<color:#404040>`: one declaration covers the whole block, and a line added later cannot be forgotten. `#404040` is the standard value — lighter (`#808080` and up) is hard to read at small render sizes, darker defeats the point.
+
+**`legendBorderColor transparent`** — drops the black 1px frame. The frame is the heaviest stroke on most diagrams, heavier than the element borders it sits next to. Note that `LegendBorderThickness 0` does *not* remove it; only a transparent border color does.
+
+**`legendBackgroundColor #EEEEEE`** — keeps the panel readable as a distinct block once the frame is gone, but lighter than PlantUML's default `#DDD`. Do not push it to `#F5F5F5` or lighter: the palette's own soft-gray swatch would disappear into it.
 
 Pair the text with `<back:#XXXXXX>   </back>` swatches (three spaces) when the legend maps colors to categories — the swatch shows the actual fill, so the reader matches it to the diagram without a color name in between.
+
+**Padding.** PlantUML has no legend-specific padding skinparam. Indent the content lines by four spaces and bracket the block with `<size:6> </size>` lines — that buys a left inset and vertical breathing room without touching anything else. Do not reach for the global `skinparam Padding`: it inflates every element on the diagram, not just the legend. Do not use `&nbsp;` either — PlantUML renders it literally, as the text `&nbsp;`.
 
 ```plantuml
 @startuml
 title Ingest Pipeline — Stage Categories
 skinparam ArrowThickness 1.5
-skinparam ComponentBackgroundColor #E8F4FD
+skinparam ComponentBackgroundColor #CFE4F6
 skinparam ComponentBorderColor #5B9BD5
+skinparam legendBackgroundColor #EEEEEE
+skinparam legendBorderColor transparent
+skinparam LegendFontColor #404040
 
-[Uploader] as up #E8F4FD
-[Transcoder] as tr #FFF8E1
-[Classifier] as cl #F3E8FD
-[Archive] as ar #F5F5F5
+[Uploader] as up #CFE4F6
+[Transcoder] as tr #FDEDC4
+[Classifier] as cl #E3CEF0
+[Archive] as ar #E4E7E7
 
 up --> tr
 tr --> cl
 cl --> ar
 
 legend right
-  <color:#404040>**Box fill** (stage category):</color>
-  <back:#E8F4FD>   </back> <color:#404040>in-process step</color>
-  <back:#FFF8E1>   </back> <color:#404040>external binary</color>
-  <back:#F3E8FD>   </back> <color:#404040>AI model</color>
-  <back:#F5F5F5>   </back> <color:#404040>storage</color>
+  <size:6> </size>
+    **Box fill** (stage category):
+    <back:#CFE4F6>   </back> in-process step
+    <back:#FDEDC4>   </back> external binary
+    <back:#E3CEF0>   </back> AI model
+    <back:#E4E7E7>   </back> storage
+  <size:6> </size>
 end legend
 @enduml
 ```
 
-![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/VPB1QW8n48RlUOe1B-s2jL8NhCYYkxhWhL1xaXvY7DTWDWcJsEgj3z4dx9CqMQsKLYGGmipy7yb7HivpyhjQCI-zGfZf2fs79sbHIOtmzV49pvvN20NtM1cIw9ZRIcqvyHh6HEPzlf5Ygz4vwDwblvg5gQtHg7tEnROYizEhmYX3q9hsoruvkJXgQ8Lq6alpntoIChPuiShmK7y5xc1dpu35dBXsmloqV0YLPTcVTjcYKDmvkPQdbb2XzH1o8JKciP5lsDHvZAHnCHR8xNOMA2o0uaae5dBnn8anXHNg5P2iDfu134MyvQ3LkuyhIvBSx64jbKeIk76DCt5qThWT33lDT1Ppow1ZS7f21g7GYPNiBr3gjYKZebVdqVud75zwXO1xZwIvWgNKd0uN28sGAuJn3EfWLrs8DiwkH9qt51oSar7TqI0RXIrykMy0)
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/RPBFQi904CRl-nG3lRI2rLB_K96WYGa8FHHgJw67DOvnSTqDiskhFVKX-eHzakucjcpH1C8myvjlvzl9n5XETh-Jp0eh4UQgH6FXILGeXKBu_lo2PyjBX8HRB3K9DCniXQeuyHrCYVJxOYEAhK9ZuEws7nGJlQkqGcLZNcnBqdkrIhJK15T9blQomKLKqmhfXFNZXtWMAaeiKQtEvDBwEUS2BKjS6LTqHmJSOyrbMjcJKg_hNyRobqfgxhfVWHlOLtyZvmilLEZVadLDsIoT9JsM9v8R8zRYL2gac-m-IRCkowTKRCGRrddk9-wbmtJ8c5DkjoEdmfoGZmh9N9-FE37M-00IvSOoWB4H7pWQH33k-2XoAO1MAzO7M0ifMosuDlMkYcPNnvjHZOoNxiP69mkHJtHy9WAXsXNfmg_EMAn2k34LmdYmI8fBM0h5wHZ2ZSqGdivXvov9_gDgqo5bh2OtxoLhtdTZdqtSn_sXFm00)
 
-`#404040` is the standard value. Going lighter (`#808080` and up) makes the legend hard to read at small render sizes; going darker defeats the point.
-
-Legend styling is markup inside the block, not a skinparam — it works on every diagram type that supports `legend` at all, including those the color table above marks 🟡 Limited.
+`legendBackgroundColor` and `legendBorderColor` are not in PlantUML's published skinparam list, but both work on the current server; `LegendFontColor` is documented. All three are skinparams, so they apply on every diagram type that supports `legend`, including those the color table above marks 🟡 Limited.
