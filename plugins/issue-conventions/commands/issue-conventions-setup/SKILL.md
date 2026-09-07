@@ -3,8 +3,8 @@ name: issue-conventions-setup
 description: >
   Interactive setup wizard for a GitHub issue label and title taxonomy. Scans the repo
   for module and topic candidates, interviews you on axes, dictionaries, colors, and
-  mandatory rules, maps legacy labels, writes a taxonomy document to your repo, drafts
-  an ADR, and creates the labels on GitHub.
+  mandatory rules, maps legacy labels, writes a taxonomy document to your repo, and
+  creates the labels on GitHub.
   Keywords: issue conventions setup, label taxonomy, configure labels, github labels,
   issue titles, taxonomy design.
 ---
@@ -57,9 +57,11 @@ Render it per `${CLAUDE_PLUGIN_ROOT}/templates/document-schema.md`, using real i
 
 If the project's `CLAUDE.md` has a label section, show it and ask permission to cut it. **Never write anything to CLAUDE.md automatically.**
 
-### 9. Draft the ADR
+### 9. Record the decision, if the project keeps ADRs
 
-Per `${SKILL_DIR}/references/adr-template.md`: `status: draft`, a named gate, filled Context and Decision, alternatives seeded from the interview, and `TODO` markers where post-application experience belongs. If an ADR about the taxonomy already exists, propose superseding it rather than adding a second. If there is no `docs/adr/`, ask whether to start the practice. Promoting draft → accepted is the user's call, after seeing the labels on a real backlog.
+Only when `docs/adr/` already exists. Per `${SKILL_DIR}/references/adr-template.md`, the record says one thing: the taxonomy now lives at `<path>`, maintained by this plugin. **Not** the axes, dictionaries, colors, or rules — those are in the document, and an ADR that copies them starts drifting from it immediately.
+
+If no `docs/adr/` exists, ask whether to start the practice; a project without ADRs is not missing anything the taxonomy needs.
 
 ### 10. Create the labels
 

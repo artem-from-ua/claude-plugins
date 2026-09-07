@@ -152,7 +152,7 @@ Policy: **delete**. Exceptions kept: none.
 | | |
 |---|---|
 | Config | `.claude-plugin/issue-conventions.json` |
-| Plugin | `issue-conventions` v0.4.0 |
+| Plugin | `issue-conventions` v0.4.1 |
 | Last synced with GitHub | YYYY-MM-DD |
 <!-- /issue-conventions:managed -->
 ````
