@@ -6,7 +6,7 @@
 Your issue tracker has labels nobody agrees on: the ones in heavy use narrow nothing, and the rest nobody ever applied. This designs a taxonomy from what you actually work on, writes it down, and applies it to every issue you already have.
 
 > [!NOTE]
-> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [⚡ Commands](#commands) · [⚙️ Setup](#setup) · [📝 Config](#config) · [📚 Reference](#reference) · [🔗 Dependencies](#dependencies)
+> [⚡ How it works](#how-it-works) · [📦 Installation](#installation) · [🤖 Commands](#commands) · [⚙️ Setup](#setup) · [📝 Config](#config) · [🔗 Dependencies](#dependencies)
 
 ## 🎬 Demo <a name="demo"></a>
 
@@ -47,11 +47,11 @@ Apply batch 1? [y/n/edit]
 
 None of those three ended up as `type:docs`, though every title says documentation. The classifier reads the pull request that closed each issue: a title records the symptom someone reported, the diff records the work that answered it.
 
-## ⚙️ How it works <a name="how-it-works"></a>
+## ⚡ How it works <a name="how-it-works"></a>
 
-**Two workflows, in order.**
+**Two primary workflows, in order.**
 
-The first reads every issue in the repository — open and closed alike — and proposes a label taxonomy from what it finds. It mines the recurring subjects, the parts of the product that get filed against, and the existing labels that stopped narrowing anything, then interviews you about the calls it cannot make alone and writes the result as a document in your repo ([example](../../docs/issue-labels.md)). The GitHub labels are created from that document.
+The first reads every issue in the repository — open and closed alike — and proposes a label taxonomy from what it finds. It mines the recurring subjects, the parts of the product that get filed against, and the existing labels that stopped narrowing anything, then interviews you about the calls it cannot make alone and writes the result as a document in your repo (for this repository: the [taxonomy document](../../docs/issue-labels.md) and the [issues it produced](https://github.com/artem-from-ua/claude-plugins/issues)). The GitHub labels are created from that document.
 
 This wants dozens of issues at minimum, and reads best at a hundred or more. Below thirty the plugin says so and lets you continue anyway — with that little history a taxonomy is guessed from the code layout rather than derived from what the maintainers actually do.
 
@@ -64,6 +64,18 @@ The taxonomy lives as a **schema-constrained markdown document in your repositor
 - **A taxonomy is a set of decisions people read and argue about.** JSON is unreadable, and generating a human-facing document from it creates a second source that drifts from the first — the exact failure this plugin exists to catch.
 - **When the document and GitHub disagree, the document wins.** Editing it by hand is a legitimate way to change the taxonomy; the plugin propagates the change to GitHub, never the reverse.
 - **Rules do not sit in your `CLAUDE.md`.** A label section there loads into every session, including the majority that never touch issues.
+
+### Color carries the axis
+
+GitHub assigns a random color to every label you create, so a mature tracker looks like confetti: nothing about the color tells you anything, and two labels that mean unrelated things can end up the same shade.
+
+The plugin assigns **one color per axis** instead, and writes the choice into the document alongside the label. The prefix already says which axis a label belongs to; the color says it at a glance, without reading. An issue carrying blue, green and grey chips is showing you three different kinds of fact about itself.
+
+Two deliberate exceptions. Priority, where it exists, is the one axis that gets a gradient — there the color carries urgency rather than membership, and the loudest priority shares its red with `type:bug` so the two alarms look alike. And the metadata axes (`by:*`, `reason:*`, and `type:*` apart from bugs) all sit on the same grey, because provenance and closing reasons should not compete for attention with what an issue is about.
+
+The palette is proposed, not imposed: setup shows it on three real issues from your repo before creating anything, since a shade that looks distinct in a swatch can be indistinguishable next to its neighbour on a real multi-label issue.
+
+### What reaches your session
 
 The skill is a **dispatcher**: about fifty lines of routing that decide which subagent handles what. The rules and the issue bodies stay in the subagent, so neither reaches your session context. A conditional `SessionStart` hook adds a short block — where the taxonomy lives, when to invoke the skill, how to check for drift — and only in repositories that have one configured, costing nothing everywhere else. Its text is fixed rather than computed, so it does not invalidate the prompt cache on every session start.
 
@@ -86,7 +98,7 @@ GitHub labels                 ← derived state, synced to the document
 /plugin install issue-conventions@artem-from-ua
 ```
 
-## ⚡ Commands <a name="commands"></a>
+## 🤖 Commands <a name="commands"></a>
 
 | Command | What it does |
 |---|---|
@@ -143,12 +155,6 @@ Resolution order: `.claude-plugin/issue-conventions.json` → `.claude/issue-con
 Unknown sections and unknown columns are ignored rather than rejected, so a document can use syntax the installed version does not know yet. Verified on a real document: a `## Rule exceptions` section added before upgrading parsed cleanly under the older parser — no warning, no error, all axes and labels intact — and started taking effect once the plugin caught up.
 
 This is worth knowing because the intuition runs the other way. There is no ordering requirement between updating the plugin and updating the document: add the section whenever it is convenient.
-
-## 📚 Reference <a name="reference"></a>
-
-- [`docs/ACCEPTANCE_TESTS.md`](docs/ACCEPTANCE_TESTS.md) — test suite, plus what three live migrations taught: which checks earned their place, which one was written and abandoned after measuring it, and the traps that produce a confident wrong answer instead of an error.
-
-Three test scripts run without network or credentials, on synthetic fixtures: `test-drift-jq.sh` pins the semantics of the drift expressions, `test-pr-evidence.sh` pins which pull request counts as evidence, and `test-scale.sh` guards the batch size against a dump large enough to break it.
 
 ## 🔗 Dependencies <a name="dependencies"></a>
 
