@@ -36,6 +36,8 @@ Report these as they are — no re-derivation:
 
 If `adrStatus` is absent, no ADR is configured and there is nothing to compare against.
 
+**Only the taxonomy's own ADR is read, never the directory.** This check asks whether the taxonomy agrees with the record that decided it — not whether the project's ADR corpus is healthy. A repo may hold a hundred other ADRs; none of them are about labels, so none are relevant here regardless of how cheap they would be to read.
+
 Demanding another fix would be wrong twice over: the work is done, and editing the numbers in place would violate the immutability convention the successor itself records. An ADR is a decision as it was made, not a mirror of current state.
 
 **Why the script decides this and not you.** The three signals are deterministic — `status: superseded`, a non-empty `superseded_by`, or the number and title struck through in the index — so they live in `adr-status.sh`, where a test can pin them. Prose in this file cannot be regression-tested: reword a paragraph and the behavior changes while every test stays green.
