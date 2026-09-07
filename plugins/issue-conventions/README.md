@@ -1,31 +1,79 @@
 # issue-conventions
 
 > [!TIP]
-> ✨ ***Design the taxonomy once. Keep it honest forever.***
+> ✨ ***Issue labels rot quietly. So do the docs that describe them.***
 
-Designs an issue label and title taxonomy for your repository, writes it as a document in your repo, applies it to the existing backlog, and detects when the document and the GitHub labels drift apart. Recommended once a project has around 30 issues — before that there is not enough material to see what the maintainers actually work on.
+Your issue tracker has labels nobody agrees on: the ones in heavy use narrow nothing, and the rest nobody ever applied. This designs a taxonomy from what you actually work on, writes it down, and applies it to every issue you already have.
 
 > [!NOTE]
-> [📦 Installation](#installation) · [⚙️ How it works](#how-it-works) · [⚡ Commands](#commands) · [⚙️ Setup](#setup) · [📝 Config](#config) · [🔗 Dependencies](#dependencies)
+> [📦 Installation](#installation) · [⚡ How it works](#how-it-works) · [🤖 Commands](#commands) · [⚙️ Setup](#setup) · [📝 Config](#config) · [🔗 Dependencies](#dependencies)
 
 ## 🎬 Demo <a name="demo"></a>
 
+**Designing the taxonomy** — reads the issues, proposes the axes, asks you to settle the rest:
+
 ```markdown
-> /issue-conventions-drift
+> /issue-conventions-setup
 
-Drift check — 3 findings · source of truth: docs/issue-labels.md
+Scanned 152 issues (77 closed, 75 open) and 16 labels.
 
-DOCUMENT ↔ GITHUB
-- `dependencies`, `python:uv` exist on GitHub but not in the document (Dependabot created them).
-  Fix: add them under "Legacy label mapping" as `keep`, or delete them from GitHub.
-- 3 issues have no priority label — #201, #244, #289. Fix: /issue-conventions-relabel
+[a short interview: which axes describe your work — the parts of the product,
+ the kinds of change, the urgency — offered as candidates mined from the scan,
+ plus the ambiguous issues it wants you to settle once so it stops asking]
 
-INFO
-- Soft limit is 5; median labels per issue is 4. Healthy — no action.
-- 5 declared values are unused (3 stages, 2 closing reasons). Expected, not a defect.
+⏺ Wrote issue taxonomy proposal to docs/issue-labels.md · created 38 labels · deleted 9 GitHub built-ins
 ```
 
-## ⚙️ How it works <a name="how-it-works"></a>
+**Applying it to the backlog** — proposes, you review, then it applies:
+
+```markdown
+> /issue-conventions-relabel
+
+Classified 152 issues in 9 batches. Review at /tmp/relabel-review.md.
+
+Batch 1 of 9
+
+  #285  "Fix 2 broken documentation links"
+          documentation, kb-grooming-report  →  type:bug, plugin:kb-grooming, by:kb-grooming
+
+  #293  "Fix root README nav line"
+          documentation, kb-grooming-report  →  type:feature, plugin:playbook, preset:readme, by:kb-grooming
+
+  #149  "docs: extract CLAUDE.md reference material into docs/"
+          enhancement  →  type:feature, plugin:playbook
+
+Apply batch 1? [y/n/edit]
+```
+
+None of those three ended up as `type:docs`, though every title says documentation. The classifier reads the pull request that closed each issue: a title records the symptom someone reported, the diff records the work that answered it.
+
+### Live example
+
+This repository was labelled by the plugin itself — 152 issues, 16 ad-hoc labels replaced by 38 across five axes. Everything below is what the two commands produced, unedited afterwards:
+
+- [`docs/issue-labels.md`](../../docs/issue-labels.md) — the taxonomy document: axes, dictionaries, colors, disambiguation rules, and the mapping from the old labels
+- [ADR (Architecture Decision Record)](../../docs/adr/0001-issue-taxonomy-lives-in-a-versioned-document.md) — the short note a project keeps when it settles something worth not re-arguing. This one records that the taxonomy now lives in a versioned document and which one, so the next reader finds the decision rather than inferring it from the labels
+- [The relabel report to review](https://claude.ai/code/artifact/360f6c4b-eb7f-4bc2-9470-2562e58596f1) — every issue with its labels and title before and after, the way the command presented them for approval
+- [The labelled issues](https://github.com/artem-from-ua/claude-plugins/issues) — the result on the backlog; filter by any prefix to see what the axes buy
+
+## 📦 Installation <a name="installation"></a>
+
+```bash
+/plugin marketplace add artem-from-ua/claude-plugins
+/plugin install issue-conventions@artem-from-ua
+```
+
+## ⚡ How it works <a name="how-it-works"></a>
+
+**Two primary workflows, in order.**
+
+The first reads every issue in the repository — open and closed alike — and proposes a label taxonomy from what it finds. It mines the recurring subjects, the parts of the product that get filed against, and the existing labels that stopped narrowing anything, then interviews you about the calls it cannot make alone and writes the result as a document in your repo. The GitHub labels are created from that document.
+
+This wants dozens of issues at minimum, and reads best at a hundred or more. Below thirty the plugin says so and lets you continue anyway — with that little history a taxonomy is guessed from the code layout rather than derived from what the maintainers actually do.
+
+The second applies the taxonomy to the issues you already have. It classifies all of them, proposes labels and — if you ask for it — retitled subjects, and hands you a review document in batches rather than a fait accompli. When you rewrite a proposal it asks whether that was a one-off or a rule; a rule goes into the document and is re-applied to everything already classified, so each correction is paid for once. Nothing reaches GitHub until you approve it, and the backup written beforehand contains the commands to undo it.
+
+### Where the truth lives
 
 The taxonomy lives as a **schema-constrained markdown document in your repository** — not in a JSON config, and not in `CLAUDE.md`. That choice drives everything else:
 
@@ -33,7 +81,19 @@ The taxonomy lives as a **schema-constrained markdown document in your repositor
 - **When the document and GitHub disagree, the document wins.** Editing it by hand is a legitimate way to change the taxonomy; the plugin propagates the change to GitHub, never the reverse.
 - **Rules do not sit in your `CLAUDE.md`.** A label section there loads into every session, including the majority that never touch issues.
 
-The skill is a **dispatcher**: about fifty lines of routing that decide which subagent handles what. The rules and the issue bodies stay in the subagent, so neither reaches your session context. A conditional `SessionStart` hook prints three lines — and only in repositories that have a taxonomy configured, costing nothing everywhere else.
+### Color carries the axis
+
+GitHub assigns a random color to every label you create, so a mature tracker looks like confetti: nothing about the color tells you anything, and two labels that mean unrelated things can end up the same shade.
+
+The plugin assigns **one color per axis** instead, and writes the choice into the document alongside the label. The prefix already says which axis a label belongs to; the color says it at a glance, without reading. An issue carrying blue, green and grey chips is showing you three different kinds of fact about itself.
+
+Two deliberate exceptions. Priority, where it exists, is the one axis that gets a gradient — there the color carries urgency rather than membership, and the loudest priority shares its red with `type:bug` so the two alarms look alike. And the metadata axes (`by:*`, `reason:*`, and `type:*` apart from bugs) all sit on the same grey, because provenance and closing reasons should not compete for attention with what an issue is about.
+
+The palette is proposed, not imposed: setup shows it on three real issues from your repo before creating anything, since a shade that looks distinct in a swatch can be indistinguishable next to its neighbour on a real multi-label issue.
+
+### What reaches your session
+
+The skill is a **dispatcher**: about fifty lines of routing that decide which subagent handles what. The rules and the issue bodies stay in the subagent, so neither reaches your session context. A conditional `SessionStart` hook adds a short block — where the taxonomy lives, when to invoke the skill, how to check for drift — and only in repositories that have one configured, costing nothing everywhere else. Its text is fixed rather than computed, so it does not invalidate the prompt cache on every session start.
 
 ```
 docs/issue-labels.md          ← source of truth (markdown, in git, read by people and machines)
@@ -47,7 +107,7 @@ skills/issue-conventions-guide/   ← dispatcher: routing only, no rules
 GitHub labels                 ← derived state, synced to the document
 ```
 
-## ⚡ Commands <a name="commands"></a>
+## 🤖 Commands <a name="commands"></a>
 
 | Command | What it does |
 |---|---|
