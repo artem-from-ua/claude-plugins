@@ -162,6 +162,8 @@ After any run that deleted labels, open `ROLLBACK.md` in the backup directory an
 | Drift report full of noise | unused values reported as divergences instead of INFO | `templates/drift-check.md` |
 | Every label reported as drifted | bare `.description` instead of `$l.description` in the `metadataDrift` select | 3.9; cross-check against `label-plan.sh`, which is right when the two disagree |
 | Every value reported as unused | `from_entries` fed `count:` instead of `value:` | 3.9 |
+| Session context bloated after one issue | rules leaked into the dispatcher | 1.10 |
+| Prompt cache missing every session | the hook emits a computed date | 1.12 |
 
 ### State expectations precisely enough to be refuted
 
@@ -198,25 +200,36 @@ A guard comparing against `getconf` can therefore claim the fixture is big enoug
 
 ### Anchor on structure, not on a word that may appear in prose
 
-Four bugs in this plugin have now shared one shape: something was located by guessing at a word instead of keying on structure.
+Three bugs in this plugin have now shared one shape: something was located by guessing at a word instead of keying on structure.
 
 | What was guessed | What it matched instead | Fix |
 |---|---|---|
 | `.description` after a `\|` in jq | the object being iterated, not `$l` | bind the value first |
 | `index(.scope)` after a `\|` | the array, not the object | bind the value first |
 | a table found by a column name containing "scope" | the section's *first* table, whose prose mentions scope | anchor on the bold marker line |
-| an index row matched on "supersede" | the successor row (`supersedes`), not the superseded one | read the strikethrough, not the prose |
 
-The first two are the same jq trap: after a pipe, the dot is the previous result, not where you started. The last two look like carelessness about structure, but the second polygon put the cause better, and the better statement is the useful one:
+The first two are the same jq trap: after a pipe, the dot is the previous result, not where you started. The last one looks like carelessness about structure, but the second polygon put the cause better, and the better statement is the useful one:
 
 **A grep for a line *is* a structural check — until someone writes prose about that line.** `grep 'gh issue list'` was a perfectly good check the day it was written. It broke when `fetch-issues.sh` gained a comment explaining why that command is *not* used. The most conscientiously documented file defeats the simplest check, and it does so by being improved rather than by being broken.
 
 So the practical rule is not "use structure" — it is: **a check that reads a file must be re-read whenever that file gains a substantive comment.** Refactors are not the risky moment; explanations are. Where the check can be made immune cheaply, do that instead — `^[^#]*` for a call rather than a mention, an anchored marker line rather than a column name, a bound variable rather than a bare dot.
 
-**The fourth one had to be fixed twice**, which is the most instructive part. The first attempt narrowed the match from "supersede" to "superseded by" — correct on today's data, and it would have held for a while: 5 rows of 37 say `supersedes`, so the naive version returned 10 instead of 5, while the narrowed one returned exactly the right 5.
+### A check goes stale silently
 
-But the Status cell is prose, and prose has no contract. A successor row phrased "accepted (0029 superseded by this record)" reads perfectly naturally and defeats the narrowed match too. The strikethrough on the number and title does not have that failure mode: it says something about *the record*, not about a relationship, and it cannot be reworded into meaning the opposite.
+Widen the last rule and it covers most of what this plugin got wrong. The expensive findings here were not bugs in code — they were claims that looked verified and had quietly stopped being true:
 
-So the split is: **structure answers whether, prose answers by whom.** Read the strikethrough to decide the record was replaced, then read the Status cell for the successor's number. Getting a right answer from the wrong kind of signal is the thing to notice — it works until someone writes a sentence nobody anticipated.
-| Session context bloated after one issue | rules leaked into the dispatcher | 1.10 |
-| Prompt cache missing every session | the hook emits a computed date | 1.12 |
+| The claim | What changed under it |
+|---|---|
+| `adr-status.sh` is exercised against 130 real ADRs | it never read them; the number described the repo, not the test |
+| this finding came from the second polygon | true while there was only one polygon to confuse it with |
+| `grep 'gh issue list'` finds the call | the file gained a comment explaining why that call is *not* used |
+| the axis table under Decision is what was decided | a second document appeared holding the same table |
+
+None was wrong when written. All four spoiled because conditions moved around them, and that is why they survived: **a failing test announces itself, while a stale claim keeps looking right.** Attention does not catch this class — only a trigger to go re-read does. Three have earned their place so far:
+
+- a file a check reads gains a substantive comment;
+- a second instance appears where the claim assumed one (a second polygon, a second caller);
+- a second document starts describing the same subject — after which every "this is already covered elsewhere" needs checking, in both directions.
+
+The third is the one this plugin paid most for: the ADR template and the taxonomy document both described the axes, and the duplication was invisible from inside either file.
+
