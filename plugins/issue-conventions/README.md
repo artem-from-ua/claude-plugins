@@ -10,20 +10,51 @@ Your issue tracker has labels nobody agrees on: the ones in heavy use narrow not
 
 ## 🎬 Demo <a name="demo"></a>
 
+**Designing the taxonomy** — reads the issues, then asks only what it cannot decide:
+
 ```markdown
-> /issue-conventions-drift
+> /issue-conventions-setup
 
-Drift check — 3 findings · source of truth: docs/issue-labels.md
+Scanned 157 issues (84 closed, 73 open) and 16 labels.
 
-DOCUMENT ↔ GITHUB
-- `dependencies`, `python:uv` exist on GitHub but not in the document (Dependabot created them).
-  Fix: add them under "Legacy label mapping" as `keep`, or delete them from GitHub.
-- 3 issues have no priority label — #201, #244, #289. Fix: /issue-conventions-relabel
+What I found:
+- `plugins/` has 13 directories, every one of them with issues — a structural axis
+- 4 title prefixes already in use: spike:, epic:, research:, idea:
+- `enhancement` is on 51 issues and `documentation` on 49 — half the backlog each
 
-INFO
-- Soft limit is 5; median labels per issue is 4. Healthy — no action.
-- 5 declared values are unused (3 stages, 2 closing reasons). Expected, not a defect.
+Two questions I can't answer for you:
+
+1. What should the structural axis be called?  [plugin:]  layer:  component:
+2. An issue about a plugin's ACCEPTANCE_TESTS.md — is that `type:test`
+   or `type:docs`? Both descriptions accept it as written.
+   → type:test  → type:docs  → narrow one of the two
+
+Your answer to 2 becomes a disambiguation rule, so I stop asking.
+
+Wrote docs/issue-labels.md · created 38 labels · deleted 9 GitHub built-ins
 ```
+
+**Applying it to the backlog** — proposes, you review, then it applies:
+
+```markdown
+> /issue-conventions-relabel
+
+Classified 157 issues in 9 batches. Review at /tmp/relabel-review.md.
+
+⚠️ Needs your decision (4)
+  #100  root cause is upstream, but the fix landed in plugins/retroscope/
+        → plugin:retroscope   → no plugin value
+
+Batch 1 of 9                                     current → proposed
+  #285  Fix 2 broken documentation links      documentation → type:bug
+        └ PR #292 changed kb-structural-scan.sh (+61/-5) — a scanner fix
+  #293  Fix root README nav line              documentation → type:feature
+        └ PR #298 changed presets/readme.md — executable preset content
+
+Apply batch 1? [y/n/edit]
+```
+
+Note the two `type:docs` proposals that are not `type:docs`: the title records the symptom, the pull request records the work.
 
 ## ⚙️ How it works <a name="how-it-works"></a>
 
