@@ -213,3 +213,23 @@ The first two are the same jq trap: after a pipe, the dot is the previous result
 **A grep for a line *is* a structural check — until someone writes prose about that line.** `grep 'gh issue list'` was a perfectly good check the day it was written. It broke when `fetch-issues.sh` gained a comment explaining why that command is *not* used. The most conscientiously documented file defeats the simplest check, and it does so by being improved rather than by being broken.
 
 So the practical rule is not "use structure" — it is: **a check that reads a file must be re-read whenever that file gains a substantive comment.** Refactors are not the risky moment; explanations are. Where the check can be made immune cheaply, do that instead — `^[^#]*` for a call rather than a mention, an anchored marker line rather than a column name, a bound variable rather than a bare dot.
+
+### A check goes stale silently
+
+Widen the last rule and it covers most of what this plugin got wrong. The expensive findings here were not bugs in code — they were claims that looked verified and had quietly stopped being true:
+
+| The claim | What changed under it |
+|---|---|
+| `adr-status.sh` is exercised against 130 real ADRs | it never read them; the number described the repo, not the test |
+| this finding came from the second polygon | true while there was only one polygon to confuse it with |
+| `grep 'gh issue list'` finds the call | the file gained a comment explaining why that call is *not* used |
+| the axis table under Decision is what was decided | a second document appeared holding the same table |
+
+None was wrong when written. All four spoiled because conditions moved around them, and that is why they survived: **a failing test announces itself, while a stale claim keeps looking right.** Attention does not catch this class — only a trigger to go re-read does. Three have earned their place so far:
+
+- a file a check reads gains a substantive comment;
+- a second instance appears where the claim assumed one (a second polygon, a second caller);
+- a second document starts describing the same subject — after which every "this is already covered elsewhere" needs checking, in both directions.
+
+The third is the one this plugin paid most for: the ADR template and the taxonomy document both described the axes, and the duplication was invisible from inside either file.
+
