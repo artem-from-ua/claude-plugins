@@ -98,10 +98,10 @@ An ordinary close through a merged PR needs no `reason:*` — the linked PR alre
 - **`type:feature` vs `type:refactor`** — only `type:feature` when a plugin's user can observe the change. Renames and internal restructuring are `type:refactor`.
 - **`type:idea` vs `type:feature`** — `type:idea` while the shape is still open ("preset or plugin?", "should this exist?"). Once the form is decided it becomes `type:feature`.
 - **`type:research` vs `type:perf`** — an investigation is `type:research` even when its subject is performance; `type:perf` is for the change that follows.
-- **Undecided form still gets an address** — #332 proposes worktree-discipline as "preset or plugin" and carries `type:idea` + `plugin:playbook`: the likeliest home is known even though the form is not. No `preset:*` until the preset exists.
+- **A proposal gets no label for the thing it proposes** — `plugin:*` and `preset:*` name what exists on disk, so an issue asking for a *new* plugin or preset carries neither, however clearly it describes one. It still gets the address of whatever existing plugin would host it: #332 and #366 propose new playbook presets and carry `type:idea` + `plugin:playbook`, with no `preset:*`. Once the name is settled, add its value to the dictionary and label the originating issue with it — the block lasts only while the name does not exist.
 - **Documentation issues carry `plugin:*` too** — #304 (heading case in the git-branch-naming README) is `type:docs` + `plugin:git-branch-naming`, so that "everything open on this plugin" stays a complete answer.
 - **Provenance is not a type** — an issue filed by automation gets its own `type:*` on merit. A kb-grooming report umbrella is `type:epic` + `by:kb-grooming`; each derived issue is usually `type:docs` + `by:kb-grooming`.
-- **Repo-level work has no `plugin:*`** — issues about `CLAUDE.md`, `CONTRIBUTING.md`, the root README, `docs/`, or the PR template belong to no single plugin and stay without the axis. Same for proposals of plugins that do not exist on disk yet.
+- **Repo-level work has no `plugin:*`** — issues about `CLAUDE.md`, `CONTRIBUTING.md`, the root README, `docs/`, or the PR template belong to no single plugin and stay without the axis.
 - **`preset:*` implies playbook** — a `preset:*` label always accompanies `plugin:playbook`, never stands alone.
 
 ## Worked examples
