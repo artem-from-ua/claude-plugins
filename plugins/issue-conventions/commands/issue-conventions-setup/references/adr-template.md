@@ -1,22 +1,21 @@
 # ADR draft
 
-The plugin writes roughly 70% of an ADR. The remaining 30% is worth more than the 70%, and no interview can reach it — so the draft stops short and says where.
+The ADR records **one decision: where the taxonomy lives and who maintains it.** Not what is in it.
 
-## Why a draft and not a finished record
+## Why so little
 
-Evidence from the reference project: in ADR 0029's first commit the blue gradient across the pipeline axis was **the decision** ("so label chips echo upstream/downstream"). Thirty minutes later it was a **rejected alternative** ("rejected after first use: multi-stage issues read as visual noise"). That sentence — the most useful one in the ADR — did not exist until the labels were on real issues in the GitHub UI.
+An ADR that reproduces the axis tables has copied the document. Two copies of the same dictionary drift the moment either changes — and then the plugin has to detect that drift, decide which copy wins, and tell a stale number apart from a wrong one. All of that work exists only because the copy was made.
 
-An ADR is immutable by convention: a wrong one is not edited, it is superseded by a whole new record. Auto-emitting `status: accepted` from unvalidated interview answers manufactures permanent records. So the draft ships as `status: draft` with a named gate, and the human promotes it after looking at a labelled backlog.
+The document is the source of truth. The ADR is the record of *choosing* it as such. So it names the file and stops.
 
-## What the plugin fills
+What belongs in the ADR:
 
-| Part | Source |
-|---|---|
-| Number, filename, frontmatter, index row | mechanical — and the part that actually drifts |
-| Context | the label census from `gh` (how many labels exist, how many are used, how many issues are unlabelled) plus the operations that are broken today |
-| Decision | the axis tables and disambiguation rules from the interview |
-| Alternatives considered | every option rejected **during the interview**, with the reason given |
-| Consequences | honest and provisional, with `TODO` markers |
+- The problem: labels were ad hoc, or inconsistent, or absent — with the counts that made it a problem.
+- The decision: a taxonomy now exists, it lives at `<path>`, and it is applied by this plugin.
+- Alternatives rejected during the interview, with reasons — including any that were about *placement* (a section in CONTRIBUTING, a wiki page, labels alone with no document).
+- Consequences: what this enables, what it costs, what has to be maintained.
+
+What does not: axis names, value dictionaries, colors, cardinality rules, disambiguation rules, the title pattern. Every one of those is in the document, one link away, and always current there.
 
 ## Skeleton
 
@@ -24,49 +23,54 @@ An ADR is immutable by convention: a wrong one is not edited, it is superseded b
 ---
 status: draft
 date: YYYY-MM-DD
-gate: promote to accepted after the taxonomy has been applied to the existing backlog
+gate: promote to accepted once the taxonomy has been applied to the backlog
 ---
 
-# NNNN. Issue label and title taxonomy
+# NNNN. Issue taxonomy lives in a versioned document
 
 ## Context
 
-<Label census: N labels exist, M ever used, K of L issues unlabelled. Which operations
-this breaks — filtering by component, sorting a backlog by urgency, searching closed
-issues. Project constraints: team size, who applies labels (humans, AI assistants, or
-automation), one-time cost of relabelling.>
+<What was wrong: N labels, M ever used, K of L issues unlabelled; which operations
+that broke — filtering by component, sorting by urgency, searching closed issues.
+Who applies labels: humans, AI assistants, automation. Why an informal convention
+was not enough.>
 
 ## Decision
 
-<The axis table. The dictionaries. The prefix choice and why. The color scheme and why
-one color per axis. The mandatory rules. The disambiguation rules that were settled
-during the interview. What is explicitly out of scope and why.>
+The issue label and title taxonomy is defined in [`<path>`](<path>), maintained by
+the `issue-conventions` plugin.
+
+That document is the single source of truth. When it and the GitHub labels
+disagree, the document wins; the plugin propagates the change to GitHub, never the
+reverse. Editing it by hand is a legitimate way to change the taxonomy — the
+commands exist to keep the labels in step, not to hold a monopoly on the rules.
 
 ## Alternatives considered
 
-<Every option rejected during the interview, each with its reason. An unnamed cost reads
-as one nobody noticed.>
+<Options rejected during the interview, each with its reason. Placement choices
+belong here: a section in an existing conventions file, a wiki page, GitHub label
+descriptions alone. So do process choices: no taxonomy, or one enforced only by
+review.>
 
 ## Consequences
 
-**Positive:** <what now works: one-command filtering, release-blocking backlog visible
-at a glance, AI assistants have a single source of truth.>
+**Positive:** <one command filters the backlog by component; release-blocking work
+is visible at a glance; AI assistants read the rules from one place.>
 
-**Negative:** <the honest costs. A mandatory priority forces a choice on every issue;
-the cure — defaulting to medium — risks the axis losing meaning if everything lands there.>
+**Negative:** <the document is one more artifact to keep current; a label created
+in the GitHub UI is drift until someone runs the check.>
 
-TODO after applying to the backlog:
-- Color legibility on real multi-label issues — which shades blurred, if any.
-- Values that turned out to fit awkwardly, and the rules added because of them.
-- Actual migration cost against the estimate.
+TODO once applied to the backlog:
+- Whether the palette stays legible on real multi-label issues.
+- Values that fitted awkwardly and the rules added because of them.
 ```
 
 ## Index row and supersession
 
-If `docs/adr/README.md` exists, add the row in its existing format. If an ADR about the label taxonomy is already there, do **not** write a second one: propose superseding it, set `superseded_by` on the old record, add a one-line postscript at its top pointing at the replacement, and strike through both the number and the title link in the index table — leaving the Status cell readable.
+If `docs/adr/README.md` exists, add a row in its existing format.
 
-If the project has no `docs/adr/`, ask whether to start the practice rather than creating the directory unasked.
+If an ADR about the taxonomy is already there, do **not** write a second one. Propose superseding it: set `superseded_by` on the old record, add a one-line postscript at its top pointing at the replacement, and strike through both the number and the title link in the index — leaving the Status cell readable.
 
-**Point the config at the successor, not the superseded record.** After writing a superseding ADR, update `adr` in `.claude-plugin/issue-conventions.json` to the new file. A config still naming the old one makes every tool that reads that field quote numbers the ADR itself has disowned — and the drift check will keep comparing the document against a record that was deliberately retired.
+Point `adr` in `.claude-plugin/issue-conventions.json` at the **current** record. A config still naming a superseded one makes every tool that reads that field quote a retired decision.
 
-**Extend the postscript, do not edit the numbers.** Stale figures usually live in the superseded ADR's Decision tables, *above* wherever a postscript at the top would sit — so a reader arriving from search sees "7 values" with no indication it is historical. Say in the postscript which specific claims are now wrong and what replaced them. The numbers in the body stay untouched: an ADR records a decision as it was made, not current state.
+If the project has no `docs/adr/`, ask whether to start the practice rather than creating the directory unasked. A project without ADRs is not missing anything the taxonomy needs — the document works alone.

@@ -97,12 +97,7 @@ Tolerant — each must exit **zero**:
 | 3.7 | `inject-rules.sh` without a config | zero output, exit 0 |
 | 3.8 | `inject-rules.sh` twice in a row with a config | byte-identical output (determinism) |
 | 3.9 | `test-drift-jq.sh` | 12 tests pass — pins the semantics of the jq expressions in `drift-check.sh` |
-| 3.10 | `test-adr-status.sh` | 6 tests pass — supersession decided by script from three signals, on fixtures copied from the reference project |
-| 3.11 | `test-index-rows.sh` | 8 tests pass — supersession is read from the strikethrough (structure), the successor number from the Status cell (prose) |
-| 3.12 | `test-scale.sh` | 5 tests pass — a synthetic 500-issue dump; asserts the old form still fails with the exact error, so a stale fixture announces itself |
-| 3.13 | `test-adr-state.sh` | 3 tests pass — "no ADR configured" and "configured but the file is gone" are distinct states, so a broken config cannot read as a clean one |
-
-**On 3.10.** Supersession detection lived in the subagent template until 0.2.4 — deterministic logic expressed as prose the model had to re-derive each run. The first polygon pointed out the consequence: the tests pinned a bash implementation that shipped nowhere, so rewording a paragraph would change behavior while every test stayed green. The three signals now live in `adr-status.sh`, which the drift check calls and the subagent reads. The template keeps the judgment (what a divergence *means*) and hands over the fact.
+| 3.10 | `test-scale.sh` | 5 tests pass — a synthetic 500-issue dump; asserts the old form still fails with the exact error, so a stale fixture announces itself |
 
 **On 3.9.** Two bugs shipped in 0.1.0 and were caught on the first polygon: `from_entries` fed `{key, count}` instead of `{key, value}` (so every declared value looked unused — 36 of 36, burying the five real ones), and a bare `.description` where `$l.description` was meant (so every label looked drifted, while `label-plan.sh` correctly reported zero updates on the same data). Both are the same shape: jq stayed silent and returned plausible output, so `bash -n` could not catch them. These tests pin behavior rather than syntax.
 
@@ -137,7 +132,7 @@ The check that most easily produces false positives is modules-without-an-axis. 
 Ordered deliberately: prove the plugin does not manufacture work before letting it mutate anything.
 
 1. **A repository whose taxonomy is already correct** — dry run. Expected: zero rule violations, and only the drift findings known in advance. A finding beyond that list is a false positive to fix before proceeding.
-2. **The same repository, migrated** — move the taxonomy out of `CLAUDE.md` into a document, cut the section (with permission), supersede the ADR rather than editing it.
+2. **The same repository, migrated** — move the taxonomy out of `CLAUDE.md` into a document, cut the section (with permission).
 3. **The largest backlog** — first live relabel. Exercises pagination, rate limiting, batch pacing, and all five legacy-mapping actions.
 4. **This repository** — the built-in labels policy and the absorption case (a flat `plugin` label disappearing into `plugin:<name>`).
 
@@ -170,9 +165,9 @@ After any run that deleted labels, open `ROLLBACK.md` in the backup directory an
 
 ### State expectations precisely enough to be refuted
 
-Before the second polygon ran, this guide said its ADR corpus would be "the largest exercise of `adr-status.sh` in the cycle". The session checked, and found the script reads only the paths named in the config — it never scans a directory. The exercise could not have happened at all.
+Before the second polygon ran, this guide predicted a specific check would get "the largest exercise in the cycle" there. The session went to look, and found the code path could not run at all on that repository — the exercise was impossible, not merely untested.
 
-What made that findable was the specificity. A vague "ADRs are covered too" would have passed unexamined; a claim with a number in it invites someone to go count. The same holds for every expectation written down here: the ones phrased loosely enough to always be true are the ones that never get checked.
+What made that findable was the specificity. A vague "it is covered too" would have passed unexamined; a claim with a number in it invites someone to go count. The same holds for every expectation written down here: the ones phrased loosely enough to always be true are the ones that never get checked.
 
 So when recording what a run should produce, prefer the form that can fail — an exact count, a named file, a specific error string. It costs nothing when right and saves a cycle when wrong.
 
@@ -189,7 +184,7 @@ That is not bad luck. A plugin gets exercised on its author's repository during 
 
 `test-scale.sh` is the answer: a synthetic 500-issue, ~2.4 MB dump, deliberately larger than any repo here.
 
-**Name the polygon a finding came from, and name the right one.** Every lesson here is reproducible only against the repository that produced it: the first polygon has a Dependabot integration and a corpus of partially superseded ADRs, the second has neither but does have 210 issues and a flat Swift package. Attributing a finding to the wrong run sends the next reader looking for conditions that are not there — and a lesson nobody can reproduce is indistinguishable from one nobody checked. "One of the polygons" is better than a confident wrong name.
+**Name the polygon a finding came from, and name the right one.** Every lesson here is reproducible only against the repository that produced it: the first polygon has a Dependabot integration and a pipeline-shaped package, the second has 210 issues and a flat Swift package with no structure to mine. Attributing a finding to the wrong run sends the next reader looking for conditions that are not there — and a lesson nobody can reproduce is indistinguishable from one nobody checked. "One of the polygons" is better than a confident wrong name.
 
 **The moment to re-read old entries is when a second polygon appears.** While there is one, "on the polygon" is unambiguous and correct. Adding the second devalues every such phrase written before it — not because anyone erred, but because the conditions around the statement changed. Same mechanism as a `grep` that stops being structural once the file gains prose about the line it matches: the check did not rot, its surroundings moved.
 

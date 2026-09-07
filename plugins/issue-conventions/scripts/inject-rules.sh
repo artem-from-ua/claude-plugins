@@ -39,5 +39,5 @@ This repository has an issue taxonomy: \`$DOC\`${SYNCED:+ (last synced with GitH
 
 **ALWAYS invoke the \`issue-conventions-guide\` skill BEFORE** \`gh issue create\`, \`gh issue edit\`, \`gh issue close\`, or any label change. The skill routes to a subagent that reads the taxonomy — do not classify from memory.
 
-Run \`/issue-conventions-drift\` to check that the document, GitHub labels, and the ADR still agree.
+Run \`/issue-conventions-drift\` to check that the document and the GitHub labels still agree.
 EOF
