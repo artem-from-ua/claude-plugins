@@ -92,7 +92,8 @@ Tolerant — each must exit **zero**:
 | 3.6 | `backup.sh` | writes `labels.json`, `issues.json`, `ROLLBACK.md`; the rollback commands are syntactically valid |
 | 3.7 | `inject-rules.sh` without a config | zero output, exit 0 |
 | 3.8 | `inject-rules.sh` twice in a row with a config | byte-identical output (determinism) |
-| 3.9 | `test-drift-jq.sh` | 8 tests pass — pins the semantics of the jq expressions in `drift-check.sh` |
+| 3.9 | `test-drift-jq.sh` | 12 tests pass — pins the semantics of the jq expressions in `drift-check.sh` |
+| 3.10 | `test-index-rows.sh` | 6 tests pass — an ADR index row is read as a substring mid-cell, and `supersedes` (the successor) is not mistaken for `superseded by` |
 
 **On 3.9.** Two bugs shipped in 0.1.0 and were caught on the first polygon: `from_entries` fed `{key, count}` instead of `{key, value}` (so every declared value looked unused — 36 of 36, burying the five real ones), and a bare `.description` where `$l.description` was meant (so every label looked drifted, while `label-plan.sh` correctly reported zero updates on the same data). Both are the same shape: jq stayed silent and returned plausible output, so `bash -n` could not catch them. These tests pin behavior rather than syntax.
 
@@ -157,5 +158,18 @@ After any run that deleted labels, open `ROLLBACK.md` in the backup directory an
 | Drift report full of noise | unused values reported as divergences instead of INFO | `templates/drift-check.md` |
 | Every label reported as drifted | bare `.description` instead of `$l.description` in the `metadataDrift` select | 3.9; cross-check against `label-plan.sh`, which is right when the two disagree |
 | Every value reported as unused | `from_entries` fed `count:` instead of `value:` | 3.9 |
+
+### Anchor on structure, not on a word that may appear in prose
+
+Four bugs in this plugin have now shared one shape: something was located by guessing at a word instead of keying on structure.
+
+| What was guessed | What it matched instead | Fix |
+|---|---|---|
+| `.description` after a `\|` in jq | the object being iterated, not `$l` | bind the value first |
+| `index(.scope)` after a `\|` | the array, not the object | bind the value first |
+| a table found by a column name containing "scope" | the section's *first* table, whose prose mentions scope | anchor on the bold marker line |
+| an index row matched on "supersede" | the successor row (`supersedes`), not the superseded one | match `superseded by` specifically |
+
+The first two are the same jq trap: after a pipe, the dot is the previous result, not where you started. The last two are the same reading trap: a word that appears in prose is not an anchor. When something must be found in a document or a pipeline, key on the structure that defines it — a heading, a marker, a bound variable — and never on a substring that could legitimately appear somewhere else.
 | Session context bloated after one issue | rules leaked into the dispatcher | 1.10 |
 | Prompt cache missing every session | the hook emits a computed date | 1.12 |
