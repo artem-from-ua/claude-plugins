@@ -2367,14 +2367,14 @@ Tests that legends carry the three styling skinparams — dark-grey text, no bla
 **Setup:** Ask Claude to create a component diagram whose boxes are filled by category, with a legend mapping each fill to its meaning.
 
 **Expected behavior:**
-- All three skinparams present: `legendBackgroundColor #EEEEEE`, `legendBorderColor transparent`, `LegendFontColor #404040`
+- All three skinparams present: `legendBackgroundColor #F4F4F4`, `legendBorderColor transparent`, `LegendFontColor #404040`
 - Category swatches rendered as `<back:#XXXXXX>   </back>`, matching the fills actually used in the diagram
 - Content lines indented four spaces, block bracketed by `<size:6> </size>` lines
 
 **Pass criteria:**
 - ✅ Legend text rendered in `#404040` — check the SVG for `fill="#404040"` on the legend's `<text>` elements
 - ✅ Legend box has `stroke:none` — no black frame
-- ✅ Legend box fill is `#EEEEEE`, not the default `#DDD` and not `#F5F5F5` or lighter
+- ✅ Legend box fill is `#F4F4F4`, not the default `#DDD` and not `#F8F8F8` or lighter
 - ✅ No per-line `<color:#404040>` wrappers — the skinparam does that job
 - ✅ Swatch hex values match the box fills they describe
 - ✅ Diagram renders without a warning box (`--check` reports clean)
@@ -2411,11 +2411,26 @@ Tests that legends carry the three styling skinparams — dark-grey text, no bla
 **Pass criteria:**
 - ✅ Border hex matches the palette row of the fill it encloses — no mixing a blue fill with a green border
 - ✅ No element left on a default black border
-- ✅ Borders are visibly darker than their fills (palette borders sit at luma 55–110, fills at 216–240)
-- ✅ A gray element uses `#4D5656`, not a teal derived from the fill's cyan cast
+- ✅ Borders are visibly darker than their fills (palette fills sit at lightness 87–92%, borders at 40–73%)
+- ✅ A gray element uses `#909090` — a neutral gray, not a hue derived from a neighboring row
 - ✅ **Count the distinct `stroke:#` values in the rendered SVG** — a diagram with N differently-filled elements must show N different border colors, not one repeated. A single `skinparam ComponentBorderColor` applied to per-element fills produces uniformly outlined boxes that look plausible until the strokes are counted
 
-### 14.5 Padding Without Side Effects
+### 14.5 Arrow and Text Tone
+
+**Setup:** Ask Claude to create a diagram whose colored elements are connected by labeled arrows.
+
+**Expected behavior:**
+- Arrows leaving a colored element carry that element's third-column tone
+- An arrow label reusing the color is wrapped in `<color:#XXXXXX>` with the same hex as the arrow
+
+**Pass criteria:**
+- ✅ Arrow hex comes from the third column of the same palette row as its source element's fill
+- ✅ Arrow and its label use the identical hex — no line colored while the label stays black
+- ✅ Colored text is limited to short labels; no paragraph-length note rendered in a palette tone
+- ✅ A diagram using no color at all leaves its arrows uncolored rather than defaulting to gray
+- ✅ The third tone is not assumed to be the darkest — for yellow, purple, red and green it is lighter than that row's border, and that is correct
+
+### 14.6 Padding Without Side Effects
 
 **Setup:** Ask Claude to create any diagram with a padded legend, then compare the rendered element sizes against the same diagram without the legend padding.
 
