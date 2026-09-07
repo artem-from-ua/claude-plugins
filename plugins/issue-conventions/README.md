@@ -61,6 +61,8 @@ The `issue-conventions-guide` skill runs on its own before any `gh issue create`
 
 Classifying a backlog is not the expensive part — reviewing it is. So when you rewrite a proposed classification, the command asks whether it was a one-off or a rule. A rule gets written into the document's disambiguation section and **re-applied to the already-classified issues immediately**, without re-running classification. Rules accumulated this way make the next run cheaper and bind the skill for every new issue.
 
+It also reads the pull request that closed each issue, not just the title and body. A title records the symptom someone reported; the diff records the work that answered it, and those disagree more often than they look like they would — "Fix 2 broken documentation links" turned out to be a fix to a scanner that was emitting false positives, which makes it a bug, not documentation. For an axis derived from directories the paths settle the label outright: a change under `plugins/retroscope/` *is* `plugin:retroscope`.
+
 ## ⚙️ Setup <a name="setup"></a>
 
 ```bash
