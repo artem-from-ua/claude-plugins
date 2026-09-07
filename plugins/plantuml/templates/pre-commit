@@ -1,6 +1,12 @@
 # >>> artem-from-ua/plantuml >>>
-# PlantUML URL sync check — installed by plantuml Claude Code plugin.
+# PlantUML sync + render check — installed by plantuml Claude Code plugin.
 # Do not edit between markers; managed automatically by setup-project.sh.
+#
+# --check verifies two things: that each diagram's URL matches its source, and
+# that the source still renders without deprecation warnings or syntax errors.
+# The render lint asks plantuml.com about each diagram; when the server is
+# unreachable it degrades to a warning, so commits still work offline.
+# Set PLANTUML_SKIP_LINT=1 to check URL sync only.
 PLANTUML_STAGED_MD=$(git diff --cached --name-only --diff-filter=ACM -- '*.md')
 
 if [ -n "$PLANTUML_STAGED_MD" ]; then
@@ -16,11 +22,17 @@ if [ -n "$PLANTUML_STAGED_MD" ]; then
     done
 
     if [ -n "$PLANTUML_ENCODER" ]; then
+        PLANTUML_LINT_FLAG=""
+        if [ -n "$PLANTUML_SKIP_LINT" ]; then
+            PLANTUML_LINT_FLAG="--no-lint"
+        fi
+
         echo "Checking PlantUML diagrams in: $PLANTUML_STAGED_MD"
-        if ! python3 "$PLANTUML_ENCODER" --check $PLANTUML_STAGED_MD; then
+        if ! python3 "$PLANTUML_ENCODER" $PLANTUML_LINT_FLAG --check $PLANTUML_STAGED_MD; then
             echo ""
-            echo "Commit blocked: PlantUML URLs out of sync."
-            echo "  Fix: python3 $PLANTUML_ENCODER --sync <file.md>"
+            echo "Commit blocked: PlantUML diagrams have unresolved issues."
+            echo "  Out-of-sync URL: python3 $PLANTUML_ENCODER --sync <file.md>"
+            echo "  Deprecated syntax or render error: fix the source block, then re-sync."
             exit 1
         fi
     fi
