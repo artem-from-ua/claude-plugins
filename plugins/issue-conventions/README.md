@@ -31,20 +31,21 @@ Scanned 157 issues (84 closed, 73 open) and 16 labels.
 
 Classified 157 issues in 9 batches. Review at /tmp/relabel-review.md.
 
-⚠️ Needs your decision (4)
-  #100  root cause is upstream, but the fix landed in plugins/retroscope/
-        → plugin:retroscope   → no plugin value
+Batch 1 of 9
 
-Batch 1 of 9                                     current → proposed
-  #285  Fix 2 broken documentation links      documentation → type:bug
-        └ PR #292 changed kb-structural-scan.sh (+61/-5) — a scanner fix
-  #293  Fix root README nav line              documentation → type:feature
-        └ PR #298 changed presets/readme.md — executable preset content
+  #285  "Fix 2 broken documentation links"
+          documentation, kb-grooming-report  →  type:bug, plugin:kb-grooming, by:kb-grooming
+
+  #293  "Fix root README nav line"
+          documentation, kb-grooming-report  →  type:feature, plugin:playbook, preset:readme, by:kb-grooming
+
+  #149  "docs: extract CLAUDE.md reference material into docs/"
+          enhancement  →  type:feature, plugin:playbook
 
 Apply batch 1? [y/n/edit]
 ```
 
-Note the two `type:docs` proposals that are not `type:docs`: the title records the symptom, the pull request records the work.
+None of those three ended up as `type:docs`, though every title says documentation. The classifier reads the pull request that closed each issue: a title records the symptom someone reported, the diff records the work that answered it.
 
 ## ⚙️ How it works <a name="how-it-works"></a>
 
