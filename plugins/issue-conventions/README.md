@@ -6,7 +6,7 @@
 Your issue tracker has labels nobody agrees on: the ones in heavy use narrow nothing, and the rest nobody ever applied. This designs a taxonomy from what you actually work on, writes it down, and applies it to every issue you already have.
 
 > [!NOTE]
-> [⚡ How it works](#how-it-works) · [📦 Installation](#installation) · [🤖 Commands](#commands) · [⚙️ Setup](#setup) · [📝 Config](#config) · [🔗 Dependencies](#dependencies)
+> [📦 Installation](#installation) · [⚡ How it works](#how-it-works) · [🤖 Commands](#commands) · [⚙️ Setup](#setup) · [📝 Config](#config) · [🔗 Dependencies](#dependencies)
 
 ## 🎬 Demo <a name="demo"></a>
 
@@ -47,11 +47,26 @@ Apply batch 1? [y/n/edit]
 
 None of those three ended up as `type:docs`, though every title says documentation. The classifier reads the pull request that closed each issue: a title records the symptom someone reported, the diff records the work that answered it.
 
+### Live example
+
+This repository was labelled by the plugin itself — 157 issues, 16 ad-hoc labels replaced by 38 across five axes. Everything below is what the two commands produced, unedited afterwards:
+
+- [`docs/issue-labels.md`](../../docs/issue-labels.md) — the taxonomy document: axes, dictionaries, colors, disambiguation rules, and the mapping from the old labels
+- [The labelled issues](https://github.com/artem-from-ua/claude-plugins/issues) — the result on the backlog; filter by any prefix to see what the axes buy
+- [PR #393](https://github.com/artem-from-ua/claude-plugins/pull/393) — the migration itself, including [ADR 0001](../../docs/adr/0001-issue-taxonomy-lives-in-a-versioned-document.md) recording where the taxonomy lives
+
+## 📦 Installation <a name="installation"></a>
+
+```bash
+/plugin marketplace add artem-from-ua/claude-plugins
+/plugin install issue-conventions@artem-from-ua
+```
+
 ## ⚡ How it works <a name="how-it-works"></a>
 
 **Two primary workflows, in order.**
 
-The first reads every issue in the repository — open and closed alike — and proposes a label taxonomy from what it finds. It mines the recurring subjects, the parts of the product that get filed against, and the existing labels that stopped narrowing anything, then interviews you about the calls it cannot make alone and writes the result as a document in your repo (for this repository: the [taxonomy document](../../docs/issue-labels.md) and the [issues it produced](https://github.com/artem-from-ua/claude-plugins/issues)). The GitHub labels are created from that document.
+The first reads every issue in the repository — open and closed alike — and proposes a label taxonomy from what it finds. It mines the recurring subjects, the parts of the product that get filed against, and the existing labels that stopped narrowing anything, then interviews you about the calls it cannot make alone and writes the result as a document in your repo. The GitHub labels are created from that document.
 
 This wants dozens of issues at minimum, and reads best at a hundred or more. Below thirty the plugin says so and lets you continue anyway — with that little history a taxonomy is guessed from the code layout rather than derived from what the maintainers actually do.
 
@@ -89,13 +104,6 @@ skills/issue-conventions-guide/   ← dispatcher: routing only, no rules
 .claude-plugin/issue-conventions.json   ← thin config: operational settings
         ↓
 GitHub labels                 ← derived state, synced to the document
-```
-
-## 📦 Installation <a name="installation"></a>
-
-```bash
-/plugin marketplace add artem-from-ua/claude-plugins
-/plugin install issue-conventions@artem-from-ua
 ```
 
 ## 🤖 Commands <a name="commands"></a>
