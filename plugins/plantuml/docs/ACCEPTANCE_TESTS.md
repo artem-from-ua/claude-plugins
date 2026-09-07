@@ -2413,6 +2413,7 @@ Tests that legends carry the three styling skinparams — dark-grey text, no bla
 - ✅ No element left on a default black border
 - ✅ Borders are visibly darker than their fills (palette borders sit at luma 55–110, fills at 216–240)
 - ✅ A gray element uses `#4D5656`, not a teal derived from the fill's cyan cast
+- ✅ **Count the distinct `stroke:#` values in the rendered SVG** — a diagram with N differently-filled elements must show N different border colors, not one repeated. A single `skinparam ComponentBorderColor` applied to per-element fills produces uniformly outlined boxes that look plausible until the strokes are counted
 
 ### 14.5 Padding Without Side Effects
 

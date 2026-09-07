@@ -58,6 +58,8 @@ Use color coding to improve diagram readability. Apply a **muted pastel palette*
 | Soft purple | `#E3CEF0` | `#5C257E` | External systems, third-party |
 | Soft gray | `#D4D9D9` | `#4D5656` | Inactive, deprecated |
 
+**When a diagram uses more than one palette color, set fill and border together per element** — `[Transcoder] #FDEDC4;line:7E6525`, or `rectangle "X" #F9CCC9;line:7E2A25`. The `skinparam ComponentBorderColor` family sets *one* border color for every element of that kind, so a diagram whose fills vary per element ends up with all of them outlined in the same color — the pairing below silently stops holding. Reserve the skinparam form for diagrams that genuinely use a single color throughout.
+
 **A border is its own fill's hue, taken down to roughly one third lightness** — same color, much darker, never a separate accent color and never plain black. That keeps each block reading as one object rather than a pastel patch inside an unrelated outline, and it lets the border do the work `#000` used to: the edge stays legible without the black frame's weight. The fills sit around luma 220–240 and the borders around 55–110, which is enough separation to survive a downscaled render.
 
 Soft gray is the exception worth noting twice. Its fill carries a faint cyan cast, so deriving the border purely from hue drives it to teal — it is desaturated back to `#4D5656`, dark and slightly cool, still gray. Its fill also sits a step darker than the rest of the palette (`#D4D9D9`, luma 216 against the others' 220–240), because a neutral gray is the one fill that shares a hue with the `#EEEEEE` legend panel and would otherwise dissolve into it.
@@ -105,16 +107,14 @@ Pair the text with `<back:#XXXXXX>   </back>` swatches (three spaces) when the l
 @startuml
 title Ingest Pipeline — Stage Categories
 skinparam ArrowThickness 1.5
-skinparam ComponentBackgroundColor #CFE4F6
-skinparam ComponentBorderColor #25557E
 skinparam legendBackgroundColor #EEEEEE
 skinparam legendBorderColor transparent
 skinparam LegendFontColor #404040
 
-[Uploader] as up #CFE4F6
-[Transcoder] as tr #FDEDC4
-[Classifier] as cl #E3CEF0
-[Archive] as ar #D4D9D9
+[Uploader] as up #CFE4F6;line:25557E
+[Transcoder] as tr #FDEDC4;line:7E6525
+[Classifier] as cl #E3CEF0;line:5C257E
+[Archive] as ar #D4D9D9;line:4D5656
 
 up --> tr
 tr --> cl
@@ -132,6 +132,6 @@ end legend
 @enduml
 ```
 
-![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/RPBFQW8n4CRlUOg1Nbh1QbkrABAe-mU47Wgr9-aXhkCQZCaoYQtsr8Ve4_P9cknkIq1tOHbcVlDblinEZELa3tl9hB0IOQuAD1QUHObIA8IVhszuiRn0YBd5GfD0mynEg98JtyEKI7yijYBVAJG6xcxxGJ7M-r8hL7R6yrr1-g3MiPQQu2hEqbusk8XgMYCrs7s_ttzC0qnYWMfz9fTMppaNQ5dYohYYEoBWdYekqyesIhskVnbRlfPISzVz1jp0eVmVURdmGhd-ArdNb2Lf4lVOCfRS6B4HJIcNRhA7ECswR3cbV2lUiSfprvBqac4oPCmfjzkHKs5Eo4UvPAxFHvmOgtq0YM9h6S3OY4yS3I8OTtmKkHH0gpNJHzW8ALijk3RLhl9wLwURKOMCL-x6Hes5o2SwFXE1KEsITEvNPooM8LoR2c4yMYJ59Qo4udGAuTfc24_di7UN94EgDXrIncfoyrwovdtNzjd4VTmV-Wi0)
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/RPBDIWCn4CVlUOe1BrgerRfPiPQbxNw0u46mdeg7k1steMcoJ5A_JZw4J-YJc6mgBEW6bc7oop_pdydCEa5klrFCIQSGRdI3ri6TR559ZV3z-GNtJZG8kN3O699ecTrAtGeIEvWJcTVbHjPRZTR2-IdlRIfiKAyNejusPFPwdHjb28xAxllB6LeZHSQHqDPledOzxhRZAgFTGIav2uknrKEhZF2d7q5OsBTmb5TbKgNNmS9ap3c_BDbg6KHhyuivBr0LPP4d4RiiKpxcR9KhOQrybWUiLhxYYxoipYB6yt6dDgTw8r-mOuINAfBYghYAJ5BmbAUC-Kg6mypVnFnb8QeLyteX4iHOz0qacurZ05ChFt2IPZ0TXIZpAO31O67Uu5agDHZ0iUqcKST9l9zCEcJwv3iyELZEGc8KCXb8FMp9r64mrc7RXwFnFenl3aaB1KzI2thlmz5-7vxVmCutKlMfs80-PPqXN-z_reBlQ9_D_C-_lny0)
 
 `legendBackgroundColor` and `legendBorderColor` are not in PlantUML's published skinparam list, but both work on the current server; `LegendFontColor` is documented. All three are skinparams, so they apply on every diagram type that supports `legend`, including those the color table above marks 🟡 Limited.
