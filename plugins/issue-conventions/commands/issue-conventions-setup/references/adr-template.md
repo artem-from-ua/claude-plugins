@@ -17,6 +17,12 @@ What belongs in the ADR:
 
 What does not: axis names, value dictionaries, colors, cardinality rules, disambiguation rules, the title pattern. Every one of those is in the document, one link away, and always current there.
 
+**The test, applied line by line: could a reader learn this by opening the document?** If yes, it belongs there and not here. If no — if it is *why* the choice was made rather than what the choice is — it belongs here and nowhere else.
+
+The distinction matters most where the two are entangled in one paragraph. "Colors are `#b60205` for `type:bug` and a red→orange→lime gradient for priority" is checkable and goes. "One color per axis, because the prefix already carries identity — except priority, where color carries urgency instead" is not checkable from the document: it will show you *that* the colors are what they are, never that this was a decision rather than an accident. Split the paragraph; keep the half that survives the test.
+
+**Why this is stated as a test rather than a prohibition.** An earlier version of this template asked for the axis table inside the Decision section, and it was filled in faithfully — the duplication is invisible while writing, because a table under "Decision" reads exactly like what was decided. It only becomes visible when both documents exist and someone opens them side by side. A template that asks you to fill in a structure is stronger than a rule that asks you not to, so the guidance here is something you can apply to a single line without holding both files in your head.
+
 ## Skeleton
 
 ```markdown
@@ -64,6 +70,14 @@ TODO once applied to the backlog:
 - Whether the palette stays legible on real multi-label issues.
 - Values that fitted awkwardly and the rules added because of them.
 ```
+
+## Editing before the record is accepted
+
+While it says `status: draft`, the record is still being written and can be revised freely. Once it is `accepted`, the convention makes it immutable: a wrong decision gets a superseding record, not an edit.
+
+That fixes the order of two things people usually think of as independent. **Any tidying — trimming what belongs in the document, fixing a stale count — happens before promotion, or not at all.** Promote first and the same edit means rewriting an immutable record; the only clean alternative left is a new ADR that supersedes the old one over a copy-paste mistake.
+
+So when the gate is met and the record also needs cleaning, do both in one commit.
 
 ## Index row and supersession
 
