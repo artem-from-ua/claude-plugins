@@ -152,7 +152,7 @@ Policy: **delete**. Exceptions kept: none.
 | | |
 |---|---|
 | Config | `.claude-plugin/issue-conventions.json` |
-| Plugin | `issue-conventions` v0.4.3 |
+| Plugin | `issue-conventions` v0.4.4 |
 | Last synced with GitHub | YYYY-MM-DD |
 <!-- /issue-conventions:managed -->
 ````
@@ -169,6 +169,7 @@ Policy: **delete**. Exceptions kept: none.
 | Color | Three valid forms: `#rrggbb` in backticks, the word `gradient` (only in the Axes table), **or an empty cell** — inherit the axis color. A per-value color overrides the axis color. |
 | Label names | Backtick-quoted in the Values tables; the prefix must match its axis prefix, otherwise a parse error. |
 | Description required | An empty Description cell is a parse error. Every label carries a description. |
+| Description length | At most **100 bytes of UTF-8** — GitHub's cap, enforced by the parser. Bytes, not characters: Cyrillic and emoji cost two to four each. |
 | Values sections | Every row of the Axes table must have a matching `### ` section. Extra `### ` sections are ignored. |
 | Cross-axis rules | Machine-readable, since axis names are project-specific: `- at-least-one: a, b`, `- soft-limit: N`, `- mutually-exclusive: a, b`. Lines not starting with a known key are prose and are ignored. |
 | `<!-- source: ... -->` | Optional, under an axis `### ` heading. Key `source` is required, value `modules` or `manual`. For `modules`, `path=<repo-relative path>` is required (one path) and `ignore=<comma list>` is optional — modules deliberately left out of the axis; drift check skips them. An unknown `source` value is treated as `manual`, without error. |
