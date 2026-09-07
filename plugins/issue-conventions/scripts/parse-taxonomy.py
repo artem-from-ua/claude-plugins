@@ -414,10 +414,25 @@ def parse_legacy(lines, idx, sections):
         if action not in {"map", "split", "delete", "keep", "migrate"}:
             raise ParseError(line_no, f"legacy mapping {old!r} has action={action!r}",
                              "map / split / delete / keep / migrate")
+        new = strip_backticks(cell(row, c_new)) or None
+        # A `keep` row may put a color where a target label would go. It means
+        # "not ours, but stop it wearing an axis color" — the label keeps its
+        # name and description, and only the swatch changes. Any other action
+        # with a color there is a mistake worth catching: `map` to `#cccccc`
+        # would otherwise silently create a label literally named "#cccccc".
+        recolor = None
+        if new and HEX.match(new):
+            if action != "keep":
+                raise ParseError(line_no,
+                                 f"legacy mapping {old!r} has action={action!r} "
+                                 f"with a color in the New label column",
+                                 "a color there is only meaningful for 'keep'")
+            recolor, new = new.lower(), None
         out.append({
             "old": old,
             "action": action,
-            "new": strip_backticks(cell(row, c_new)) or None,
+            "new": new,
+            "recolor": recolor,
             "why": cell(row, c_why) or None,
         })
     return out
