@@ -54,7 +54,7 @@ This repository was labelled by the plugin itself — 152 issues, 16 ad-hoc labe
 - [`docs/issue-labels.md`](../../docs/issue-labels.md) — the taxonomy document: axes, dictionaries, colors, disambiguation rules, and the mapping from the old labels
 - [ADR (Architecture Decision Record)](../../docs/adr/0001-issue-taxonomy-lives-in-a-versioned-document.md) — the short note a project keeps when it settles something worth not re-arguing. This one records that the taxonomy now lives in a versioned document and which one, so the next reader finds the decision rather than inferring it from the labels
 - [The relabel report to review](https://claude.ai/code/artifact/360f6c4b-eb7f-4bc2-9470-2562e58596f1) — every issue with its labels and title before and after, the way the command presented them for approval
-- [The labelled issues](https://github.com/artem-from-ua/claude-plugins/issues) — the result on the backlog; filter by any prefix to see what the axes buy
+- [The labelled issues](https://github.com/artem-from-ua/claude-plugins/issues?q=is%3Aissue) — the result on the backlog, open and closed; filter by any prefix to see what the axes buy
 
 ## 📦 Installation <a name="installation"></a>
 
