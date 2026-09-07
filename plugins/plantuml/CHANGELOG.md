@@ -5,6 +5,17 @@ All notable changes to the PlantUML plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-09-07
+
+### Added
+- Arrow thickness rule for every diagram type: `skinparam ArrowThickness 1.5` for activity, state, class, component, object, use case, deployment and ER, alongside the existing `sequenceArrowThickness 1.5` for sequence diagrams. At the default `1` arrows weigh the same as element borders and stop reading as the primary layer
+- `references/styling.md` — one reference for all visual styling, holding the arrow thickness table, a worked non-sequence example, and the color palette
+- Acceptance tests for arrow thickness (section 13), covering activity and class diagrams, unsupported types, and the injected SessionStart rule
+
+### Changed
+- SessionStart rule generalized from sequence-only arrow thickness to every supported diagram type
+- `references/colors.md` merged into `references/styling.md`; the diagram guide now points at the latter
+
 ## [1.10.0] - 2026-09-07
 
 ### Added
