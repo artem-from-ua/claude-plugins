@@ -1,7 +1,6 @@
 {
   "version": 1,
   "taxonomyDocument": "docs/issue-labels.md",
-  "adr": "docs/adr/0001-issue-taxonomy-lives-in-a-versioned-document.md",
   "titleFormat": {
     "enabled": true,
     "rewriteExisting": true
