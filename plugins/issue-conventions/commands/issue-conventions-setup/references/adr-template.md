@@ -17,6 +17,12 @@ What belongs in the ADR:
 
 What does not: axis names, value dictionaries, colors, cardinality rules, disambiguation rules, the title pattern. Every one of those is in the document, one link away, and always current there.
 
+**The test, applied line by line: could a reader learn this by opening the document?** If yes, it belongs there and not here. If no — if it is *why* the choice was made rather than what the choice is — it belongs here and nowhere else.
+
+The distinction matters most where fact and reason are entangled in one paragraph. "Colors are `#b60205` for `type:bug` and a red-to-lime gradient for priority" is checkable and goes. "One color per axis, because the prefix already carries identity — except priority, where color carries urgency instead" is not checkable from the document: it will show you *that* the colors are what they are, never that this was a decision rather than an accident. Split the paragraph; keep the half that survives the test.
+
+**A number that measures is not a number that defines.** The test rejects "seven `area:*` values" — that is the dictionary, restated, and it is wrong the moment an eighth is added. It keeps "150 of 210 issues landed on `priority:medium`, and 9 needed a human decision": the document does not know those figures and never will, because they describe the backlog on the day it was labeled, not the taxonomy. Measurements are dated observations and belong in Consequences; definitions belong in the document. Do not strip the first while removing the second.
+
 ## Skeleton
 
 ```markdown
@@ -59,10 +65,10 @@ is visible at a glance; AI assistants read the rules from one place.>
 in the GitHub UI is drift until someone runs the check.>
 ```
 
-## Index row and supersession
+## Fitting into a practice that already exists
 
 If `docs/adr/README.md` exists, add a row in its existing format.
 
-If an ADR about the taxonomy is already there, do **not** write a second one. Propose superseding it: set `superseded_by` on the old record, add a one-line postscript at its top pointing at the replacement, and strike through both the number and the title link in the index — leaving the Status cell readable.
+If an ADR about the taxonomy is already there, do **not** write a second one alongside it. Say so, and let the maintainer decide what to do with the old record — whether an accepted ADR may be edited, and how a replacement is linked to what it replaces, is that project's convention. This plugin has no opinion on it and should not offer one.
 
 If the project has no `docs/adr/`, ask whether to start the practice rather than creating the directory unasked. A project without ADRs is not missing anything the taxonomy needs — the document works alone.
