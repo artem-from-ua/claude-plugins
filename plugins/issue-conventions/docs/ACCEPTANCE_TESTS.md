@@ -93,7 +93,10 @@ Tolerant — each must exit **zero**:
 | 3.7 | `inject-rules.sh` without a config | zero output, exit 0 |
 | 3.8 | `inject-rules.sh` twice in a row with a config | byte-identical output (determinism) |
 | 3.9 | `test-drift-jq.sh` | 12 tests pass — pins the semantics of the jq expressions in `drift-check.sh` |
-| 3.10 | `test-index-rows.sh` | 8 tests pass — supersession is read from the strikethrough (structure), the successor number from the Status cell (prose) |
+| 3.10 | `test-adr-status.sh` | 6 tests pass — supersession decided by script from three signals, on fixtures copied from the reference project |
+| 3.11 | `test-index-rows.sh` | 8 tests pass — supersession is read from the strikethrough (structure), the successor number from the Status cell (prose) |
+
+**On 3.10.** Supersession detection lived in the subagent template until 0.2.4 — deterministic logic expressed as prose the model had to re-derive each run. The polygon session pointed out the consequence: the tests pinned a bash implementation that shipped nowhere, so rewording a paragraph would change behavior while every test stayed green. The three signals now live in `adr-status.sh`, which the drift check calls and the subagent reads. The template keeps the judgment (what a divergence *means*) and hands over the fact.
 
 **On 3.9.** Two bugs shipped in 0.1.0 and were caught on the first polygon: `from_entries` fed `{key, count}` instead of `{key, value}` (so every declared value looked unused — 36 of 36, burying the five real ones), and a bare `.description` where `$l.description` was meant (so every label looked drifted, while `label-plan.sh` correctly reported zero updates on the same data). Both are the same shape: jq stayed silent and returned plausible output, so `bash -n` could not catch them. These tests pin behavior rather than syntax.
 
