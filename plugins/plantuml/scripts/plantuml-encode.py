@@ -514,7 +514,63 @@ def main():
                         help='Decode each PlantUML URL back to source and report whether it is '
                              'intact (exit 1 if any is broken). Catches retyped, truncated or '
                              'line-wrapped links before they are shown to anyone')
+    parser.add_argument('--md-link', metavar='TEXT', nargs='?', const='diagram',
+                        help='Read source from stdin and print a ready-to-paste Markdown link '
+                             '[TEXT](url), self-verified. Use this instead of composing a link by '
+                             'hand — the encoded string never has to be retyped')
+    parser.add_argument('--verify-file', metavar='FILE', nargs='+',
+                        help='Verify every PlantUML URL found in each file (exit 1 if any is '
+                             'broken). Reads the URLs from disk, so nothing is retyped')
     args = parser.parse_args()
+
+    if args.md_link:
+        text = sys.stdin.read()
+        if not text.strip():
+            print("Error: no input provided on stdin", file=sys.stderr)
+            sys.exit(1)
+        url = make_url(text, args.format)
+        ok, reason, _ = verify_url(url)
+        if not ok:
+            print(f"Error: generated URL failed self-verification: {reason}", file=sys.stderr)
+            sys.exit(1)
+        print(f"[{args.md_link}]({url})")
+        return
+
+    if args.verify_file:
+        # A URL trailed by "..." (abbreviated in prose) or by "$"/"<" (a shell variable
+        # or placeholder inside a documented command) is an example, not a real link;
+        # verifying it would report damage that is not there.
+        url_re = re.compile(r'https://www\.plantuml\.com/plantuml/\w+/[A-Za-z0-9_=-]+')
+        broken = 0
+        total = 0
+        skipped = 0
+        for filepath in args.verify_file:
+            try:
+                with open(filepath, encoding='utf-8') as fh:
+                    content = fh.read()
+            except OSError as e:
+                print(f"Error reading {filepath}: {e}", file=sys.stderr)
+                sys.exit(1)
+            for match in url_re.finditer(content):
+                url = match.group(0)
+                if content[match.end():match.end() + 1] in ('.', '$', '<'):
+                    skipped += 1
+                    continue
+                total += 1
+                ok, reason, source = verify_url(url)
+                if ok:
+                    title = next((ln.strip() for ln in source.splitlines()
+                                  if ln.strip().startswith('title ')), reason)
+                    print(f"OK      {filepath}: {title}")
+                else:
+                    broken += 1
+                    print(f"BROKEN  {filepath}: {reason}\n        {url[:70]}...")
+        note = f" ({skipped} abbreviated example(s) skipped)" if skipped else ""
+        if broken:
+            print(f"\n{broken} of {total} URL(s) broken.{note}")
+            sys.exit(1)
+        print(f"\nAll {total} URL(s) decode cleanly.{note}")
+        return
 
     if args.verify_url:
         broken = 0

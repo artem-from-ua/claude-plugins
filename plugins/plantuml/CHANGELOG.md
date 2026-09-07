@@ -14,7 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Acceptance tests for legend styling (section 14), covering color-coded legends, the sequence ACK legend, legends on limited-color diagram types, and padding side effects
 - `--verify-url URL...` decodes a PlantUML URL back to its source locally and reports whether it is intact, printing the decoded diagram's title so a link pointing at the wrong diagram is caught too. A damaged encoding never fails loudly — the server decodes whatever prefix parses and answers with a "looks like HUFFMAN encoding, add a `~1` header" message or silently renders the wrong diagram type, both of which read as an encoder bug when the encoder is fine. Documentation fragments without `@start` pass; the `~1` prefix and non-PlantUML URLs are reported
 - Rule that diagram links shown in conversation must be Markdown links (`[diagram 1](...)`) rather than bare URLs, that encoded strings are never retyped or hand-assembled, and that every link is checked with `--verify-url` before being shown
-- Acceptance tests for `--verify-url` (section 2.5), including the padding-truncation case that is legitimately harmless
+- `--md-link [TEXT]` reads source from stdin and prints a ready-to-paste, self-verified `[TEXT](url)` line, removing the hand-composition step that verification alone cannot protect: a link assembled by hand in a reply looks plausible and is dead
+- `--verify-file FILE...` verifies every PlantUML URL found in each file, reading them from disk so nothing is retyped
+- Acceptance tests for `--verify-url` (section 2.5), including the padding-truncation case that is legitimately harmless, and for `--md-link` / `--verify-file` (section 2.6)
 
 ### Changed
 - Palette fills darkened: each is now its border color blended 18% toward the pastel, keeping both halves of a pair in the same hue family. The previous fills (luma 236–248) were too close to white and to the `#EEEEEE` legend background to read as distinct blocks

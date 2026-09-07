@@ -386,6 +386,38 @@ python3 scripts/plantuml-encode.py --verify-url "https://www.plantuml.com/plantu
 **Expected result:**
 - ✅ Exit code 1, reason names the `~1` HUFFMAN prefix and that this encoder emits DEFLATE
 
+#### 2.6 Link Generation (`--md-link`, `--verify-file`)
+
+**Objective:** Verify that a shareable link can be produced and re-checked without the encoded string ever being retyped.
+
+**Why this exists:** verification only helps if it is actually run. The failure mode it does not cover is a link composed by hand in a reply — a single altered character produces a URL that looks plausible and is dead. `--md-link` removes the hand-composition step entirely.
+
+**Test — generate:**
+```bash
+printf '@startuml\ntitle MD Link Test\nAlice -> Bob: Hi\n@enduml\n' \
+  | python3 scripts/plantuml-encode.py --md-link "test diagram"
+```
+
+**Expected result:**
+- ✅ One line of output: `[test diagram](https://www.plantuml.com/plantuml/svg/...)`
+- ✅ The link is self-verified before printing — a URL that fails its own decode exits 1 instead of being emitted
+- ✅ `--md-link` with no argument uses `diagram` as the link text
+- ✅ `--format png --md-link "x"` produces a `/png/` link
+
+**Test — verify links already in files:**
+```bash
+python3 scripts/plantuml-encode.py --verify-file docs/*.md
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Every URL in each file is decoded and reported with its diagram title
+- ✅ Exit code 1 if any is broken, naming the file it came from
+- ✅ Documentation fragments report as `fragment (no @start ...)` and do not fail the run
+- ✅ Abbreviated examples in prose — a URL trailed by `...`, by a `$shell` variable, or by a `<placeholder>` — are skipped, and the count of skipped examples is printed rather than passed over silently
+
+**Note:** run `--verify-file` on this document itself. It contains both real diagram links and deliberately damaged example URLs; a run that reports the examples as broken means the skip rule regressed.
+
 ---
 
 ### 3. PostToolUse Hook Testing
