@@ -101,6 +101,12 @@ The disambiguation pass near the end is the highest-value step. It picks genuine
 
 Resolution order: `.claude-plugin/issue-conventions.json` → `.claude/issue-conventions.json` → `~/.claude/issue-conventions.json` → the plugin's `templates/issue-conventions.json`.
 
+### The document may run ahead of the plugin
+
+Unknown sections and unknown columns are ignored rather than rejected, so a document can use syntax the installed version does not know yet. Verified on a real document: a `## Rule exceptions` section added before upgrading parsed cleanly under the older parser — no warning, no error, all axes and labels intact — and started taking effect once the plugin caught up.
+
+This is worth knowing because the intuition runs the other way. There is no ordering requirement between updating the plugin and updating the document: add the section whenever it is convenient.
+
 ## 🔗 Dependencies <a name="dependencies"></a>
 
 `gh` (authenticated), `jq`, `python3`, `git`.
