@@ -1,7 +1,7 @@
 # issue-conventions
 
 > [!TIP]
-> ✨ ***Design the taxonomy once. Keep it honest forever.***
+> ✨ ***Issue labels rot quietly. So do the docs that describe them.***
 
 Designs an issue label and title taxonomy for your repository, writes it as a document in your repo, applies it to the existing backlog, and detects when the document and the GitHub labels drift apart. Recommended once a project has around 30 issues — before that there is not enough material to see what the maintainers actually work on.
 
