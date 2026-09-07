@@ -20,6 +20,15 @@ Usage:
 
     # Check for mismatches without modifying files (exit 1 if errors)
     python3 plantuml-encode.py --check README.md docs/*.md
+
+    # Skip the render lint and only verify URL/source sync (offline, no network)
+    python3 plantuml-encode.py --check --no-lint README.md
+
+    # Lint diagram sources only: deprecated syntax and render errors
+    python3 plantuml-encode.py --lint README.md docs/*.md
+
+    # A block containing the comment `' plantuml-lint: ignore` is skipped by the
+    # lint — for documentation that shows deprecated syntax on purpose.
 """
 
 import sys
@@ -93,6 +102,168 @@ def render_ascii(text):
     except Exception as e:
         print(f"Error: Unexpected error while rendering ASCII: {e}", file=sys.stderr)
         return None
+
+
+# Locally detectable deprecated constructs. Each entry is matched against a
+# single source line; the network lint catches everything not listed here.
+DEPRECATED_PATTERNS = [
+    {
+        'name': 'inline-activity-color',
+        # Old activity form: `#COLOR:label;` — the color now goes after the ';'
+        'regex': re.compile(r'^\s*#(?:[0-9A-Fa-f]{3,8}|[A-Za-z][\w]*)\s*:.*;\s*$'),
+        'message': ("deprecated activity color syntax `#COLOR:label;` — "
+                    "write `:label; <<#COLOR>>` instead"),
+        # Substring of the server's own warning for this construct, used to
+        # avoid reporting the same problem twice.
+        'marker': 'This syntax is deprecated',
+    },
+]
+
+# A block carrying this marker is skipped by the lint. Documentation that shows
+# deprecated syntax on purpose (as a counter-example) needs a way to stay
+# committable without weakening the check for real diagrams.
+LINT_IGNORE_MARKER = 'plantuml-lint: ignore'
+
+# Markers that identify a render-time complaint in the PlantUML text output.
+RENDER_COMPLAINT_MARKERS = (
+    'is deprecated',      # covers "This syntax is deprecated, you must add ..."
+    'deprecated syntax',
+    'syntax error',
+    'cannot be parsed',
+)
+
+
+def lint_source_offline(puml_source):
+    """
+    Scan a diagram source for known-deprecated constructs without touching the
+    network. Returns a list of (line_offset, message, server_marker) tuples.
+    """
+    problems = []
+    for offset, line in enumerate(puml_source.splitlines()):
+        for pattern in DEPRECATED_PATTERNS:
+            if pattern['regex'].match(line):
+                problems.append((
+                    offset,
+                    f"{pattern['message']} (found: {line.strip()})",
+                    pattern['marker'],
+                ))
+    return problems
+
+
+def lint_source_remote(puml_source, timeout=15):
+    """
+    Ask the PlantUML server to render the diagram and report what it complains
+    about. Deprecation warnings render with HTTP 200 and no error headers — the
+    only trace is the warning text in the response body — so the body is always
+    scanned, not just the status code.
+
+    Returns (problems, unreachable):
+      problems    — list of complaint strings reported by the server
+      unreachable — True when the server could not be reached at all
+    """
+    url = make_url(puml_source, fmt="txt")
+    try:
+        req = urllib.request.Request(url)
+        req.add_header('User-Agent', 'plantuml-encode.py/1.0')
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            body = response.read().decode('utf-8', errors='replace')
+            headers = response.headers
+    except urllib.error.HTTPError as e:
+        # A syntax error is served as HTTP 400 with the diagnosis in the body
+        # and in x-plantuml-* headers — that is a real finding, not an outage.
+        body = e.read().decode('utf-8', errors='replace')
+        headers = e.headers
+    except (urllib.error.URLError, OSError):
+        # No network, DNS failure, timeout — the caller degrades to a warning.
+        return [], True
+    except Exception:
+        return [], True
+
+    problems = []
+
+    # The header carries the same diagnosis as the body but adds a line number,
+    # so it is preferred and the body's echo of it is dropped below.
+    header_error = (headers.get('x-plantuml-diagram-error') or '').strip()
+    if header_error:
+        line_hint = headers.get('x-plantuml-diagram-error-line')
+        where = f" (source line {line_hint})" if line_hint else ""
+        problems.append(f"{header_error}{where}")
+
+    for raw_line in body.splitlines():
+        line = ' '.join(raw_line.split())
+        if not line:
+            continue
+        if header_error and header_error in line:
+            continue
+        lowered = line.lower()
+        if any(marker in lowered for marker in RENDER_COMPLAINT_MARKERS):
+            if line not in problems:
+                problems.append(line)
+
+    return problems, False
+
+
+def iter_plantuml_blocks(filepath):
+    """
+    Yield (index, source, line_number) for every ```plantuml block in a file.
+    """
+    with open(filepath, 'r') as f:
+        content = f.read()
+
+    block_pattern = re.compile(r'```plantuml\s*\n(.*?)```', re.DOTALL)
+    for i, match in enumerate(block_pattern.finditer(content), 1):
+        line_num = content[:match.start()].count('\n') + 1
+        yield i, match.group(1).strip(), line_num
+
+
+def lint_markdown(filepath, use_network=True):
+    """
+    Lint every PlantUML block in a markdown file for deprecated syntax and
+    render errors. Returns (errors, unreachable) where errors is a list of error
+    dicts in the same shape as check_markdown() produces, and unreachable is
+    True when the PlantUML server could not be reached for at least one block.
+    """
+    errors = []
+    unreachable = False
+
+    for i, source, line_num in iter_plantuml_blocks(filepath):
+        if not source:
+            continue
+
+        if LINT_IGNORE_MARKER in source:
+            continue
+
+        complaints = []
+        local_hits = lint_source_offline(source)
+
+        for offset, message, marker in local_hits:
+            complaints.append(f"line {line_num + 1 + offset}: {message}")
+
+        if use_network:
+            remote_problems, block_unreachable = lint_source_remote(source)
+            unreachable = unreachable or block_unreachable
+            # A construct caught by a local pattern is also flagged by the
+            # server; report it once, preferring the local hit that names the
+            # line and the fix.
+            local_markers = [marker for _, _, marker in local_hits]
+            for problem in remote_problems:
+                if any(marker in problem for marker in local_markers):
+                    continue
+                complaints.append(problem)
+
+        for complaint in complaints:
+            errors.append({
+                'file': filepath,
+                'block': i,
+                'line': line_num,
+                'type': 'deprecated_syntax',
+                'message': f"PlantUML block #{i} (line {line_num}) renders with a complaint:\n"
+                           f"  {complaint}\n"
+                           f"  The URL may be in sync and the diagram still render badly — "
+                           f"fix the source, then re-sync.",
+            })
+
+    return errors, unreachable
 
 
 def check_markdown(filepath):
@@ -194,6 +365,56 @@ def sync_markdown(filepath):
         print(f"No changes: {filepath}")
 
 
+def report_errors(all_errors, files_checked, unreachable, sync_only=True, linted=True):
+    """
+    Print a combined report for --check / --lint and exit non-zero on findings.
+
+    An unreachable PlantUML server is reported as a warning, never as a failure:
+    the render lint needs the network, and a commit must stay possible offline.
+    """
+    if unreachable:
+        print("Warning: PlantUML server unreachable — render lint skipped for "
+              "some diagrams. URL sync was still verified.", file=sys.stderr)
+
+    if all_errors:
+        sync_errors = [e for e in all_errors if e['type'] != 'deprecated_syntax']
+        lint_errors = [e for e in all_errors if e['type'] == 'deprecated_syntax']
+
+        print(f"\n{'='*60}", file=sys.stderr)
+        print(f"PLANTUML ERRORS: {len(all_errors)} issue(s) found", file=sys.stderr)
+        print(f"{'='*60}\n", file=sys.stderr)
+        for err in all_errors:
+            print(f"  ✗ {err['file']}: {err['message']}\n", file=sys.stderr)
+        if sync_errors:
+            print("Fix out-of-sync URLs by running:", file=sys.stderr)
+            files = ' '.join(sorted(set(e['file'] for e in sync_errors)))
+            print(f"  plantuml-encode.py --sync {files}\n", file=sys.stderr)
+        if lint_errors:
+            print("Deprecated syntax and render errors must be fixed in the source "
+                  "block by hand, then re-synced.\n", file=sys.stderr)
+        sys.exit(1)
+
+    count = len(files_checked)
+    # Only claim a clean render when the render lint actually ran to completion.
+    render_verified = linted and not unreachable
+
+    if not sync_only:
+        if render_verified:
+            print(f"All PlantUML diagrams render without deprecation warnings "
+                  f"across {count} file(s).")
+        else:
+            print(f"No deprecated syntax found across {count} file(s), but the render "
+                  f"lint could not check every diagram.")
+    elif render_verified:
+        print(f"All PlantUML diagrams are in sync and render cleanly across {count} file(s).")
+    elif not linted:
+        print(f"All PlantUML diagrams are in sync across {count} file(s). "
+              f"Render lint skipped (--no-lint).")
+    else:
+        print(f"All PlantUML diagrams are in sync across {count} file(s). "
+              f"Render lint incomplete — see the warning above.")
+
+
 def main():
     parser = argparse.ArgumentParser(description="PlantUML URL encoder")
     parser.add_argument('--format', '-f', default='svg', choices=['svg', 'png', 'txt'],
@@ -201,7 +422,17 @@ def main():
     parser.add_argument('--sync', '-s', metavar='FILE', nargs='+',
                         help='Sync PlantUML image URLs in markdown file(s)')
     parser.add_argument('--check', '-c', metavar='FILE', nargs='+',
-                        help='Check PlantUML image URLs match source (exit 1 if mismatch)')
+                        help='Check PlantUML image URLs match source and lint the sources '
+                             '(exit 1 if mismatch or deprecated syntax)')
+    parser.add_argument('--lint', '-l', metavar='FILE', nargs='+',
+                        help='Lint PlantUML sources for deprecated syntax and render errors '
+                             '(exit 1 if any found)')
+    parser.add_argument('--no-lint', action='store_true',
+                        help='With --check: only verify URL/source sync, skip the render lint '
+                             '(fully offline)')
+    parser.add_argument('--offline', action='store_true',
+                        help='Lint using local deprecated-syntax patterns only, never contacting '
+                             'the PlantUML server')
     parser.add_argument('--encode-only', '-e', action='store_true',
                         help='Output only the encoded string, not full URL')
     parser.add_argument('--render-ascii', '-r', action='store_true',
@@ -210,21 +441,25 @@ def main():
 
     if args.check:
         all_errors = []
+        unreachable = False
         for filepath in args.check:
-            errors = check_markdown(filepath)
-            all_errors.extend(errors)
-        if all_errors:
-            print(f"\n{'='*60}", file=sys.stderr)
-            print(f"PLANTUML SYNC ERRORS: {len(all_errors)} issue(s) found", file=sys.stderr)
-            print(f"{'='*60}\n", file=sys.stderr)
-            for err in all_errors:
-                print(f"  ✗ {err['file']}: {err['message']}\n", file=sys.stderr)
-            print(f"Fix all issues by running:", file=sys.stderr)
-            files = ' '.join(sorted(set(e['file'] for e in all_errors)))
-            print(f"  plantuml-encode.py --sync {files}\n", file=sys.stderr)
-            sys.exit(1)
-        else:
-            print(f"All PlantUML diagrams are in sync across {len(args.check)} file(s).")
+            all_errors.extend(check_markdown(filepath))
+            if not args.no_lint:
+                lint_errors, file_unreachable = lint_markdown(
+                    filepath, use_network=not args.offline)
+                all_errors.extend(lint_errors)
+                unreachable = unreachable or file_unreachable
+        report_errors(all_errors, args.check, unreachable, linted=not args.no_lint)
+    elif args.lint:
+        all_errors = []
+        unreachable = False
+        for filepath in args.lint:
+            lint_errors, file_unreachable = lint_markdown(
+                filepath, use_network=not args.offline)
+            all_errors.extend(lint_errors)
+            unreachable = unreachable or file_unreachable
+        report_errors(all_errors, args.lint, unreachable, sync_only=False,
+                      linted=True)
     elif args.sync:
         for filepath in args.sync:
             sync_markdown(filepath)

@@ -1,4 +1,4 @@
-name: PlantUML Sync Check
+name: PlantUML Sync and Render Check
 
 on:
   pull_request:
@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Check PlantUML URLs match source blocks
+      - name: Check PlantUML URLs match source and render without warnings
         run: |
           # Get list of changed .md files
           CHANGED_MD=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- '*.md')
@@ -28,5 +28,8 @@ jobs:
             exit 0
           fi
 
+          # --check verifies URL/source sync and lints each source against the
+          # PlantUML server, so deprecated syntax fails the build instead of
+          # silently rendering a warning box into the image.
           echo "Checking files: $CHANGED_MD"
           python3 scripts/plantuml-encode.py --check $CHANGED_MD

@@ -5,6 +5,26 @@ All notable changes to the PlantUML plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-09-07
+
+### Added
+- Render lint: `--check` now also verifies that each diagram source still renders without deprecation warnings or syntax errors, closing the gap where an in-sync URL implied a correct diagram
+- `--lint FILE...` to run the render lint on its own
+- `--no-lint` to restrict `--check` to URL sync (fully offline)
+- `--offline` to lint against local deprecated-syntax patterns without contacting the PlantUML server
+- Local pattern for the deprecated activity color form `#COLOR:label;`, reported with its line number and the `:label; <<#COLOR>>` replacement
+- `' plantuml-lint: ignore` block comment to exempt deliberate counter-examples in documentation from the lint
+- `PLANTUML_SKIP_LINT=1` escape hatch for the pre-commit hook
+- Acceptance tests for the render lint (section 2.4), including offline and server-unreachable behavior
+
+### Changed
+- Pre-commit hook and CI template now block on deprecated syntax as well as stale URLs
+- Success messages distinguish a verified clean render from a skipped or incomplete lint, instead of claiming diagrams "render cleanly" when the lint never ran
+- Error banner renamed from "PLANTUML SYNC ERRORS" to "PLANTUML ERRORS", since findings are no longer only about sync
+
+### Fixed
+- `docs/VALIDATION.md` referenced a non-existent `templates/plantuml.yml`; the workflow template is `templates/plantuml-sync.yml`
+
 ## [1.8.0] - 2026-03-07
 
 ### Added

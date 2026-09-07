@@ -103,6 +103,9 @@ Every diagram has two parts: a `plantuml` source block and an image URL below it
 | PostToolUse (Write/Edit on `.md`) | Auto-updates image URLs when source changes ([validation & CI](docs/VALIDATION.md)) |
 | PreToolUse | Auto-allows all PlantUML operations — no permission prompts |
 | Before creating any diagram | `plantuml-diagram-guide` skill invoked automatically — picks the right type from 17 options |
+| Pre-commit | Blocks commits with a stale URL, deprecated syntax, or a diagram that fails to render |
+
+A matching URL is not the same as a working diagram: PlantUML happily renders deprecated syntax and bakes a yellow warning box into the image. Validation therefore checks both — that the URL encodes the source, and that the source still renders cleanly. See [validation & CI](docs/VALIDATION.md).
 
 ## 📦 Installation <a name="installation"></a>
 
@@ -118,7 +121,7 @@ Select **plantuml** → enable **auto-update**. Restart your session — done.
 
 ## 🗑️ Uninstall <a name="uninstall"></a>
 
-The plugin installs a pre-commit hook section that validates PlantUML URLs before each commit. To remove it from a project:
+The plugin installs a pre-commit hook section that validates PlantUML diagrams before each commit. To remove it from a project:
 
 ```
 /plantuml-uninstall
@@ -130,4 +133,4 @@ This removes only the plantuml section from your pre-commit hook. If other hook 
 
 - [`CHANGELOG.md`](CHANGELOG.md) — version history
 - [`docs/ACCEPTANCE_TESTS.md`](docs/ACCEPTANCE_TESTS.md) — test suite
-- [`docs/VALIDATION.md`](docs/VALIDATION.md) — URL validation and CI setup
+- [`docs/VALIDATION.md`](docs/VALIDATION.md) — URL validation, render lint, and CI setup

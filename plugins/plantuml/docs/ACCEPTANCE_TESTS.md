@@ -223,7 +223,8 @@ echo "Exit code: $?"
 
 **Expected result:**
 - ✅ Exit code 0 (success)
-- ✅ Output: "All PlantUML diagrams are in sync across 1 file(s)."
+- ✅ Output: "All PlantUML diagrams are in sync and render cleanly across 1 file(s)."
+- ℹ️ If the PlantUML server is unreachable, the output instead reports that the render lint was incomplete, and the exit code is still 0
 
 **Test case 2:** Invalid file (stale URL)
 
@@ -246,10 +247,94 @@ echo "Exit code: $?"
 **Expected result:**
 - ✅ Exit code 1 (error)
 - ✅ stderr output includes:
-  - "PLANTUML SYNC ERRORS: 1 issue(s) found"
+  - "PLANTUML ERRORS: 1 issue(s) found"
   - File path and line number
   - Descriptive error message
   - Fix command: `plantuml-encode.py --sync <file>`
+
+---
+
+#### 2.4 Render Lint (Deprecated Syntax and Render Errors)
+
+**Objective:** Verify that a diagram whose URL is in sync but whose source renders with a complaint is rejected. A matching URL does not imply a correct diagram — this is the gap `--check` alone used to leave open.
+
+**Test fixture** — the deprecated activity-color form. `--sync` gives it a correct URL, so URL validation passes:
+
+```plantuml
+@startuml
+' plantuml-lint: ignore — deprecated on purpose, this is the counter-example
+start
+#FDE8E8:skip auto install off;
+:next;
+stop
+@enduml
+```
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/7Oqn2iCm40HxlM8XHPguDtBZ8iu_X7sEHUIxGpg1IpyYBynBeWIsM9XbTYmMijKzkIiq1VxLBaKsZ_XaoOJF-SP2ccaEHWk4eJMh5Bh1jbZGOXjXbif6kQCZx9h8_RtkyhXF_TJxyegAK4qGkP6K8EiwECzqsD2secuaNjhv5m00)
+
+Write that source to `deprecated.md` **without** the ignore comment (the comment exists only so this document itself stays committable), then sync it:
+
+```bash
+python3 scripts/plantuml-encode.py --sync deprecated.md
+```
+
+**Test case 1:** URL sync alone accepts the deprecated diagram
+
+```bash
+python3 scripts/plantuml-encode.py --no-lint --check deprecated.md
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Exit code 0
+- ✅ Output states that the render lint was skipped (`--no-lint`), so the pass is not claimed as a clean render
+
+**Test case 2:** Default `--check` rejects it
+
+```bash
+python3 scripts/plantuml-encode.py --check deprecated.md 2>&1
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Exit code 1
+- ✅ stderr names the offending source line and the replacement: `` :label; <<#COLOR>> ``
+- ✅ The problem is reported once, not twice — the local pattern and the server warning describe the same construct and are deduplicated
+
+**Test case 3:** Offline lint catches the known pattern with no network
+
+```bash
+python3 scripts/plantuml-encode.py --offline --check deprecated.md 2>&1
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Exit code 1, same finding, no network request made
+
+**Test case 4:** An unreachable server never blocks
+
+```bash
+https_proxy=http://127.0.0.1:9 HTTPS_PROXY=http://127.0.0.1:9 \
+  python3 scripts/plantuml-encode.py --check valid.md
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Exit code 0 — a network outage must not block a commit
+- ✅ stderr warns that the render lint was skipped for some diagrams
+- ✅ stdout does not claim the diagrams "render cleanly", only that they are in sync
+
+**Test case 5:** Standalone `--lint`
+
+```bash
+python3 scripts/plantuml-encode.py --lint valid.md
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Exit code 0, output confirms no deprecation warnings
+
+**Note on flag order:** `--check` and `--lint` take one or more filenames, so other flags must precede them. `--no-lint --check file.md` works; `--check --no-lint file.md` makes argparse treat `--check` as having no arguments and exits 2.
 
 ---
 
