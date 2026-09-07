@@ -2223,6 +2223,59 @@ Tests for correct application of ACK suppression rules, async arrow styles, visu
 
 ---
 
+## Test 13: Arrow Thickness on Non-Sequence Diagrams
+
+Tests that the non-default arrow thickness rule is applied to every supported diagram type, not only to sequence diagrams.
+
+### 13.1 Activity Diagram
+
+**Setup:** Ask Claude to create an activity diagram for a CI/CD release flow with at least one `if/then/else` branch.
+
+**Expected behavior:**
+- `skinparam ArrowThickness 1.5` present, on the line after `title`
+- `skinparam sequenceArrowThickness` NOT used (it has no effect outside sequence diagrams)
+
+**Pass criteria:**
+- ✅ `skinparam ArrowThickness 1.5` present
+- ✅ Value is `1.5`, not the default `1` and not `2`
+- ✅ No `sequenceArrowThickness` on a non-sequence diagram
+
+### 13.2 Class Diagram
+
+**Setup:** Ask Claude to create a class diagram with an interface, two implementations, and one association.
+
+**Expected behavior:**
+- `skinparam ArrowThickness 1.5` present
+- Dashed implementation arrows (`<|..`) still read as dashed, distinct from inheritance (`<|--`)
+
+**Pass criteria:**
+- ✅ `skinparam ArrowThickness 1.5` present
+- ✅ Thickness not raised above `1.5` (at `2` the dashed arrows render nearly solid)
+
+### 13.3 Unsupported Diagram Types
+
+**Setup:** Ask Claude to create a mindmap, a Gantt chart, and a JSON diagram.
+
+**Expected behavior:**
+- No `ArrowThickness` skinparam emitted — these types do not support it
+
+**Pass criteria:**
+- ✅ No `skinparam ArrowThickness` in mindmap, Gantt, WBS, JSON, YAML, timing, network, or Salt diagrams
+- ✅ Diagrams still render without errors
+
+### 13.4 SessionStart Rule Injection
+
+**Setup:** Start a new session in a project with the plugin enabled and inspect the injected rules (e.g. via `/ctx-show`).
+
+**Expected behavior:**
+- The injected rule names both skinparams and the diagram types each one applies to
+
+**Pass criteria:**
+- ✅ Injected rule mentions `skinparam ArrowThickness 1.5` for non-sequence types
+- ✅ Injected rule still mentions `skinparam sequenceArrowThickness 1.5` and `skinparam LifeLineBorderColor #C0C0C0` for sequence diagrams
+
+---
+
 ## Contributing
 
 When adding new features to the PlantUML plugin:

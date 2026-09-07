@@ -27,6 +27,6 @@ Rules:
 - Use SVG format (\`/svg/\` path) unless PNG is specifically requested.
 - The alt text in the image link should be a short description of the diagram.
 - Place a blank line between the closing \`\`\` and the image link.
-- Every sequence diagram MUST include \`skinparam sequenceArrowThickness 1.5\` and \`skinparam LifeLineBorderColor #C0C0C0\` after \`@startuml\`.
+- Every diagram MUST set a non-default arrow thickness after \`@startuml\`: \`skinparam sequenceArrowThickness 1.5\` for sequence diagrams, \`skinparam ArrowThickness 1.5\` for activity, state, class, component, object, use case, deployment and ER. Sequence diagrams MUST also include \`skinparam LifeLineBorderColor #C0C0C0\`.
 - For sequence diagrams: consult \`references/sequence.md\` (via plantuml-diagram-guide skill) for ACK suppression rules and arrow style conventions.
 RULES
