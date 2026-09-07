@@ -3,13 +3,7 @@
 > [!TIP]
 > ✨ ***Issue labels rot quietly. So do the docs that describe them.***
 
-**Two workflows, in order.**
-
-The first reads every issue in the repository — open and closed alike — and proposes a label taxonomy from what it finds. It mines the recurring subjects, the parts of the product that get filed against, and the existing labels that stopped narrowing anything, then interviews you about the calls it cannot make alone and writes the result as a document in your repo. That document is the source of truth ([this repository's own](../../docs/issue-labels.md)); the GitHub labels are created from it.
-
-This wants dozens of issues at minimum, and reads best at a hundred or more. Below thirty the plugin says so and lets you continue anyway — with that little history a taxonomy is guessed from the code layout rather than derived from what the maintainers actually do.
-
-The second applies the taxonomy to the issues you already have. It classifies all of them, proposes labels and — if you ask for it — retitled subjects, and hands you a review document in batches rather than a fait accompli. When you rewrite a proposal it asks whether that was a one-off or a rule; a rule goes into the document and is re-applied to everything already classified, so each correction is paid for once. Nothing reaches GitHub until you approve it, and the backup written beforehand contains the commands to undo it.
+Your issue tracker has labels nobody agrees on: the ones in heavy use narrow nothing, and the rest nobody ever applied. This designs a taxonomy from what you actually work on, writes it down, and applies it to every issue you already have.
 
 > [!NOTE]
 > [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [⚡ Commands](#commands) · [⚙️ Setup](#setup) · [📝 Config](#config) · [📚 Reference](#reference) · [🔗 Dependencies](#dependencies)
@@ -32,6 +26,16 @@ INFO
 ```
 
 ## ⚙️ How it works <a name="how-it-works"></a>
+
+**Two workflows, in order.**
+
+The first reads every issue in the repository — open and closed alike — and proposes a label taxonomy from what it finds. It mines the recurring subjects, the parts of the product that get filed against, and the existing labels that stopped narrowing anything, then interviews you about the calls it cannot make alone and writes the result as a document in your repo ([example](../../docs/issue-labels.md)). The GitHub labels are created from that document.
+
+This wants dozens of issues at minimum, and reads best at a hundred or more. Below thirty the plugin says so and lets you continue anyway — with that little history a taxonomy is guessed from the code layout rather than derived from what the maintainers actually do.
+
+The second applies the taxonomy to the issues you already have. It classifies all of them, proposes labels and — if you ask for it — retitled subjects, and hands you a review document in batches rather than a fait accompli. When you rewrite a proposal it asks whether that was a one-off or a rule; a rule goes into the document and is re-applied to everything already classified, so each correction is paid for once. Nothing reaches GitHub until you approve it, and the backup written beforehand contains the commands to undo it.
+
+### Where the truth lives
 
 The taxonomy lives as a **schema-constrained markdown document in your repository** — not in a JSON config, and not in `CLAUDE.md`. That choice drives everything else:
 
