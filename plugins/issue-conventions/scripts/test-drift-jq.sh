@@ -85,5 +85,41 @@ mods=$(printf '_prompts.py\n__init__.py\ntranscode.py\nrender.PY\n' \
   || bad "unexpected module list: '$mods'"
 
 echo
+echo "=== title scopes: bind the scope before index(), or . means the array ==="
+
+# Same trap as bug 2 above, one layer along: after `$known | index(...)`, the dot
+# refers to $known, not to the object being filtered. `index(.scope)` therefore
+# asks jq to index an array with a string and dies at runtime.
+scope_model='{"axes":[{"name":"stage","values":[{"name":"proofread"}]},
+                      {"name":"area","values":[{"name":"llm"}]}]}'
+scope_issues='[
+  {"number":1,"title":"feat(proofread): known","labels":["type:feature"]},
+  {"number":2,"title":"research(pipeline): never exists","labels":["type:docs"]},
+  {"number":3,"title":"feat(followup): proposes a stage","labels":["type:feature"]},
+  {"number":4,"title":"CRITICAL fix(llm): known, with prefix","labels":["type:bug"]},
+  {"number":5,"title":"chore(nope): bot-filed","labels":["by:kb-grooming"]},
+  {"number":6,"title":"no scope at all","labels":["type:docs"]}
+]'
+
+scopes=$(jq -c -n --argjson model "$scope_model" --argjson issues "$scope_issues" '
+  ([$model.axes[] | .values[] | .name]) as $knownScopes
+  | [ $issues[]
+      | select([.labels[] | startswith("by:")] | any | not)
+      | select(.title | test("^(?:CRITICAL )?[a-z]+\\([^)]+\\):"))
+      | {number, scope: (.title | capture("^(?:CRITICAL )?[a-z]+\\((?<s>[^)]+)\\):") | .s)}
+      | .scope as $s
+      | select($knownScopes | index($s) | not) ]' 2>&1)
+
+[ "$scopes" = '[{"number":2,"scope":"pipeline"},{"number":3,"scope":"followup"}]' ] \
+  && ok "unknown scopes found; known, exempt and scope-less titles skipped" \
+  || bad "unexpected: $scopes"
+
+if grep -q 'index(\.scope)' "$SCRIPT"; then
+  bad "drift-check.sh still calls index(.scope) — the dot is the array there"
+else
+  ok "drift-check.sh binds the scope before index()"
+fi
+
+echo
 echo "Пройдено: $pass, провалено: $fail"
 [ "$fail" -eq 0 ]
