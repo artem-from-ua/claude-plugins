@@ -318,6 +318,41 @@ def parse_list_section(lines, idx, sections):
     return out
 
 
+def parse_allowed_scopes(lines, idx, sections):
+    """Scopes valid in titles that no axis value carries.
+
+    Typically an issue proposing a component that does not exist yet. Without
+    this the rule lives only in prose and the drift check flags every such title.
+    """
+    end = len(lines)
+    for level, _, i in sections:
+        if i > idx and level == 2:
+            end = i
+            break
+
+    out = []
+    # Anchored on the bold marker line, not guessed from column names: the
+    # section's first table (Element | Source | Rule) mentions "scope" in its
+    # prose and would otherwise match first.
+    marker = re.compile(r"allowed scopes beyond the axis values", re.I)
+    for i in range(idx + 1, end):
+        if not marker.search(lines[i]):
+            continue
+        header, rows, _ = collect_table(lines, i + 1)
+        if header is None:
+            break
+        c_scope = column_index(header, "Scope")
+        c_why = column_index(header, "Why")
+        if c_scope is None:
+            break
+        for _, row in rows:
+            name = strip_backticks(cell(row, c_scope))
+            if name:
+                out.append({"scope": name, "why": cell(row, c_why) or None})
+        break
+    return out
+
+
 def parse_legacy(lines, idx, sections):
     end = len(lines)
     for level, _, i in sections:
@@ -395,7 +430,11 @@ def parse(text):
         "crossAxisRules": cross,
         "softLimit": soft_limit,
         "disambiguation": parse_list_section(lines, by_name["Disambiguation rules"], sections),
-        "titleFormat": {"documented": "Title format" in by_name},
+        "titleFormat": {
+            "documented": "Title format" in by_name,
+            "allowedScopes": (parse_allowed_scopes(lines, by_name["Title format"], sections)
+                              if "Title format" in by_name else []),
+        },
         "legacyMapping": (parse_legacy(lines, by_name["Legacy label mapping"], sections)
                           if "Legacy label mapping" in by_name else []),
         "builtins": {

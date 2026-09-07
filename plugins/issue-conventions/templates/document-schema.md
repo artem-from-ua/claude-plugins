@@ -118,6 +118,12 @@ Every issue needs at least one `plugin:*` or `topic:*`; beyond five labels an is
 
 **Exempt:** issues carrying a `by:*` label keep whatever title the automation produced.
 
+**Allowed scopes beyond the axis values:**
+
+| Scope | Why |
+|---|---|
+| `followup` | Proposes a pipeline stage that does not exist yet; labels use a cross-cutting axis until it ships. |
+
 ## Legacy label mapping
 
 | Old label | Action | New label | Why |
@@ -140,7 +146,7 @@ Policy: **delete**. Exceptions kept: none.
 | | |
 |---|---|
 | Config | `.claude-plugin/issue-conventions.json` |
-| Plugin | `issue-conventions` v0.2.0 |
+| Plugin | `issue-conventions` v0.2.1 |
 | Last synced with GitHub | YYYY-MM-DD |
 <!-- /issue-conventions:managed -->
 ````
@@ -160,6 +166,7 @@ Policy: **delete**. Exceptions kept: none.
 | Values sections | Every row of the Axes table must have a matching `### ` section. Extra `### ` sections are ignored. |
 | Cross-axis rules | Machine-readable, since axis names are project-specific: `- at-least-one: a, b`, `- soft-limit: N`, `- mutually-exclusive: a, b`. Lines not starting with a known key are prose and are ignored. |
 | `<!-- source: ... -->` | Optional, under an axis `### ` heading. Key `source` is required, value `modules` or `manual`. For `modules`, `path=<repo-relative path>` is required (one path) and `ignore=<comma list>` is optional — modules deliberately left out of the axis; drift check skips them. An unknown `source` value is treated as `manual`, without error. |
+| Allowed scopes | Optional table under `## Title format`, headed "Allowed scopes beyond the axis values", with columns `Scope` and `Why`. Scopes listed there are valid in titles even though no axis value carries the name — typically an issue proposing a component that does not exist yet. Without this table the rule lives only in prose, and the drift check reports every such title as a defect. |
 | Tolerance | **Unknown columns and unknown sections are ignored, not errors.** Someone adding an `Owner` column or a `## Notes` section must still get a working document. Strictness applies only where it is unavoidable: cardinality vocabulary, prefix match, description presence. |
 | Footer | The `<!-- issue-conventions:managed -->` marker is expected; its absence is a **warning, not an error** — a hand-written document should still work. |
 | Failure mode | A parse error reports the line number and the expected shape. **Never guess**: stop and point at the line. |
