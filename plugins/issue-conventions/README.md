@@ -6,7 +6,7 @@
 Designs an issue label and title taxonomy for your repository, writes it as a document in your repo, applies it to the existing backlog, and detects when the document and the GitHub labels drift apart. Recommended once a project has around 30 issues — before that there is not enough material to see what the maintainers actually work on.
 
 > [!NOTE]
-> [📦 Installation](#installation) · [⚙️ How it works](#how-it-works) · [⚡ Commands](#commands) · [⚙️ Setup](#setup) · [📝 Config](#config) · [🔗 Dependencies](#dependencies)
+> [⚙️ How it works](#how-it-works) · [📦 Installation](#installation) · [⚡ Commands](#commands) · [⚙️ Setup](#setup) · [📝 Config](#config) · [📚 Reference](#reference) · [🔗 Dependencies](#dependencies)
 
 ## 🎬 Demo <a name="demo"></a>
 
@@ -33,7 +33,7 @@ The taxonomy lives as a **schema-constrained markdown document in your repositor
 - **When the document and GitHub disagree, the document wins.** Editing it by hand is a legitimate way to change the taxonomy; the plugin propagates the change to GitHub, never the reverse.
 - **Rules do not sit in your `CLAUDE.md`.** A label section there loads into every session, including the majority that never touch issues.
 
-The skill is a **dispatcher**: about fifty lines of routing that decide which subagent handles what. The rules and the issue bodies stay in the subagent, so neither reaches your session context. A conditional `SessionStart` hook prints three lines — and only in repositories that have a taxonomy configured, costing nothing everywhere else.
+The skill is a **dispatcher**: about fifty lines of routing that decide which subagent handles what. The rules and the issue bodies stay in the subagent, so neither reaches your session context. A conditional `SessionStart` hook adds a short block — where the taxonomy lives, when to invoke the skill, how to check for drift — and only in repositories that have one configured, costing nothing everywhere else. Its text is fixed rather than computed, so it does not invalidate the prompt cache on every session start.
 
 ```
 docs/issue-labels.md          ← source of truth (markdown, in git, read by people and machines)
@@ -45,6 +45,13 @@ skills/issue-conventions-guide/   ← dispatcher: routing only, no rules
 .claude-plugin/issue-conventions.json   ← thin config: operational settings
         ↓
 GitHub labels                 ← derived state, synced to the document
+```
+
+## 📦 Installation <a name="installation"></a>
+
+```bash
+/plugin marketplace add artem-from-ua/claude-plugins
+/plugin install issue-conventions@artem-from-ua
 ```
 
 ## ⚡ Commands <a name="commands"></a>
@@ -104,6 +111,12 @@ Resolution order: `.claude-plugin/issue-conventions.json` → `.claude/issue-con
 Unknown sections and unknown columns are ignored rather than rejected, so a document can use syntax the installed version does not know yet. Verified on a real document: a `## Rule exceptions` section added before upgrading parsed cleanly under the older parser — no warning, no error, all axes and labels intact — and started taking effect once the plugin caught up.
 
 This is worth knowing because the intuition runs the other way. There is no ordering requirement between updating the plugin and updating the document: add the section whenever it is convenient.
+
+## 📚 Reference <a name="reference"></a>
+
+- [`docs/ACCEPTANCE_TESTS.md`](docs/ACCEPTANCE_TESTS.md) — test suite, plus what three live migrations taught: which checks earned their place, which one was written and abandoned after measuring it, and the traps that produce a confident wrong answer instead of an error.
+
+Three test scripts run without network or credentials, on synthetic fixtures: `test-drift-jq.sh` pins the semantics of the drift expressions, `test-pr-evidence.sh` pins which pull request counts as evidence, and `test-scale.sh` guards the batch size against a dump large enough to break it.
 
 ## 🔗 Dependencies <a name="dependencies"></a>
 
