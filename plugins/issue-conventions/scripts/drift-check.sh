@@ -1,10 +1,10 @@
 #!/bin/bash
 # drift-check.sh — the mechanical half of the drift algorithm.
 #
-# Checks 1, 2, 3, 7, 8, 11 are set operations over JSON and need no model at all;
-# this script runs them. Checks 4, 5, 6, 9, 10 need judgment (numbers stated in
-# human prose, "documented norm vs the actual corpus", ADR freshness) and are left
-# to the drift-check subagent, which reads this output as its input.
+# The set operations over JSON need no model at all;
+# this script runs them. The rest need judgment — numbers stated in human prose,
+# a documented norm against the actual corpus — and are left to the drift-check
+# subagent, which reads this output as its input.
 #
 # The taxonomy document is the source of truth: every finding names the two
 # sources that disagree, and the fix always pulls GitHub up to the document.
@@ -27,47 +27,6 @@ done
 
 MODEL=$(python3 "$SCRIPT_DIR/parse-taxonomy.py" "$DOC")
 
-# ADR supersession status, decided by script rather than re-derived from prose
-# each run. The subagent still judges what a divergence *means*; this settles
-# the fact it reasons from. Path comes from the config, if there is one.
-# Reports *why* there is nothing to compare, never a bare null: "not configured"
-# and "configured but the file is missing" look identical otherwise, and the
-# second is a broken setup reading as a clean one.
-ADR_STATE="not-configured"
-ADR_RECORDS="[]"
-ADR_MISSING="[]"
-
-CONFIG="${CLAUDE_PROJECT_DIR:-.}/.claude-plugin/issue-conventions.json"
-[[ -f "$CONFIG" ]] || CONFIG="${CLAUDE_PROJECT_DIR:-.}/.claude/issue-conventions.json"
-if [[ -f "$CONFIG" ]]; then
-  ADR_PATHS=$(jq -r '(.adr // empty) | if type == "array" then .[] else . end' "$CONFIG" 2>/dev/null || true)
-  if [[ -n "$ADR_PATHS" ]]; then
-    found=""
-    missing=""
-    while IFS= read -r p; do
-      [[ -z "$p" ]] && continue
-      if [[ -f "$p" ]]; then
-        found+="$(bash "$SCRIPT_DIR/adr-status.sh" "$p" 2>/dev/null)"$'\n'
-      else
-        missing+="$p"$'\n'
-      fi
-    done <<< "$ADR_PATHS"
-
-    [[ -n "$found" ]] && ADR_RECORDS=$(printf '%s' "$found" | jq -sc . 2>/dev/null || echo '[]')
-    [[ -n "$missing" ]] && ADR_MISSING=$(printf '%s' "$missing" | jq -R 'select(length > 0)' | jq -sc .)
-
-    if [[ "$ADR_MISSING" != "[]" ]]; then
-      ADR_STATE="configured-but-missing"
-    else
-      ADR_STATE="checked"
-    fi
-  fi
-fi
-
-ADR_STATUS=$(jq -n --arg state "$ADR_STATE" \
-                   --argjson records "$ADR_RECORDS" \
-                   --argjson missing "$ADR_MISSING" \
-                   '{state: $state, records: $records, missingPaths: $missing}')
 LIVE=$(gh label list --limit 500 --json name,color,description)
 # The dump stays on disk and reaches jq through --slurpfile. Passing it via
 # --argjson puts the whole thing on argv, which dies with "Argument list too
@@ -75,7 +34,7 @@ LIVE=$(gh label list --limit 500 --json name,color,description)
 # exactly the size where this plugin earns its keep.
 ISSUES_FILE=$(bash "$SCRIPT_DIR/fetch-issues.sh")
 
-# Modules on disk, for check 9's input (the subagent decides what it means).
+# Modules on disk (the subagent decides what an uncovered one means).
 #
 # Private modules (a leading underscore, and `__init__`) are dropped entirely —
 # they are implementation detail, never their own axis value. They therefore do
@@ -98,7 +57,6 @@ jq -n \
   --argjson live "$LIVE" \
   --slurpfile issuesWrapped "$ISSUES_FILE" \
   --argjson modules "$MODULES" \
-  --argjson adrStatus "$ADR_STATUS" \
   --arg doc "$DOC" '
   ($issuesWrapped[0]) as $issues
   | ($model.axes | map(.values[].label)) as $declared
@@ -117,13 +75,13 @@ jq -n \
   | {
       document: $doc,
       mechanical: {
-        # 1. declared but absent from GitHub
+        # declared but absent from GitHub
         missingOnGitHub: [ $declared[] | select(. as $d | $onGitHub | index($d) | not) ],
 
-        # 2. on GitHub but undeclared (Dependabot and friends) — reported, never auto-deleted
+        # on GitHub but undeclared (Dependabot and friends) — reported, never auto-deleted
         undeclaredOnGitHub: [ $onGitHub[] | select(. as $g | $declared | index($g) | not) ],
 
-        # 3. color or description drift (someone edited in the UI)
+        # color or description drift (someone edited in the UI)
         metadataDrift: [
           $model.axes[] | .values[] as $v
           | ($live[] | select(.name == $v.label)) as $l
@@ -134,7 +92,7 @@ jq -n \
              document: {color: ($v.color // "#cccccc" | ltrimstr("#")), description: $v.description}}
         ],
 
-        # 7. issues violating cardinality / cross-axis rules / soft limit
+        # issues violating cardinality / cross-axis rules / soft limit
         violations: [
           $issues[] as $i
           | ($exactlyOne | map(. as $ax
@@ -157,14 +115,14 @@ jq -n \
              overSoftLimit: (($i.labels | length) > $softLimit)}
         ],
 
-        # 8. declared values nobody uses — INFO only, never a divergence
+        # declared values nobody uses — INFO only, never a divergence
         unusedValues: [ $declared[] | select(($usage[.] // 0) == 0) ],
 
-        # 11. GitHub silently re-created a built-in
+        # GitHub silently re-created a built-in
         builtinsPresent: [ $builtins[] | select(. as $b | $onGitHub | index($b)) ]
       },
 
-      # input for the judgment half (checks 4, 5, 6, 9, 10)
+      # input for the judgment half
       forSubagent: {
         softLimit: $softLimit,
         labelCountDistribution: ($issues | map(.labels | length) | group_by(.)
@@ -189,7 +147,6 @@ jq -n \
           | .scope as $s
           | select($knownScopes | index($s) | not)
         ],
-        adrStatus: $adrStatus,
         footer: $model.footer,
         warnings: $model.warnings
       }

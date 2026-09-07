@@ -3,7 +3,7 @@
 > [!TIP]
 > ✨ ***Design the taxonomy once. Keep it honest forever.***
 
-Designs an issue label and title taxonomy for your repository, writes it as a document in your repo, applies it to the existing backlog, and detects when the document, the GitHub labels, and the ADR drift apart. Recommended once a project has around 30 issues — before that there is not enough material to see what the maintainers actually work on.
+Designs an issue label and title taxonomy for your repository, writes it as a document in your repo, applies it to the existing backlog, and detects when the document and the GitHub labels drift apart. Recommended once a project has around 30 issues — before that there is not enough material to see what the maintainers actually work on.
 
 > [!NOTE]
 > [📦 Installation](#installation) · [⚙️ How it works](#how-it-works) · [⚡ Commands](#commands) · [⚙️ Setup](#setup) · [📝 Config](#config) · [🔗 Dependencies](#dependencies)
@@ -13,16 +13,12 @@ Designs an issue label and title taxonomy for your repository, writes it as a do
 ```markdown
 > /issue-conventions-drift
 
-Drift check — 4 findings · source of truth: docs/issue-labels.md
+Drift check — 3 findings · source of truth: docs/issue-labels.md
 
 DOCUMENT ↔ GITHUB
 - `dependencies`, `python:uv` exist on GitHub but not in the document (Dependabot created them).
   Fix: add them under "Legacy label mapping" as `keep`, or delete them from GitHub.
 - 3 issues have no priority label — #201, #244, #289. Fix: /issue-conventions-relabel
-
-DOCUMENT ↔ ADR
-- ADR 0029 states 7 values for the area axis; the document has 8 (`area:repo` came later).
-  Fix: update the ADR table, or supersede it.
 
 INFO
 - Soft limit is 5; median labels per issue is 4. Healthy — no action.
@@ -55,9 +51,9 @@ GitHub labels                 ← derived state, synced to the document
 
 | Command | What it does |
 |---|---|
-| `/issue-conventions-setup` | Interviews you, writes the taxonomy document, drafts an ADR, creates the labels |
+| `/issue-conventions-setup` | Interviews you, writes the taxonomy document, creates the labels |
 | `/issue-conventions-relabel` | Classifies the existing backlog, reviews it in batches, applies with reconciliation |
-| `/issue-conventions-drift` | Read-only: reports what disagrees between the document, GitHub, and the ADR |
+| `/issue-conventions-drift` | Read-only: reports what disagrees between the document and GitHub |
 
 The `issue-conventions-guide` skill runs on its own before any `gh issue create`, `gh issue edit`, `gh issue close`, or label change.
 
@@ -83,7 +79,6 @@ The disambiguation pass near the end is the highest-value step. It picks genuine
 {
   "version": 1,
   "taxonomyDocument": "docs/issue-labels.md",
-  "adr": "docs/adr/0038-taxonomy-storage.md",
   "titleFormat": { "enabled": true, "rewriteExisting": false },
   "thresholds": { "minIssues": 30 },
   "models": { "classifyNew": "sonnet", "reclassify": "sonnet",
@@ -96,8 +91,6 @@ The disambiguation pass near the end is the highest-value step. It picks genuine
 ```
 
 `titleFormat` splits deliberately: `enabled` makes title rules apply to new issues, while `rewriteExisting` controls mass renaming of the existing backlog — the least reversible thing this plugin can do, so it stays off until you turn it on.
-
-`adr` accepts a single path or an array. Point it at the **current** record, not the one that started the chain: ADRs supersede each other, and a config still naming a superseded record makes every tool that reads it quote outdated numbers. With an array, the first entry is the current one and the rest are history.
 
 Resolution order: `.claude-plugin/issue-conventions.json` → `.claude/issue-conventions.json` → `~/.claude/issue-conventions.json` → the plugin's `templates/issue-conventions.json`.
 

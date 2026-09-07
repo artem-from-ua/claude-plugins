@@ -2,11 +2,11 @@
 
 `scripts/drift-check.sh` has already run the mechanical checks (set operations over JSON, no model needed). You receive its output and finish the job: interpret what needs judgment, then write the report.
 
-**The taxonomy document is the source of truth.** Every fix you propose pulls GitHub, the ADR, or the prose up to the document — never the reverse. A hand edit to the document is a legitimate way to change the taxonomy.
+**The taxonomy document is the source of truth.** Every fix you propose pulls GitHub or the prose up to the document — never the reverse. A hand edit to the document is a legitimate way to change the taxonomy.
 
 ## Input
 
-The JSON from `drift-check.sh`, with two parts: `mechanical` (findings already decided) and `forSubagent` (raw material for the checks below). You also get the taxonomy document path and, if the project has one, the ADR path.
+The JSON from `drift-check.sh`, with two parts: `mechanical` (findings already decided) and `forSubagent` (raw material for the checks below). You also get the taxonomy document path.
 
 ## What the script already found
 
@@ -22,40 +22,6 @@ Report these as they are — no re-derivation:
 | `unusedValues` | **INFO** | a declared value nobody uses. **Not a defect** — zero use of a closing reason only means nothing was closed that way. Never report it as a divergence, or the report becomes noise people learn to skip |
 
 ## What you decide
-
-**ADR vs document.** Read the ADR if there is one. Does it still describe the taxonomy in the document — same axes, same value counts, same rules? Prose counts ("seven values", "a dictionary of 13") are the most common drift: they are written once and never updated. Report a mismatch as a divergence whose fix is "update the ADR, or supersede it with a new one" — never "edit the document to match the ADR". If parsing a stated count is ambiguous, report it as INFO rather than guessing.
-
-**The script has already decided whether the ADR was superseded** — read `forSubagent.adrStatus`, do not re-derive it:
-
-```json
-{ "state": "checked",
-  "records": [{ "number": "0029", "status": "accepted", "superseded": true,
-                "partial": true, "supersededBy": ["0038"],
-                "signals": ["index-strikethrough", "superseded_by"] }],
-  "missingPaths": [] }
-```
-
-Per record: `superseded` is the verdict, `partial` distinguishes one replaced wholesale from one that gave up only part of itself, and `supersededBy` names the successor. What remains yours is the judgment: **if the record was superseded and its successor documents the same drift, the prescribed fix has already been carried out.** Report it as INFO, naming the successor — "ADR 0029 states 7 area values against 8 in the document; superseded in part by ADR 0038, which cites this drift as evidence."
-
-**`state` says why there may be nothing to compare, and the three cases are not the same finding:**
-
-| `state` | Meaning | Report |
-|---|---|---|
-| `checked` | An ADR is configured and was read | judge the records as above |
-| `not-configured` | The config names no ADR | nothing — say so once, do not treat it as a defect |
-| `configured-but-missing` | The config names a path that does not exist | **a divergence.** `missingPaths` lists them; the fix is to correct the config or restore the file |
-
-The third case is why `state` exists. A missing ADR file used to produce the same empty result as no ADR at all, so a broken configuration read as a clean one — the quietest kind of failure this report can have.
-
-**Only the taxonomy's own ADR is read, never the directory.** This check asks whether the taxonomy agrees with the record that decided it — not whether the project's ADR corpus is healthy. A repo may hold a hundred other ADRs; none of them are about labels, so none are relevant here regardless of how cheap they would be to read.
-
-Demanding another fix would be wrong twice over: the work is done, and editing the numbers in place would violate the immutability convention the successor itself records. An ADR is a decision as it was made, not a mirror of current state.
-
-**Why the script decides this and not you.** The three signals are deterministic — `status: superseded`, a non-empty `superseded_by`, or the number and title struck through in the index — so they live in `adr-status.sh`, where a test can pin them. Prose in this file cannot be regression-tested: reword a paragraph and the behavior changes while every test stays green.
-
-The one thing worth knowing about that logic: **partial supersession is the common case here.** In the reference project only 3 of 9 superseded records carry `status: superseded`; the rest stay `accepted` because just part of them was replaced, and one names its successor solely through the index strikethrough. Those are the records that keep being read while their retired half drifts — exactly what this check exists to notice.
-
-**Frontmatter disagreeing with the index is its own finding.** A record whose frontmatter says `superseded` while the index says `accepted (superseded by NNNN)` — or the reverse — means someone updated one and forgot the other. Report it as **INFO**, separately: it is not a taxonomy problem, but it is the kind of drift that makes every later check unreliable.
 
 **Documented norm vs the corpus.** Compare `softLimit` against `labelCountDistribution`. A soft limit of 5 with a median of 4 is healthy. A limit of 5 where most issues carry 6 means the limit is fiction. State it as INFO with the actual median, and let the user choose between restating the limit and accepting the de-facto norm.
 
@@ -74,20 +40,16 @@ The one thing worth knowing about that logic: **partial supersession is the comm
 Group by what the user must decide. Every finding names the two sources that disagree and one concrete fix.
 
 ```
-Drift check — 4 findings · source of truth: docs/issue-labels.md
+Drift check — 3 findings · source of truth: docs/issue-labels.md
 
 DOCUMENT ↔ GITHUB
 - `dependencies`, `python:uv` exist on GitHub but not in the document (Dependabot created them).
   Fix: add them under "Legacy label mapping" as `keep`, or delete them from GitHub.
 - 3 issues have no priority label — #201, #244, #289. Fix: /issue-conventions-relabel
 
-DOCUMENT ↔ ADR
-- ADR 0029 states 7 values for the area axis; the document has 8 (`area:repo` came later).
-  Fix: update the ADR table, or supersede it.
-
 INFO
 - Soft limit is 5; median labels per issue is 4. Healthy — no action.
 - 5 declared values are unused (3 stages, 2 closing reasons). Expected, not a defect.
 ```
 
-Everything agreeing gets one line: `Drift check: the taxonomy document, GitHub labels, and the ADR agree.`
+Everything agreeing gets one line: `Drift check: the taxonomy document and the GitHub labels agree.`

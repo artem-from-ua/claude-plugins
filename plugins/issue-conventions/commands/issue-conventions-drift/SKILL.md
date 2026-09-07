@@ -1,7 +1,7 @@
 ---
 name: issue-conventions-drift
 description: >
-  Check that the issue taxonomy document, the GitHub labels, and the ADR still agree.
+  Check that the issue taxonomy document and the GitHub labels still agree.
   Read-only — reports divergences and the fix for each, mutates nothing. Run it when the
   taxonomy document was edited by hand, when labels were changed in the GitHub UI, or
   periodically to catch silent drift.
@@ -33,13 +33,13 @@ Set operations over JSON — labels declared but missing on GitHub, labels on Gi
 
 Launch it with `${CLAUDE_PLUGIN_ROOT}/templates/drift-check.md` as instructions and the script's JSON as input, using `models.driftCheck` and `efforts.driftCheck` (haiku/low by default — half the work is already done, what remains is interpretation).
 
-It decides the parts that need judgment: whether the ADR still matches the document, whether a documented norm survives contact with the actual corpus, whether modules on disk are genuinely uncovered, and whether the footer's sync date is stale. Then it writes the report.
+It decides the parts that need judgment: whether a documented norm survives contact with the actual corpus, whether modules on disk are genuinely uncovered, and whether the footer's sync date is stale. Then it writes the report.
 
 ### 4. Report
 
 Show the subagent's report as it comes. Do not soften it and do not act on it — this command reports, the user decides.
 
-Two things it must get right, and both are in the subagent's instructions: **the document is the source of truth**, so every fix pulls GitHub or the ADR up to it, never the reverse. And **unused values are INFO, not divergences** — a closing reason nobody used means nothing was closed that way, and reporting it as a problem trains people to skip the report.
+Two things it must get right, and both are in the subagent's instructions: **the document is the source of truth**, so every fix pulls GitHub up to it, never the reverse. And **unused values are INFO, not divergences** — a closing reason nobody used means nothing was closed that way, and reporting it as a problem trains people to skip the report.
 
 When everything agrees, that is one line, not a table.
 
@@ -48,4 +48,3 @@ When everything agrees, that is one line, not a table.
 - Labels missing on GitHub, or color and description drift → `/issue-conventions-relabel` reconciles them in its second step, or `gh label create --force` directly.
 - Issues breaking the rules → `/issue-conventions-relabel`.
 - Undeclared labels on GitHub → a decision: add to the document, record as `keep` in the legacy mapping, or delete from GitHub.
-- ADR out of step → update it, or supersede it with a new one. Never edit the document to match an ADR.

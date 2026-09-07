@@ -1,7 +1,6 @@
 {
   "version": 1,
   "taxonomyDocument": "docs/issue-labels.md",
-  "adr": null,
   "titleFormat": {
     "enabled": true,
     "rewriteExisting": false
