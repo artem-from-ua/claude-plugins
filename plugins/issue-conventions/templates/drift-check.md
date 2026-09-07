@@ -33,9 +33,9 @@ Demanding another fix would be wrong twice over: the work is done, and editing t
 
 1. `status: superseded` in the frontmatter — a record replaced wholesale.
 2. A non-empty `superseded_by` — often present while `status` stays `accepted`.
-3. The index row contains "superseded by" — sometimes the *only* place the replacement is recorded, with no `superseded_by` field at all.
+3. The index row has the number and title **struck through** (`~~N~~`) — sometimes the only place the replacement is recorded, with no `superseded_by` field at all.
 
-**Match the index row as a substring, anywhere in the cell, and mind the direction.** Real rows from the reference project:
+**Read the strikethrough for *whether*, the Status cell for *by whom*.** Real rows from the reference project:
 
 ```
 | ~~24~~ | ~~[Defaults for the safe_speech stage](0024-…md)~~ | accepted (render display superseded by 0025) |
@@ -43,10 +43,14 @@ Demanding another fix would be wrong twice over: the work is done, and editing t
 | ~~29~~ | ~~[Issue label taxonomy: 4 axes](0029-…md)~~ | accepted (storage mechanism superseded by 0038; axes still in force) |
 ```
 
-Two traps here, and they pull in opposite directions:
+The strikethrough is a **structural** marker on the record itself: this row is about a decision that has been replaced. It lives in the first two columns only — the Status cell is deliberately left readable, so that a reader can still scan which record superseded which. The Status cell is **prose**, written by hand in whatever wording fits.
 
-- The phrase sits **inside parentheses, mid-cell**, after the word `accepted`. Anything that checks a prefix, or normalizes the cell to its first word, sees only "accepted" and misses every partial supersession.
-- `supersedes` is **not** `superseded by`. Row 25 is the *successor* — it replaces 0024. A naive substring search for "supersede" marks it as replaced when it is the replacement. Match `superseded by` specifically, and read the number that follows it.
+So anchor on the structure and let the prose supply the detail. Verified across all 37 rows of the reference index, both signals agree exactly — but they are not equally safe:
+
+- `supersedes` is not `superseded by`, and the successors are not rare. Five rows say `supersedes`; a naive substring search for "supersede" returns 10 of 37 rows instead of 5, marking every replacement as replaced.
+- Even matching `superseded by` exactly depends on a phrasing nobody has promised. "accepted (0029 superseded by this record)" would read naturally on a *successor* row and would fool the phrase check. The strikethrough cannot be fooled that way, because it says something about the row rather than about a relationship.
+
+Take the number from the Status cell once the strikethrough has established that the record was replaced — matching `superseded by NNNN` as a substring anywhere in the cell, since the phrase sits mid-cell inside parentheses and any prefix check would miss it.
 
 **Partial supersession is the common case, and the one that matters most here.** When a record is replaced wholesale, `status` becomes `superseded` and people stop reading it. When only part of it is replaced, the status honestly stays `accepted` — the rest still governs the code — and *that* record keeps being read while its retired half quietly drifts from reality. Exactly the class of stale number this check exists to notice. Reporting it as a defect asks the maintainer to break the immutability convention.
 
