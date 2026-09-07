@@ -10,28 +10,18 @@ Your issue tracker has labels nobody agrees on: the ones in heavy use narrow not
 
 ## 🎬 Demo <a name="demo"></a>
 
-**Designing the taxonomy** — reads the issues, then asks only what it cannot decide:
+**Designing the taxonomy** — reads the issues, proposes the axes, asks you to settle the rest:
 
 ```markdown
 > /issue-conventions-setup
 
 Scanned 157 issues (84 closed, 73 open) and 16 labels.
 
-What I found:
-- `plugins/` has 13 directories, every one of them with issues — a structural axis
-- 4 title prefixes already in use: spike:, epic:, research:, idea:
-- `enhancement` is on 51 issues and `documentation` on 49 — half the backlog each
+[a short interview: which axes describe your work — the parts of the product,
+ the kinds of change, the urgency — offered as candidates mined from the scan,
+ plus the ambiguous issues it wants you to settle once so it stops asking]
 
-Two questions I can't answer for you:
-
-1. What should the structural axis be called?  [plugin:]  layer:  component:
-2. An issue about a plugin's ACCEPTANCE_TESTS.md — is that `type:test`
-   or `type:docs`? Both descriptions accept it as written.
-   → type:test  → type:docs  → narrow one of the two
-
-Your answer to 2 becomes a disambiguation rule, so I stop asking.
-
-Wrote docs/issue-labels.md · created 38 labels · deleted 9 GitHub built-ins
+Wrote issue taxonomy proposal to docs/issue-labels.md · created 38 labels · deleted 9 GitHub built-ins
 ```
 
 **Applying it to the backlog** — proposes, you review, then it applies:
