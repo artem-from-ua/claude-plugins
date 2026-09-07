@@ -224,12 +224,17 @@ Widen the last rule and it covers most of what this plugin got wrong. The expens
 | this finding came from the second polygon | true while there was only one polygon to confuse it with |
 | `grep 'gh issue list'` finds the call | the file gained a comment explaining why that call is *not* used |
 | the axis table under Decision is what was decided | a second document appeared holding the same table |
+| the instruction was removed in 0.4.2 | true of the repository; the installed cache was still 0.4.1 |
 
-None was wrong when written. All four spoiled because conditions moved around them, and that is why they survived: **a failing test announces itself, while a stale claim keeps looking right.** Attention does not catch this class — only a trigger to go re-read does. Three have earned their place so far:
+None was wrong when written. All five spoiled because conditions moved around them, and that is why they survived: **a failing test announces itself, while a stale claim keeps looking right.** Attention does not catch this class — only a trigger to go re-read does. Four have earned their place so far:
 
 - a file a check reads gains a substantive comment;
 - a second instance appears where the claim assumed one (a second polygon, a second caller);
-- a second document starts describing the same subject — after which every "this is already covered elsewhere" needs checking, in both directions.
+- a second document starts describing the same subject — after which every "this is already covered elsewhere" needs checking, in both directions;
+- a fix lands in `main` that removes guidance rather than changing behavior — see below.
 
 The third is the one this plugin paid most for: the ADR template and the taxonomy document both described the axes, and the duplication was invisible from inside either file.
 
+**Grepping `main` proves the source is right and proves nothing about behavior.** Commands, the `SessionStart` hook, and the guide skill all load from `~/.claude/plugins/cache/`, not from the working tree. The cache lags the repository by however long it has been since a marketplace sync, so a deletion takes effect only after that sync, while every unsynced install keeps following the old text.
+
+This is how a config field acquired an entry three weeks after the code that read it was deleted: the reference ordering the field was gone from `main` and present in the installed 0.4.1. Verify against the installed version, and prefer a remedy that makes guidance true over one that merely removes it — a working implementation is correct under both old and new configs, whereas a deletion has to propagate before it means anything.
