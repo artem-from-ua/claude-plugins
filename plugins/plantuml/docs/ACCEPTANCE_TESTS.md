@@ -336,6 +336,56 @@ echo "Exit code: $?"
 
 **Note on flag order:** `--check` and `--lint` take one or more filenames, so other flags must precede them. `--no-lint --check file.md` works; `--check --no-lint file.md` makes argparse treat `--check` as having no arguments and exits 2.
 
+#### 2.5 URL Verification (`--verify-url`)
+
+**Objective:** Verify that a mistyped, truncated, or line-wrapped PlantUML URL is caught locally, before it reaches anyone.
+
+**Why this exists:** a damaged encoding does not fail loudly. The server decodes whatever prefix parses and answers with a "looks like HUFFMAN encoding, add a `~1` header" message or silently renders the wrong diagram type — both of which read as an encoder bug when the encoder is fine.
+
+**Test — intact URL:**
+```bash
+url=$(echo '@startuml
+title Verify Test
+Alice -> Bob: Hello
+@enduml' | python3 scripts/plantuml-encode.py)
+python3 scripts/plantuml-encode.py --verify-url "$url"
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Exit code 0, line starts with `OK`, and the decoded `title Verify Test` is echoed back
+
+**Test — damaged URL:**
+```bash
+enc="${url#*svg/}"
+python3 scripts/plantuml-encode.py --verify-url "https://www.plantuml.com/plantuml/svg/Z${enc:1}"
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Exit code 1, reported as `BROKEN` with `not valid DEFLATE data`
+- ✅ No network request is made — the check is a local decode
+
+**Note on trailing characters:** dropping the final character of an encoding is often harmless — the last group frequently encodes only padding bytes, and both this check and the PlantUML server still decode the diagram correctly. Do not treat a shortened tail as proof of damage; verify rather than assume. Corruption anywhere in the body, by contrast, fails immediately.
+
+**Test — documentation fragment:**
+```bash
+printf 'legend right\n  note\nend legend\n' | python3 scripts/plantuml-encode.py > /tmp/frag.txt
+python3 scripts/plantuml-encode.py --verify-url "$(cat /tmp/frag.txt)"
+```
+
+**Expected result:**
+- ✅ Exit code 0, reported as `OK … fragment (no @start — server supplies the wrapper)`
+- ✅ A bare `legend` or `group` snippet is not treated as damage — the server wraps it itself
+
+**Test — `~1` prefix:**
+```bash
+python3 scripts/plantuml-encode.py --verify-url "https://www.plantuml.com/plantuml/svg/~1abc"
+```
+
+**Expected result:**
+- ✅ Exit code 1, reason names the `~1` HUFFMAN prefix and that this encoder emits DEFLATE
+
 ---
 
 ### 3. PostToolUse Hook Testing
