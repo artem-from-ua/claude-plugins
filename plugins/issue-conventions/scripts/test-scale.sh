@@ -48,7 +48,10 @@ json.dump(issues, open(sys.argv[1], "w"))
 PY
 
 SIZE=$(wc -c < "$DUMP" | tr -d ' ')
-echo "fixture: $SIZE bytes, 500 issues"
+# getconf is printed as diagnostics, never asserted against: it is an upper
+# bound, so it explains *why* a stale fixture stopped reproducing the failure
+# without being trusted to decide *whether* it has.
+echo "fixture: $SIZE bytes, 500 issues (getconf ARG_MAX: $(getconf ARG_MAX), env: $(env | wc -c | tr -d ' ') bytes)"
 echo
 
 echo "=== the bug still reproduces at this size ==="

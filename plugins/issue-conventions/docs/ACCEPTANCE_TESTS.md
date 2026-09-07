@@ -195,7 +195,11 @@ Four bugs in this plugin have now shared one shape: something was located by gue
 | a table found by a column name containing "scope" | the section's *first* table, whose prose mentions scope | anchor on the bold marker line |
 | an index row matched on "supersede" | the successor row (`supersedes`), not the superseded one | read the strikethrough, not the prose |
 
-The first two are the same jq trap: after a pipe, the dot is the previous result, not where you started. The last two are the same reading trap: a word that appears in prose is not an anchor. When something must be found in a document or a pipeline, key on the structure that defines it — a heading, a marker, a bound variable — and never on a substring that could legitimately appear somewhere else.
+The first two are the same jq trap: after a pipe, the dot is the previous result, not where you started. The last two look like carelessness about structure, but the polygon session put the cause better, and the better statement is the useful one:
+
+**A grep for a line *is* a structural check — until someone writes prose about that line.** `grep 'gh issue list'` was a perfectly good check the day it was written. It broke when `fetch-issues.sh` gained a comment explaining why that command is *not* used. The most conscientiously documented file defeats the simplest check, and it does so by being improved rather than by being broken.
+
+So the practical rule is not "use structure" — it is: **a check that reads a file must be re-read whenever that file gains a substantive comment.** Refactors are not the risky moment; explanations are. Where the check can be made immune cheaply, do that instead — `^[^#]*` for a call rather than a mention, an anchored marker line rather than a column name, a bound variable rather than a bare dot.
 
 **The fourth one had to be fixed twice**, which is the most instructive part. The first attempt narrowed the match from "supersede" to "superseded by" — correct on today's data, and it would have held for a while: 5 rows of 37 say `supersedes`, so the naive version returned 10 instead of 5, while the narrowed one returned exactly the right 5.
 
