@@ -43,7 +43,16 @@ Launch the subagent with `${CLAUDE_PLUGIN_ROOT}/templates/batch-classify.md` as 
 
 Pass it the document path and the batch — it reads the taxonomy itself. Issue bodies never enter this session; only the returned JSON does.
 
-Validate every returned object against the parsed taxonomy — unknown label, cardinality violation, closed-only value on an open issue — and force `disputed: true` on anything that fails.
+Validate every returned object against the parsed taxonomy and force `disputed: true` on anything that fails. Six checks, and the last two need the issue's **live** labels, not just the model's answer:
+
+1. Unknown label name.
+2. Cardinality violation.
+3. Closed-only value on an open issue.
+4. Label count over the soft limit.
+5. **No legacy-mapped label or GitHub built-in may appear in `keep`.** `keep` means "survives the migration", so a legacy label sitting there is a silent decision to keep what the mapping said to replace.
+6. **Every legacy label the issue actually carries must appear in `remove` or `keep`.** A label absent from both is dropped without anyone deciding to.
+
+Checks 5 and 6 catch the quiet failures: on the second polygon four clerical errors slipped through with `disputed: false`, and two of them were exactly this — a legacy label parked in `keep`, and one that vanished from `remove` entirely. The model flagged none of them.
 
 ### 6. Write the review document
 

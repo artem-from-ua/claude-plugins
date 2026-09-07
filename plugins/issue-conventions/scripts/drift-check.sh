@@ -42,8 +42,11 @@ if [[ -f "$CONFIG" ]]; then
   fi
 fi
 LIVE=$(gh label list --limit 500 --json name,color,description)
+# The dump stays on disk and reaches jq through --slurpfile. Passing it via
+# --argjson puts the whole thing on argv, which dies with "Argument list too
+# long" past ARG_MAX (1 MB on macOS) — around 200 issues with bodies, i.e.
+# exactly the size where this plugin earns its keep.
 ISSUES_FILE=$(bash "$SCRIPT_DIR/fetch-issues.sh")
-ISSUES=$(cat "$ISSUES_FILE")
 
 # Modules on disk, for check 9's input (the subagent decides what it means).
 #
@@ -66,11 +69,12 @@ fi
 jq -n \
   --argjson model "$MODEL" \
   --argjson live "$LIVE" \
-  --argjson issues "$ISSUES" \
+  --slurpfile issuesWrapped "$ISSUES_FILE" \
   --argjson modules "$MODULES" \
   --argjson adrStatus "$ADR_STATUS" \
   --arg doc "$DOC" '
-  ($model.axes | map(.values[].label)) as $declared
+  ($issuesWrapped[0]) as $issues
+  | ($model.axes | map(.values[].label)) as $declared
   | (([$model.axes[] | .values[] | .name])
      + ([$model.titleFormat.allowedScopes[]? | .scope])) as $knownScopes
   | ($live | map(.name)) as $onGitHub
@@ -115,6 +119,11 @@ jq -n \
                  n: ([$i.labels[] | . as $l
                       | select([$r.axes[] as $a | $l | startswith($a + ":")] | any)] | length)})
              | map(select(.n == 0))) as $badCross
+          # A documented exception is a decision, not a violation. Without this
+          # the same issue is reported on every run, forever.
+          | ([$model.ruleExceptions[]? | select((.issue | tonumber?) == $i.number) | .rule]) as $exempt
+          | ($bad | map(select(.axis as $a | $exempt | index($a) | not))) as $bad
+          | ($badCross | map(select(.rule as $r | $exempt | any(. == "at-least-one" or . == $r) | not))) as $badCross
           | select(($bad | length) > 0 or ($badCross | length) > 0 or (($i.labels | length) > $softLimit))
           | {number: $i.number, labels: $i.labels,
              cardinality: $bad, crossAxis: $badCross,

@@ -260,6 +260,15 @@ def parse_values(lines, sections, values_idx, axes):
             if not desc:
                 raise ParseError(line_no, f"label {full!r} has an empty description",
                                  "every label carries a description")
+            # GitHub caps label descriptions at 100 bytes of UTF-8, not characters.
+            # Without this the plan looks fine and `gh label create` returns 422
+            # partway through, leaving the labels half-applied.
+            desc_bytes = len(desc.encode("utf-8"))
+            if desc_bytes > 100:
+                raise ParseError(
+                    line_no,
+                    f"description for {full!r} is {desc_bytes} bytes; GitHub allows 100",
+                    "shorten it — the limit is bytes of UTF-8, so Cyrillic counts double")
             color = parse_color(cell(row, c_color), line_no, allow_gradient=False)
             axis["values"].append({
                 "name": full[len(axis["prefix"]):],
@@ -353,6 +362,36 @@ def parse_allowed_scopes(lines, idx, sections):
     return out
 
 
+def parse_rule_exceptions(lines, idx, sections):
+    """Issues that deliberately break a cross-axis rule.
+
+    A decided exception reported as a violation on every run is a permanent
+    false positive — the kind that teaches people to skip the report.
+    """
+    end = len(lines)
+    for level, _, i in sections:
+        if i > idx and level == 2:
+            end = i
+            break
+
+    header, rows, _ = collect_table(lines, idx + 1)
+    if header is None:
+        return []
+    c_issue = column_index(header, "Issue")
+    c_rule = column_index(header, "Rule")
+    c_why = column_index(header, "Why")
+    if c_issue is None or c_rule is None:
+        return []
+
+    out = []
+    for _, row in rows:
+        issue = strip_backticks(cell(row, c_issue)).lstrip("#")
+        rule = cell(row, c_rule)
+        if issue and rule:
+            out.append({"issue": issue, "rule": rule, "why": cell(row, c_why) or None})
+    return out
+
+
 def parse_legacy(lines, idx, sections):
     end = len(lines)
     for level, _, i in sections:
@@ -430,6 +469,8 @@ def parse(text):
         "crossAxisRules": cross,
         "softLimit": soft_limit,
         "disambiguation": parse_list_section(lines, by_name["Disambiguation rules"], sections),
+        "ruleExceptions": (parse_rule_exceptions(lines, by_name["Rule exceptions"], sections)
+                           if "Rule exceptions" in by_name else []),
         "titleFormat": {
             "documented": "Title format" in by_name,
             "allowedScopes": (parse_allowed_scopes(lines, by_name["Title format"], sections)

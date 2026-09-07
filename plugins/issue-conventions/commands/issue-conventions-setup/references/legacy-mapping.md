@@ -18,7 +18,11 @@ A `split` row has no target value. It is passed to the classifier as a criterion
 
 ## `migrate` is a question, not a recommendation
 
-Before proposing a milestone migration, check whether the repo uses milestones at all (`gh api "repos/{owner}/{repo}/milestones?state=all"`). If it does not, proposing one means pushing an unfamiliar mechanism for the sake of taxonomic purity. Offer three options with **"keep it as an axis" as the default**: keep as an axis (`phase:1`, `phase:2`) / move to milestones / delete.
+Before proposing a milestone migration, check whether the repo uses milestones at all: `gh api "repos/{owner}/{repo}/milestones?state=all" --jq 'length'`.
+
+**Zero milestones — do not offer the migration at all.** Map the label to an axis (`phase:1`, `phase:2`) and say why in one line: the repo does not use milestones, so moving roadmap state there would introduce a mechanism nobody maintains. Offering an option the user will not take is noise, and noise in a question is worse than in a report — it costs a decision.
+
+**Milestones in use** — then it is a real question. Three options with **"keep it as an axis" as the default**: keep as an axis / move to milestones / delete.
 
 ## GitHub built-ins: one policy question
 

@@ -17,10 +17,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 DOC="${1:-}"
 SUMMARY=0
-[[ "${2:-}" == "--summary" ]] && SUMMARY=1
+APPLY=0
+case "${2:-}" in
+  --summary) SUMMARY=1 ;;
+  --apply)   APPLY=1 ;;
+  "")        ;;
+  *) echo "unknown option: $2" >&2; exit 2 ;;
+esac
 
 if [[ -z "$DOC" || ! -f "$DOC" ]]; then
-  echo "usage: label-plan.sh <taxonomy-document.md> [--summary]" >&2
+  echo "usage: label-plan.sh <taxonomy-document.md> [--summary|--apply]" >&2
   exit 2
 fi
 
@@ -50,6 +56,30 @@ PLAN=$(jq -n --argjson model "$MODEL" --argjson live "$LIVE" '
       unknown: [ $have[] | select(.name as $n | $wantNames | index($n) | not) | .name ]
     }
 ')
+
+if [[ "$APPLY" -eq 1 ]]; then
+  # Creates and updates only. Undeclared labels are never touched here — they
+  # belong to someone else, or to a decision the user has not made yet. Nor are
+  # legacy labels deleted: relabel classifies from them, so removing them is the
+  # last step of the migration, not part of applying the plan.
+  applied=0
+  failed=0
+  while IFS=$'\t' read -r name color desc; do
+    [[ -z "$name" ]] && continue
+    if gh label create "$name" --color "$color" --description "$desc" --force >/dev/null 2>&1; then
+      applied=$((applied + 1))
+    else
+      failed=$((failed + 1))
+      echo "  failed: $name" >&2
+    fi
+    sleep 0.3
+  done < <(echo "$PLAN" | jq -r '(.create + (.update | map({name, color: .to.color, description: .to.description})))[]
+                                 | [.name, .color, .description] | @tsv')
+
+  echo "applied $applied label(s)"
+  [[ "$failed" -gt 0 ]] && { echo "$failed failed — see above" >&2; exit 1; }
+  exit 0
+fi
 
 if [[ "$SUMMARY" -eq 1 ]]; then
   echo "$PLAN" | jq -r '"Create \(.create | length) · Update \(.update | length) · Undeclared on GitHub \(.unknown | length)"'

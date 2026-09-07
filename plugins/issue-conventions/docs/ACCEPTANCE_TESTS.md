@@ -68,6 +68,8 @@ Negative — each must exit non-zero **with a line number**:
 | 2.12 | Label prefix not matching its axis | prefix mismatch |
 | 2.13 | Axis with no `###` section | missing values section |
 | 2.14 | Non-hex color | color format error |
+| 2.19 | Description over 100 bytes | rejected with a line number — GitHub returns 422 otherwise, half-applying the plan |
+| 2.20 | 60 Cyrillic characters in a description | rejected: the limit is bytes of UTF-8, not characters |
 
 Tolerant — each must exit **zero**:
 
@@ -77,6 +79,7 @@ Tolerant — each must exit **zero**:
 | 2.16 | Extra column in the Axes table | ignored |
 | 2.17 | Unknown `## Notes` section | ignored |
 | 2.18 | Extra `###` section inside `## Values` | ignored |
+| 2.21 | `## Rule exceptions` section | parsed; listed issues are exempt from the named cross-axis rule |
 
 **Acceptance criteria:** all eighteen behave as specified. 2.15–2.18 are as important as the negatives — a parser that rejects a human's added column turns the document back into a brittle config, which is the thing markdown-as-truth was chosen to avoid.
 
@@ -84,6 +87,7 @@ Tolerant — each must exit **zero**:
 
 | # | Check | Expected |
 |---|---|---|
+| 3.0 | `drift-check.sh` on a repo with ~200+ issues | completes — the dump reaches jq via `--slurpfile`, not argv. `--argjson` dies with "Argument list too long" past ARG_MAX (1 MB), which is exactly the corpus size this plugin is for |
 | 3.1 | `fetch-issues.sh --count-only` on a repo with >60 issues | returns the true count, **not ~60** — the regression guard against `gh issue list --json` truncation |
 | 3.2 | `fetch-issues.sh` filters PRs | no entry has a `pull_request` field |
 | 3.3 | `label-plan.sh` against a synced document | empty create and update groups (idempotent) |

@@ -33,36 +33,46 @@ Run it per `${SKILL_DIR}/references/interview.md` — the full question order, o
 
 **Anything shown as a candidate but not chosen goes into `ignore=`**, alongside what step 2 filtered out automatically. Without this the drift check keeps re-raising what the user already declined.
 
-### 4. Draft and confirm
+### 4. Look for gaps before confirming
+
+Before showing the axis table, run one cheap pass: **which issues do not fit the dictionary just assembled?** Sample 20–30 across the corpus and ask, per issue, whether any value covers it.
+
+The frequency scan in step 2 cannot find these by construction — it keeps terms recurring in three or more issues, so a surface with one or two loses out. On the second polygon four values had to be added mid-run this way, each covering 1–4 issues, and each addition meant returning to already-classified batches. Finding them here costs one pass; finding them later costs a re-run.
+
+### 5. Draft and confirm
 
 Print the axis table and ask for one confirmation; an edit answer loops back to that question. Alongside the table, **preview the palette on three real issues from this repo**, showing the full label set each would carry — adjacent shades blur only on real multi-label issues, and this is the moment to catch it.
 
-### 5. Map legacy labels
+### 6. Map legacy labels
 
 Follow `${SKILL_DIR}/references/legacy-mapping.md`. Build the `old label (usage) → action` table, show the auto-proposals as a list, ask about contested ones individually, and record the result in the document's Legacy label mapping section.
 
-### 6. Choose where the document lives
+### 7. Choose where the document lives
 
 Propose a path based on what step 2 found (see `repo-scan.md` for the priority order) and confirm it. One document, never two: if `docs/conventions.md` exists it gets a two-line pointer, not a copy of the dictionaries.
 
-### 7. Write the document
+### 8. Write the document
 
 Render it per `${CLAUDE_PLUGIN_ROOT}/templates/document-schema.md`, using real issues from this repo as the worked examples. Immediately re-read it with `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/parse-taxonomy.py"` and stop loudly if the round-trip does not reproduce the interview — that is where a generator/parser mismatch surfaces.
 
 If the project's `CLAUDE.md` has a label section, show it and ask permission to cut it. **Never write anything to CLAUDE.md automatically.**
 
-### 8. Draft the ADR
+### 9. Draft the ADR
 
 Per `${SKILL_DIR}/references/adr-template.md`: `status: draft`, a named gate, filled Context and Decision, alternatives seeded from the interview, and `TODO` markers where post-application experience belongs. If an ADR about the taxonomy already exists, propose superseding it rather than adding a second. If there is no `docs/adr/`, ask whether to start the practice. Promoting draft → accepted is the user's call, after seeing the labels on a real backlog.
 
-### 9. Create the labels
+### 10. Create the labels
 
 Back up first: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/backup.sh"` — deletion is irreversible.
 
-Then `bash "${CLAUDE_PLUGIN_ROOT}/scripts/label-plan.sh" <document> --summary`, show the itemized plan, and take **one** `AskUserQuestion` (Apply / Show details / Cancel). Apply with `gh label create "<name>" --color <hex> --description "<desc>" --force` for both creates and updates, `sleep 0.3` between calls. Labels reported as undeclared are never auto-deleted — report them and let the user decide.
+Then `bash "${CLAUDE_PLUGIN_ROOT}/scripts/label-plan.sh" <document> --summary`, show the itemized plan, and take **one** `AskUserQuestion` (Apply / Show details / Cancel). Apply with `bash "${CLAUDE_PLUGIN_ROOT}/scripts/label-plan.sh" <document> --apply`. Labels reported as undeclared are never auto-deleted — report them and let the user decide.
+
+**Create labels now; delete the legacy ones only after `/issue-conventions-relabel` has run.** `gh label delete` strips the label from every issue that carried it, permanently — and `relabel` classifies *from* those labels. The legacy mapping's `split` action is entirely dependent on them: without `enhancement` on an issue, the classifier has only the title to go on and the criterion in the Why column has nothing to apply to.
+
+So: create and update here, and say plainly that removing the old labels is the last step of the migration, not part of this one.
 
 Write today's date into the document footer's sync row.
 
-### 10. Drift check
+### 11. Drift check
 
 Run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/drift-check.sh" <document>` and have the drift subagent report it. A fresh setup must show **zero divergences**; INFO findings are expected. Finish by pointing at `/issue-conventions-relabel`.
