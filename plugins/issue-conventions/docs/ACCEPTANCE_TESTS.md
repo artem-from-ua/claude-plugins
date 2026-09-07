@@ -168,6 +168,14 @@ After any run that deleted labels, open `ROLLBACK.md` in the backup directory an
 | Every label reported as drifted | bare `.description` instead of `$l.description` in the `metadataDrift` select | 3.9; cross-check against `label-plan.sh`, which is right when the two disagree |
 | Every value reported as unused | `from_entries` fed `count:` instead of `value:` | 3.9 |
 
+### State expectations precisely enough to be refuted
+
+Before the second polygon ran, this guide said its ADR corpus would be "the largest exercise of `adr-status.sh` in the cycle". The session checked, and found the script reads only the paths named in the config — it never scans a directory. The exercise could not have happened at all.
+
+What made that findable was the specificity. A vague "ADRs are covered too" would have passed unexamined; a claim with a number in it invites someone to go count. The same holds for every expectation written down here: the ones phrased loosely enough to always be true are the ones that never get checked.
+
+So when recording what a run should produce, prefer the form that can fail — an exact count, a named file, a specific error string. It costs nothing when right and saves a cycle when wrong.
+
 ### A tool is tested on a repo smaller than the one it was written for
 
 Two limits in this plugin sat exactly where it starts being useful, and a live run found both:
@@ -182,6 +190,10 @@ That is not bad luck. A plugin gets exercised on its author's repository during 
 `test-scale.sh` is the answer: a synthetic 500-issue, ~2.4 MB dump, deliberately larger than any repo here.
 
 **Name the polygon a finding came from, and name the right one.** Every lesson here is reproducible only against the repository that produced it: the first polygon has a Dependabot integration and a corpus of partially superseded ADRs, the second has neither but does have 210 issues and a flat Swift package. Attributing a finding to the wrong run sends the next reader looking for conditions that are not there — and a lesson nobody can reproduce is indistinguishable from one nobody checked. "One of the polygons" is better than a confident wrong name.
+
+**The moment to re-read old entries is when a second polygon appears.** While there is one, "on the polygon" is unambiguous and correct. Adding the second devalues every such phrase written before it — not because anyone erred, but because the conditions around the statement changed. Same mechanism as a `grep` that stops being structural once the file gains prose about the line it matches: the check did not rot, its surroundings moved.
+
+So the trigger is not "when writing a lesson" but "when the set of sources grows". Both entries fixed here were written while there was one polygon, and both were accurate on the day they were written.
 
 **A polygon that does not catch a bug is not evidence the fix was unnecessary.** The third repository has ~151 issues, so its dump sits comfortably under the argv limit and `--argjson` would not have failed there. Had the polygons run in a different order, the bug would have reached everyone who has a larger backlog than the author's. Order of testing decided whether it was found, not whether it existed — which is precisely why the synthetic fixture is larger than any repository here.
 
