@@ -43,7 +43,7 @@ Launch the subagent with `${CLAUDE_PLUGIN_ROOT}/templates/batch-classify.md` as 
 
 Pass it the document path and the batch — it reads the taxonomy itself. Issue bodies never enter this session; only the returned JSON does.
 
-Validate every returned object against the parsed taxonomy and force `disputed: true` on anything that fails. Six checks, and the last two need the issue's **live** labels, not just the model's answer:
+Validate every returned object against the parsed taxonomy and force `disputed: true` on anything that fails. Seven checks; 5 and 6 need the issue's **live** labels, not just the model's answer, and 7 applies only when a title is being proposed:
 
 1. Unknown label name.
 2. Cardinality violation.
@@ -51,8 +51,11 @@ Validate every returned object against the parsed taxonomy and force `disputed: 
 4. Label count over the soft limit.
 5. **No legacy-mapped label or GitHub built-in may appear in `keep`.** `keep` means "survives the migration", so a legacy label sitting there is a silent decision to keep what the mapping said to replace.
 6. **Every legacy label the issue actually carries must appear in `remove` or `keep`.** A label absent from both is dropped without anyone deciding to.
+7. **A proposed title's type prefix must agree with the proposed `type:*`.** Derive the expected prefix through the Title format table, not by stripping `type:` — the spellings differ where Conventional Commits differs (`fix` for `type:bug`, `feat` for `type:feature`).
 
 Checks 5 and 6 catch the quiet failures: on the second polygon four clerical errors slipped through with `disputed: false`, and two of them were exactly this — a legacy label parked in `keep`, and one that vanished from `remove` entirely. The model flagged none of them.
+
+Check 7 comes from the third polygon, where eleven re-typed issues kept `docs(...)` titles while their labels became `bug`. The classifier produces both fields in one response and cannot see them disagree; the taxonomy already defines the mapping, so nothing but this check was reading it.
 
 ### 6. Write the review document
 
