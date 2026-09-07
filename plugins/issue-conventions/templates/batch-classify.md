@@ -15,7 +15,13 @@ The taxonomy document path, plus an array of issues:
                  "files": [{"path": "plugins/kb-grooming/scripts/kb-structural-scan.sh", "churn": 66}]}}]
 ```
 
-`prEvidence` is optional and produced by `scripts/pr-evidence.sh`. It is absent when no merged PR in this repository references the issue; `pr: null` means the question was asked and came back empty, which is not the same as never asking.
+`prEvidence` is optional, produced by `scripts/pr-evidence.sh`, and governed by `prEvidence.mode` in the config:
+
+- `off` — the field never appears.
+- `paths` — `files`, `pr`, `isFix`, `prMergedAt`. The cheaper half and the stronger signal.
+- `full` — the above plus `prTitle`, `prSummary`, `prLinks`.
+
+Absent means the maintainer turned it off or no merged PR references the issue. `pr: null` means the question was asked and came back empty — not the same as never asking. Use whichever fields are present; never assume the prose is missing because the PR had none.
 
 ## Step 1: Read the taxonomy
 

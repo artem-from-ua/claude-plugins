@@ -10,6 +10,13 @@
 # Usage:
 #   pr-evidence.sh 285 286 293        # explicit numbers
 #   pr-evidence.sh --from-dump FILE   # every issue in a fetch-issues dump
+#   pr-evidence.sh --mode paths ...   # paths only, omit the PR's prose
+#
+# --mode paths is the cheaper half and the stronger signal: measured over this
+# repo, paths with their churn cost ~314 characters per issue against ~874 for
+# the title, summary and link lines. For an axis derived from directories the
+# paths are not evidence but the answer, so the prose earns its keep only where
+# judgment is involved — mostly the type axis.
 #
 # Emits one JSON object per line:
 #   {"number":285,"issueState":"closed","pr":292,"prTitle":"…","prSummary":"…",
@@ -56,6 +63,19 @@ BODY_HEAD=${PR_EVIDENCE_BODY_HEAD:-800}
 LINK_RE='(clos|fix|resolv)e[sd]?[[:space:]]+#|addresses[[:space:]]+#|refs[[:space:]]+#'
 
 REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
+
+MODE="full"
+if [[ "${1:-}" == "--mode" ]]; then
+  MODE="${2:-}"
+  case "$MODE" in
+    paths|full) shift 2 ;;
+    # `off` is a config value, not a reason to fail: relabel checks it and
+    # never calls this script. Honouring it here too means a caller that
+    # forwards the config blindly gets silence rather than an error.
+    off) exit 0 ;;
+    *) echo "unknown mode: $MODE (expected 'paths', 'full', or 'off')" >&2; exit 2 ;;
+  esac
+fi
 
 numbers=()
 if [[ "${1:-}" == "--from-dump" ]]; then
@@ -128,17 +148,24 @@ for n in "${numbers[@]}"; do
   # `|| true` is load-bearing: grep exits 1 when a PR body states no issue
   # relationship, and under `set -o pipefail` that kills the whole run. PR #377
   # is exactly that case — it mentions #368 in prose without a closing keyword.
-  links=$(jq -r '.body // ""' <<<"$chosen" | { grep -Ei "$LINK_RE" || true; } | head -4 | jq -Rsc 'rtrimstr("\n")')
+  if [[ "$MODE" == "full" ]]; then
+    links=$(jq -r '.body // ""' <<<"$chosen" | { grep -Ei "$LINK_RE" || true; } | head -4 | jq -Rsc 'rtrimstr("\n")')
+  else
+    links='""'
+  fi
   files=$(gh pr view "$pr" --repo "$REPO" --json files --jq \
           "[.files[] | {path, churn: (.additions + .deletions)}
             | select(.churn >= $MIN_CHURN)] | sort_by(-.churn)" 2>/dev/null || echo '[]')
 
   jq -nc --argjson number "$n" --arg st "$issue_state" --argjson chosen "$chosen" \
          --argjson files "$files" --argjson isFix "$is_fix" \
-         --argjson head "$BODY_HEAD" --argjson links "${links:-\"\"}" \
-     '{number: $number, issueState: $st, pr: $chosen.number, prTitle: $chosen.title,
-       prSummary: ($chosen.body // "" | .[0:$head]),
-       prLinks: $links,
-       prMergedAt: $chosen.merged_at, isFix: $isFix, files: $files}'
+         --argjson head "$BODY_HEAD" --argjson links "${links:-\"\"}" --arg mode "$MODE" \
+     '{number: $number, issueState: $st, pr: $chosen.number,
+       prMergedAt: $chosen.merged_at, isFix: $isFix, files: $files}
+      + (if $mode == "full"
+         then {prTitle: $chosen.title,
+               prSummary: ($chosen.body // "" | .[0:$head]),
+               prLinks: $links}
+         else {} end)'
   sleep 0.2
 done

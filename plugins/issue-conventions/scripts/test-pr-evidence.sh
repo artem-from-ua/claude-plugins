@@ -154,6 +154,51 @@ else
   bad "expected empty, got $none"
 fi
 
+echo "=== mode gating ==="
+
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pr-evidence.sh"
+
+# `off` is a config value the caller may forward blindly. Exiting 0 with no
+# output beats an error: the pipeline that honours the setting and the one that
+# forwards it both end up doing nothing, which is what was asked for.
+out=$(bash "$SCRIPT" --mode off 285 2>&1)
+if [[ -z "$out" ]]; then
+  ok "--mode off produces nothing and exits clean"
+else
+  bad "--mode off produced output: $out"
+fi
+
+msg=$(bash "$SCRIPT" --mode sideways 285 2>&1 >/dev/null)
+rc=$?
+if [[ "$rc" -eq 2 && "$msg" == *"unknown mode"* ]]; then
+  ok "an unrecognized mode exits 2, not silently treated as full"
+else
+  bad "expected exit 2 with a message, got rc=$rc msg=$msg"
+fi
+
+# The field split is the whole point of the setting: paths are ~300 characters
+# per issue against ~900 for the prose, measured across this repo's 93 issues
+# that have a PR. A mode that returned everything anyway would cost the same.
+shaped=$(jq -nc --arg mode paths '
+  {number: 1, pr: 2, files: []}
+  + (if $mode == "full" then {prTitle: "t", prSummary: "s", prLinks: "l"} else {} end)
+  | keys')
+if [[ "$shaped" == '["files","number","pr"]' ]]; then
+  ok "paths mode omits the prose fields"
+else
+  bad "unexpected paths-mode shape: $shaped"
+fi
+
+shaped_full=$(jq -nc --arg mode full '
+  {number: 1, pr: 2, files: []}
+  + (if $mode == "full" then {prTitle: "t", prSummary: "s", prLinks: "l"} else {} end)
+  | keys | length')
+if [[ "$shaped_full" == "6" ]]; then
+  ok "full mode carries the prose fields"
+else
+  bad "expected 6 keys in full mode, got $shaped_full"
+fi
+
 echo
 echo "Пройдено: $pass, провалено: $fail"
 [[ "$fail" -eq 0 ]]
