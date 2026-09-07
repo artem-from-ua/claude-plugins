@@ -21,9 +21,7 @@ What does not: axis names, value dictionaries, colors, cardinality rules, disamb
 
 ```markdown
 ---
-status: draft
-date: YYYY-MM-DD
-gate: promote to accepted once the taxonomy has been applied to the backlog
+<frontmatter in whatever shape this project's ADRs use>
 ---
 
 # NNNN. Issue taxonomy lives in a versioned document
@@ -59,10 +57,6 @@ is visible at a glance; AI assistants read the rules from one place.>
 
 **Negative:** <the document is one more artifact to keep current; a label created
 in the GitHub UI is drift until someone runs the check.>
-
-TODO once applied to the backlog:
-- Whether the palette stays legible on real multi-label issues.
-- Values that fitted awkwardly and the rules added because of them.
 ```
 
 ## Index row and supersession
@@ -70,7 +64,5 @@ TODO once applied to the backlog:
 If `docs/adr/README.md` exists, add a row in its existing format.
 
 If an ADR about the taxonomy is already there, do **not** write a second one. Propose superseding it: set `superseded_by` on the old record, add a one-line postscript at its top pointing at the replacement, and strike through both the number and the title link in the index — leaving the Status cell readable.
-
-Point `adr` in `.claude-plugin/issue-conventions.json` at the **current** record. A config still naming a superseded one makes every tool that reads that field quote a retired decision.
 
 If the project has no `docs/adr/`, ask whether to start the practice rather than creating the directory unasked. A project without ADRs is not missing anything the taxonomy needs — the document works alone.
