@@ -102,7 +102,7 @@ Tolerant — each must exit **zero**:
 | 3.12 | `test-scale.sh` | 5 tests pass — a synthetic 500-issue dump; asserts the old form still fails with the exact error, so a stale fixture announces itself |
 | 3.13 | `test-adr-state.sh` | 3 tests pass — "no ADR configured" and "configured but the file is gone" are distinct states, so a broken config cannot read as a clean one |
 
-**On 3.10.** Supersession detection lived in the subagent template until 0.2.4 — deterministic logic expressed as prose the model had to re-derive each run. The polygon session pointed out the consequence: the tests pinned a bash implementation that shipped nowhere, so rewording a paragraph would change behavior while every test stayed green. The three signals now live in `adr-status.sh`, which the drift check calls and the subagent reads. The template keeps the judgment (what a divergence *means*) and hands over the fact.
+**On 3.10.** Supersession detection lived in the subagent template until 0.2.4 — deterministic logic expressed as prose the model had to re-derive each run. The first polygon pointed out the consequence: the tests pinned a bash implementation that shipped nowhere, so rewording a paragraph would change behavior while every test stayed green. The three signals now live in `adr-status.sh`, which the drift check calls and the subagent reads. The template keeps the judgment (what a divergence *means*) and hands over the fact.
 
 **On 3.9.** Two bugs shipped in 0.1.0 and were caught on the first polygon: `from_entries` fed `{key, count}` instead of `{key, value}` (so every declared value looked unused — 36 of 36, burying the five real ones), and a bare `.description` where `$l.description` was meant (so every label looked drifted, while `label-plan.sh` correctly reported zero updates on the same data). Both are the same shape: jq stayed silent and returned plausible output, so `bash -n` could not catch them. These tests pin behavior rather than syntax.
 
@@ -181,6 +181,8 @@ That is not bad luck. A plugin gets exercised on its author's repository during 
 
 `test-scale.sh` is the answer: a synthetic 500-issue, ~2.4 MB dump, deliberately larger than any repo here.
 
+**Name the polygon a finding came from, and name the right one.** Every lesson here is reproducible only against the repository that produced it: the first polygon has a Dependabot integration and a corpus of partially superseded ADRs, the second has neither but does have 210 issues and a flat Swift package. Attributing a finding to the wrong run sends the next reader looking for conditions that are not there — and a lesson nobody can reproduce is indistinguishable from one nobody checked. "One of the polygons" is better than a confident wrong name.
+
 **A polygon that does not catch a bug is not evidence the fix was unnecessary.** The third repository has ~151 issues, so its dump sits comfortably under the argv limit and `--argjson` would not have failed there. Had the polygons run in a different order, the bug would have reached everyone who has a larger backlog than the author's. Order of testing decided whether it was found, not whether it existed — which is precisely why the synthetic fixture is larger than any repository here.
 
 **It observes rather than calculates, and that distinction is the point.** The first version asserted the fixture exceeded `getconf ARG_MAX`. But `getconf` is an upper bound, not the limit `execve` enforces — the real ceiling also counts the environment and the argv pointer array, so it moves with however many variables the user exports. Measured on one machine: `getconf` reported 1 048 576 while `jq` actually failed at ~1 040 234, a gap of roughly the environment's own size.
@@ -198,7 +200,7 @@ Four bugs in this plugin have now shared one shape: something was located by gue
 | a table found by a column name containing "scope" | the section's *first* table, whose prose mentions scope | anchor on the bold marker line |
 | an index row matched on "supersede" | the successor row (`supersedes`), not the superseded one | read the strikethrough, not the prose |
 
-The first two are the same jq trap: after a pipe, the dot is the previous result, not where you started. The last two look like carelessness about structure, but the polygon session put the cause better, and the better statement is the useful one:
+The first two are the same jq trap: after a pipe, the dot is the previous result, not where you started. The last two look like carelessness about structure, but the second polygon put the cause better, and the better statement is the useful one:
 
 **A grep for a line *is* a structural check — until someone writes prose about that line.** `grep 'gh issue list'` was a perfectly good check the day it was written. It broke when `fetch-issues.sh` gained a comment explaining why that command is *not* used. The most conscientiously documented file defeats the simplest check, and it does so by being improved rather than by being broken.
 
