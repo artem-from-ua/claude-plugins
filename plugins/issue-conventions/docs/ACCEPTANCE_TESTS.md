@@ -214,6 +214,18 @@ The first two are the same jq trap: after a pipe, the dot is the previous result
 
 So the practical rule is not "use structure" — it is: **a check that reads a file must be re-read whenever that file gains a substantive comment.** Refactors are not the risky moment; explanations are. Where the check can be made immune cheaply, do that instead — `^[^#]*` for a call rather than a mention, an anchored marker line rather than a column name, a bound variable rather than a bare dot.
 
+### Two descriptions can claim one case with no word in common
+
+A parser check for overlapping value descriptions was written, measured, and abandoned. The record is worth more than the code would have been.
+
+The target case: `type:test` described as "Adding, fixing, restructuring, or executing tests, including acceptance test documentation" overlaps `type:docs` for every `ACCEPTANCE_TESTS.md` edit. Matching value names inside descriptions found **seven** candidates on this repo's live document, of which at most one was real — `context` matched inside "context-budget", `perf` inside "no perf claim", `statusline` inside `statusline-compact`. Restricting to whole words and cross-axis pairs cut it to three, all still false.
+
+Then the decisive measurement: `type:docs` is spelled `docs`, and the offending description says "documentation". Against `type:docs` as actually written — "Changes only to README, docs/, SKILL.md prose, or in-code comments" — the two descriptions share **no word of four letters or more**. The check would have missed the one case it existed for while reporting three that were fine.
+
+**The overlap is between the sets of artifacts two descriptions accept, and that set is not recoverable from their vocabulary.** So the check moved to setup step 8, phrased as a question the writing agent can answer because it understands the meaning: name a concrete artifact and ask whether two values would both take it. A parser sees two structurally valid rows with nothing in common, and it is right about that.
+
+Worth generalizing: a check that fires seven times to be right once is worse than no check, because it teaches the reader to skip the report — the same reason unused values are INFO rather than divergences.
+
 ### A check goes stale silently
 
 Widen the last rule and it covers most of what this plugin got wrong. The expensive findings here were not bugs in code — they were claims that looked verified and had quietly stopped being true:
