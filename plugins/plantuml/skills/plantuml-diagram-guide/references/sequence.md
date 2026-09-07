@@ -48,17 +48,23 @@ skinparam LifeLineBorderColor #C0C0C0
 | Log entry written to sink | ❌ Suppress | Pure side-effect, no branching |
 | Auth token validation result | ✅ Show | `opt [invalid]` branch follows |
 
-When ACK arrows are suppressed, add a legend:
+When ACK arrows are suppressed, add a legend. It carries the three legend skinparams and the indentation described in the Legend section of `references/styling.md`:
 
 ```plantuml
+skinparam legendBackgroundColor #EEEEEE
+skinparam legendBorderColor transparent
+skinparam LegendFontColor #404040
+
 legend right
-  ACK responses omitted for clarity
-  -> sync request  --> sync response
-  ->> async fire-and-forget
+  <size:6> </size>
+    ACK responses omitted for clarity<size:17> </size>
+    -> sync request  --> sync response
+    ->> async fire-and-forget
+  <size:6> </size>
 end legend
 ```
 
-![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/HOt13O0W40J_Lh4Dq0A9yMaL10uaGT2xys7t8ZxyJcPt2YMg0PpJfXCmBokOv6XLID3sh4e1iJ5ySPprxewnaBlwxfqNYNRmasyv90itOCnCnjLW-aiYdTvS6TK7)
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/ROxB2i8m44Nt_Oe1rqK5KP0IqA8R_OdGJ6DedTIPT56_thGf-C1a4sxEFLnf77MQzHrQj4ZcgAl6ik_9bBxr38lJT3BvvJmRvCG4rYJn4obySDU9EtiAiscp6c-M9G6mixUG0HJYdhZVAYYMuql52E1GNe1HEa-20lxkGa03TTHKhMONXjHQxxvhkG8Pg8hLHuyIOl1Eacp65EWfhXrZhidaKMtnxvnnQvhy0W00)
 
 ## Group Fragment Guidance
 
@@ -83,8 +89,11 @@ hide footbox
 title Order Processing — Mixed Sync/Async
 skinparam sequenceArrowThickness 1.5
 skinparam LifeLineBorderColor #C0C0C0
-skinparam participantBackgroundColor #E8F4FD
-skinparam participantBorderColor #7FB3D8
+skinparam participantBackgroundColor #CFE4F6
+skinparam participantBorderColor #25557E
+skinparam legendBackgroundColor #EEEEEE
+skinparam legendBorderColor transparent
+skinparam LegendFontColor #404040
 
 participant Client
 participant OrderSvc
@@ -108,11 +117,13 @@ else result = failure
 end
 
 legend right
-  ACK responses omitted for clarity
-  -> sync  --> sync response
-  ->> async fire-and-forget
+  <size:6> </size>
+    ACK responses omitted for clarity<size:17> </size>
+    -> sync  --> sync response
+    ->> async fire-and-forget
+  <size:6> </size>
 end legend
 @enduml
 ```
 
-![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/TLDXQzim4FskNt6mBmuitSOsLWmBTHndbALTe8KonXYgTBP5PCcJvBJvrX-nNxXVihFSf75PCSZMtNllxfxaCn-u2rsZMQqaGcbjkBNtBAYW4RuvYGxMpWhqNfaA_ZxyWGjrZnAkTaQyoJojp6-KQRdZ3NZytQ4Hc3bdxwvh9JQ6YF3kvECHQALAN2c3SzkhvrPR1w_oj_rpXA8rAA5QRiASYqtbR6Va8xWuNNvOBbu07wj-MixVBquPEyf3hXMQC0h5CQ-sOXHSyrr3m2yte-Yb3QhSFSTcdLHXPIl61dMOpWwYARIQ2upRH0Li_8InVfnsNm9-z3P6RxFyA_ZQtfaKf5DRzC1rW5l7ZQX_CZY8zWKE3QOWQkugJ7X39eK9uGuvc8vQSUWx7HWQoLYlFEpXC_XEz6SyBZ5x6ZU5HrzDgLo3CedRSpbvpjXRaOAsLR6b9fBrAikBnMluBuNQ6pnBztc6skDJPoLNkdFu4WdfghbadNs_A2wlVospyrMnc0m3Qgpe3KvLTI1wxosfjjPuyjKsAWIwnoNT4w6vKs5761AEPn5BnAyz8oPdm6EGFC0fDt9Ax0gZdp1KOsUqqD_q3m00)
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/TLFjQjim5FslfxYmFmaiQpkQ5amNwgREA4lRG0jZZ35K-TeMaQLCajEcl_OGUy8-oQxa97NwOOEGhiuzElVewjHvRdrJArR97A4mnj-P1-QbLmZNDaSBCsi4EYTr2Kz__y6bVC0SRbPQxAMEHkRcKY-uvJKu_DEW5fXQQ-vlAodccXBXuDEm0vhA0gTIuva9x6EZZ8KFu_tmTr0qUYdaWcj_niMyjARH-GOyoGudH--0kwoVXyFXSTO1AYnHvwy8i_YzndMulENQqIPgtwqbuYP6-pNJuNxu6UieWh6I8QiRYiRUBCLESCPNDG6_Vj-9NXalYzLBRDhaqazDoLZB3eFHbZI1XU82ux8dFTQkprYeTx4v0dw6YuktcOw_WQlClKuWjtA93hZoS4VLYkeNWorfE60hC05HSLjYZzVaekyJRhi7Wnqf5bsZF2EN60lCxHg-W6j4wAhT8qRFvIQmTbyNqjQOz-Bo8k-_pDXOaO0oPROa4RtPD1rdvn_XpHIIrtgMRFOPAeVFoWekLMFnlIIavhQzMVhZChkw_Jr9BwRPURyji6qRiBAiFAMVEFc8oT48JlR2R4GXY8RJKGkZ7PbjQkazFQU2caSeRgLVjLa7nxjf923UMPGIPnkIzVO8U0oJMpZWEXyGPObloWWQMwdib0Pw_Fy1)

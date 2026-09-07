@@ -5,6 +5,28 @@ All notable changes to the PlantUML plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-09-07
+
+### Added
+- Legend styling rule — three skinparams on every legend: `LegendFontColor #404040` (PlantUML's default black outweighs the borders and arrow labels the legend annotates, making a footnote the highest-contrast object on the canvas), `legendBorderColor transparent` (drops the black frame, the heaviest stroke on most diagrams), and `legendBackgroundColor #EEEEEE` (keeps the panel distinct once the frame is gone, lighter than the default `#DDD`)
+- Guidance on pairing legend text with `<back:#XXXXXX>   </back>` swatches when the legend maps colors to categories, plus a worked component-diagram example
+- Legend padding recipe: four-space indentation plus `<size:6> </size>` bracket lines, with the two traps documented — global `skinparam Padding` inflates every element on the diagram, and `&nbsp;` renders literally as text
+- Legend line spacing: ending each entry with an oversized blank (`…storage<size:17> </size>`) stretches that line's box while leaving the text at its normal size, taking the step from 16px to 20px. The size scales the gap smoothly — a measured table of `17`/`20`/`26` against the resulting step and legend height is included. A standalone spacer line is documented as the wrong tool for this: it adds a whole line box, jumping straight to 33px with nothing in between, and its size number has no effect at all
+- Acceptance tests for legend styling (section 14), covering color-coded legends, the sequence ACK legend, legends on limited-color diagram types, and padding side effects
+- `--verify-url URL...` decodes a PlantUML URL back to its source locally and reports whether it is intact, printing the decoded diagram's title so a link pointing at the wrong diagram is caught too. A damaged encoding never fails loudly — the server decodes whatever prefix parses and answers with a "looks like HUFFMAN encoding, add a `~1` header" message or silently renders the wrong diagram type, both of which read as an encoder bug when the encoder is fine. Documentation fragments without `@start` pass; the `~1` prefix and non-PlantUML URLs are reported
+- Rule that diagram links shown in conversation must be Markdown links (`[diagram 1](...)`) rather than bare URLs, that encoded strings are never retyped or hand-assembled, and that every link is checked with `--verify-url` before being shown
+- `--md-link [TEXT]` reads source from stdin and prints a ready-to-paste, self-verified `[TEXT](url)` line, removing the hand-composition step that verification alone cannot protect: a link assembled by hand in a reply looks plausible and is dead
+- `--verify-file FILE...` verifies every PlantUML URL found in each file, reading them from disk so nothing is retyped
+- Acceptance tests for `--verify-url` (section 2.5), including the padding-truncation case that is legitimately harmless, and for `--md-link` / `--verify-file` (section 2.6)
+
+### Changed
+- Palette fills darkened: each is now its border color blended 18% toward the pastel, keeping both halves of a pair in the same hue family. The previous fills (luma 236–248) were too close to white and to the `#EEEEEE` legend background to read as distinct blocks
+- Palette borders derived from their own fill: each border is the fill's hue taken down to roughly one third lightness, replacing the previous unrelated accent colors. A block now reads as one object instead of a pastel patch inside a foreign outline. Soft gray's border is desaturated back to `#4D5656`, since its fill's faint cyan cast would otherwise drive the derived border to teal
+- Soft gray's fill darkened a further step to `#D4D9D9` — as the one neutral in the palette it shares a hue with the `#EEEEEE` legend panel and previously dissolved into it
+- Rule that a diagram using more than one palette color sets fill and border together per element (`[X] #FDEDC4;line:7E6525`) rather than through `skinparam ComponentBorderColor`, which applies one border color to every element of that kind and silently breaks the fill/border pairing. The component example carried exactly that bug: four different fills, all outlined dark blue
+- `references/styling.md` — legend guidance moved out of the Color Coding section into a `## Legend` section of its own, since it now covers more than color legends
+- Both legend examples in `references/sequence.md` updated to the skinparam form; the Mixed Sync/Async example's participant fill moved to the darkened palette
+
 ## [1.11.0] - 2026-09-07
 
 ### Added

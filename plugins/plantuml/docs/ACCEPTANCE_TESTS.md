@@ -336,6 +336,88 @@ echo "Exit code: $?"
 
 **Note on flag order:** `--check` and `--lint` take one or more filenames, so other flags must precede them. `--no-lint --check file.md` works; `--check --no-lint file.md` makes argparse treat `--check` as having no arguments and exits 2.
 
+#### 2.5 URL Verification (`--verify-url`)
+
+**Objective:** Verify that a mistyped, truncated, or line-wrapped PlantUML URL is caught locally, before it reaches anyone.
+
+**Why this exists:** a damaged encoding does not fail loudly. The server decodes whatever prefix parses and answers with a "looks like HUFFMAN encoding, add a `~1` header" message or silently renders the wrong diagram type — both of which read as an encoder bug when the encoder is fine.
+
+**Test — intact URL:**
+```bash
+url=$(echo '@startuml
+title Verify Test
+Alice -> Bob: Hello
+@enduml' | python3 scripts/plantuml-encode.py)
+python3 scripts/plantuml-encode.py --verify-url "$url"
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Exit code 0, line starts with `OK`, and the decoded `title Verify Test` is echoed back
+
+**Test — damaged URL:**
+```bash
+enc="${url#*svg/}"
+python3 scripts/plantuml-encode.py --verify-url "https://www.plantuml.com/plantuml/svg/Z${enc:1}"
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Exit code 1, reported as `BROKEN` with `not valid DEFLATE data`
+- ✅ No network request is made — the check is a local decode
+
+**Note on trailing characters:** dropping the final character of an encoding is often harmless — the last group frequently encodes only padding bytes, and both this check and the PlantUML server still decode the diagram correctly. Do not treat a shortened tail as proof of damage; verify rather than assume. Corruption anywhere in the body, by contrast, fails immediately.
+
+**Test — documentation fragment:**
+```bash
+printf 'legend right\n  note\nend legend\n' | python3 scripts/plantuml-encode.py > /tmp/frag.txt
+python3 scripts/plantuml-encode.py --verify-url "$(cat /tmp/frag.txt)"
+```
+
+**Expected result:**
+- ✅ Exit code 0, reported as `OK … fragment (no @start — server supplies the wrapper)`
+- ✅ A bare `legend` or `group` snippet is not treated as damage — the server wraps it itself
+
+**Test — `~1` prefix:**
+```bash
+python3 scripts/plantuml-encode.py --verify-url "https://www.plantuml.com/plantuml/svg/~1abc"
+```
+
+**Expected result:**
+- ✅ Exit code 1, reason names the `~1` HUFFMAN prefix and that this encoder emits DEFLATE
+
+#### 2.6 Link Generation (`--md-link`, `--verify-file`)
+
+**Objective:** Verify that a shareable link can be produced and re-checked without the encoded string ever being retyped.
+
+**Why this exists:** verification only helps if it is actually run. The failure mode it does not cover is a link composed by hand in a reply — a single altered character produces a URL that looks plausible and is dead. `--md-link` removes the hand-composition step entirely.
+
+**Test — generate:**
+```bash
+printf '@startuml\ntitle MD Link Test\nAlice -> Bob: Hi\n@enduml\n' \
+  | python3 scripts/plantuml-encode.py --md-link "test diagram"
+```
+
+**Expected result:**
+- ✅ One line of output: `[test diagram](https://www.plantuml.com/plantuml/svg/...)`
+- ✅ The link is self-verified before printing — a URL that fails its own decode exits 1 instead of being emitted
+- ✅ `--md-link` with no argument uses `diagram` as the link text
+- ✅ `--format png --md-link "x"` produces a `/png/` link
+
+**Test — verify links already in files:**
+```bash
+python3 scripts/plantuml-encode.py --verify-file docs/*.md
+echo "Exit code: $?"
+```
+
+**Expected result:**
+- ✅ Every URL in each file is decoded and reported with its diagram title
+- ✅ Exit code 1 if any is broken, naming the file it came from
+- ✅ Documentation fragments report as `fragment (no @start ...)` and do not fail the run
+- ✅ Abbreviated examples in prose — a URL trailed by `...`, by a `$shell` variable, or by a `<placeholder>` — are skipped, and the count of skipped examples is printed rather than passed over silently
+
+**Note:** run `--verify-file` on this document itself. It contains both real diagram links and deliberately damaged example URLs; a run that reports the examples as broken means the skip rule regressed.
+
 ---
 
 ### 3. PostToolUse Hook Testing
@@ -2273,6 +2355,79 @@ Tests that the non-default arrow thickness rule is applied to every supported di
 **Pass criteria:**
 - ✅ Injected rule mentions `skinparam ArrowThickness 1.5` for non-sequence types
 - ✅ Injected rule still mentions `skinparam sequenceArrowThickness 1.5` and `skinparam LifeLineBorderColor #C0C0C0` for sequence diagrams
+
+---
+
+## Test 14: Dark-Grey Legend Text
+
+Tests that legends carry the three styling skinparams — dark-grey text, no black frame, light background — instead of PlantUML's defaults.
+
+### 14.1 Color-Coded Legend
+
+**Setup:** Ask Claude to create a component diagram whose boxes are filled by category, with a legend mapping each fill to its meaning.
+
+**Expected behavior:**
+- All three skinparams present: `legendBackgroundColor #EEEEEE`, `legendBorderColor transparent`, `LegendFontColor #404040`
+- Category swatches rendered as `<back:#XXXXXX>   </back>`, matching the fills actually used in the diagram
+- Content lines indented four spaces, block bracketed by `<size:6> </size>` lines
+
+**Pass criteria:**
+- ✅ Legend text rendered in `#404040` — check the SVG for `fill="#404040"` on the legend's `<text>` elements
+- ✅ Legend box has `stroke:none` — no black frame
+- ✅ Legend box fill is `#EEEEEE`, not the default `#DDD` and not `#F5F5F5` or lighter
+- ✅ No per-line `<color:#404040>` wrappers — the skinparam does that job
+- ✅ Swatch hex values match the box fills they describe
+- ✅ Diagram renders without a warning box (`--check` reports clean)
+
+### 14.2 Sequence Diagram ACK Legend
+
+**Setup:** Ask Claude to create a sequence diagram with suppressed fire-and-forget ACKs, which triggers the "ACK responses omitted for clarity" legend.
+
+**Expected behavior:**
+- The legend skinparams sit alongside `sequenceArrowThickness` and `LifeLineBorderColor`
+
+**Pass criteria:**
+- ✅ All three legend skinparams present
+- ✅ Arrow markup (`->`, `-->`, `->>`) inside the legend still renders as literal text, not as an arrow
+
+### 14.3 Legend on a Limited-Color Diagram Type
+
+**Setup:** Ask Claude to create a diagram of a type the color table marks 🟡 Limited (e.g. a mindmap) that carries a legend.
+
+**Expected behavior:**
+- The legend skinparams still apply — legend styling is independent of the diagram type's own color support
+
+**Pass criteria:**
+- ✅ Legend text rendered in `#404040` despite the diagram type's limited color support
+- ✅ Diagram renders without errors
+
+### 14.4 Fill and Border Pairing
+
+**Setup:** Ask Claude to create a diagram using several palette colors.
+
+**Expected behavior:**
+- Each element's border is the dark counterpart of its own fill, taken from the palette table
+
+**Pass criteria:**
+- ✅ Border hex matches the palette row of the fill it encloses — no mixing a blue fill with a green border
+- ✅ No element left on a default black border
+- ✅ Borders are visibly darker than their fills (palette borders sit at luma 55–110, fills at 216–240)
+- ✅ A gray element uses `#4D5656`, not a teal derived from the fill's cyan cast
+- ✅ **Count the distinct `stroke:#` values in the rendered SVG** — a diagram with N differently-filled elements must show N different border colors, not one repeated. A single `skinparam ComponentBorderColor` applied to per-element fills produces uniformly outlined boxes that look plausible until the strokes are counted
+
+### 14.5 Padding Without Side Effects
+
+**Setup:** Ask Claude to create any diagram with a padded legend, then compare the rendered element sizes against the same diagram without the legend padding.
+
+**Expected behavior:**
+- Padding achieved with four-space indentation and `<size:6> </size>` bracket lines only
+
+**Pass criteria:**
+- ✅ No global `skinparam Padding` — it inflates every element on the diagram, not just the legend
+- ✅ No `&nbsp;` used for spacing — PlantUML renders it literally as the text `&nbsp;`
+- ✅ Non-legend element dimensions unchanged versus the unpadded diagram
+- ✅ A legend listing swatches ends each entry with `<size:17> </size>`; measured on the rendered SVG, consecutive legend baselines sit ~20px apart rather than the default ~16px, and the entry text itself is still `font-size="14"`
+- ✅ No standalone `<size:N> </size>` spacer lines *between* entries — those add a full line box (~33px step) and are reserved for the block's top and bottom padding
 
 ---
 

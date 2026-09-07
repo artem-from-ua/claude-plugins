@@ -85,6 +85,79 @@ def make_url(text, fmt="svg"):
     return f"https://www.plantuml.com/plantuml/{fmt}/{plantuml_encode(text)}"
 
 
+def decode6bit(c):
+    """Inverse of encode6bit: map an encoded character back to its 6-bit value."""
+    if '0' <= c <= '9':
+        return ord(c) - 48
+    if 'A' <= c <= 'Z':
+        return ord(c) - 65 + 10
+    if 'a' <= c <= 'z':
+        return ord(c) - 97 + 36
+    if c == '-':
+        return 62
+    if c == '_':
+        return 63
+    return -1
+
+
+def plantuml_decode(encoded):
+    """
+    Decode a PlantUML-encoded string back to source text.
+
+    Returns the decoded text, or raises ValueError if the string is not valid
+    PlantUML encoding — which is exactly what a mistyped or truncated URL is.
+    """
+    for c in encoded:
+        if decode6bit(c) < 0:
+            raise ValueError(f"invalid character in encoded string: {c!r}")
+
+    data = bytearray()
+    for i in range(0, len(encoded), 4):
+        chunk = encoded[i:i + 4]
+        vals = [decode6bit(c) for c in chunk] + [0] * (4 - len(chunk))
+        data.append(((vals[0] << 2) | (vals[1] >> 4)) & 0xFF)
+        data.append(((vals[1] << 4) | (vals[2] >> 2)) & 0xFF)
+        data.append(((vals[2] << 6) | vals[3]) & 0xFF)
+
+    try:
+        return zlib.decompress(bytes(data), -15).decode('utf-8')
+    except (zlib.error, UnicodeDecodeError) as e:
+        raise ValueError(f"not valid DEFLATE data: {e}")
+
+
+def verify_url(url):
+    """
+    Check that a PlantUML URL decodes back to usable source.
+
+    A URL that was retyped, truncated, or line-wrapped during a copy decodes to
+    garbage rather than failing loudly on the server: PlantUML answers with a
+    HUFFMAN/`~1` complaint or renders the wrong diagram type. This catches that
+    locally, before the link is handed to anyone.
+    """
+    marker = '/plantuml/'
+    if marker not in url:
+        return False, "not a PlantUML URL", None
+    tail = url.split(marker, 1)[1]
+    parts = tail.split('/', 1)
+    if len(parts) != 2 or not parts[1]:
+        return False, "URL has no encoded payload", None
+    encoded = parts[1].strip()
+
+    if encoded.startswith('~1'):
+        return False, "URL uses the ~1 HUFFMAN prefix; this encoder emits DEFLATE", None
+
+    try:
+        source = plantuml_decode(encoded)
+    except ValueError as e:
+        return False, str(e), None
+
+    if '@start' not in source:
+        # A documentation snippet (a bare legend or group block) is legitimate:
+        # the server wraps it itself. The payload decoded, so the URL is intact.
+        return True, "fragment (no @start — server supplies the wrapper)", source
+    return True, "ok", source
+
+
 def render_ascii(text):
     """
     Render PlantUML diagram as ASCII by fetching from PlantUML text API.
@@ -437,7 +510,88 @@ def main():
                         help='Output only the encoded string, not full URL')
     parser.add_argument('--render-ascii', '-r', action='store_true',
                         help='Render ASCII diagram directly from PlantUML API (reads from stdin)')
+    parser.add_argument('--verify-url', '-V', metavar='URL', nargs='+',
+                        help='Decode each PlantUML URL back to source and report whether it is '
+                             'intact (exit 1 if any is broken). Catches retyped, truncated or '
+                             'line-wrapped links before they are shown to anyone')
+    parser.add_argument('--md-link', metavar='TEXT', nargs='?', const='diagram',
+                        help='Read source from stdin and print a ready-to-paste Markdown link '
+                             '[TEXT](url), self-verified. Use this instead of composing a link by '
+                             'hand — the encoded string never has to be retyped')
+    parser.add_argument('--verify-file', metavar='FILE', nargs='+',
+                        help='Verify every PlantUML URL found in each file (exit 1 if any is '
+                             'broken). Reads the URLs from disk, so nothing is retyped')
     args = parser.parse_args()
+
+    if args.md_link:
+        text = sys.stdin.read()
+        if not text.strip():
+            print("Error: no input provided on stdin", file=sys.stderr)
+            sys.exit(1)
+        url = make_url(text, args.format)
+        ok, reason, _ = verify_url(url)
+        if not ok:
+            print(f"Error: generated URL failed self-verification: {reason}", file=sys.stderr)
+            sys.exit(1)
+        print(f"[{args.md_link}]({url})")
+        return
+
+    if args.verify_file:
+        # A URL trailed by "..." (abbreviated in prose) or by "$"/"<" (a shell variable
+        # or placeholder inside a documented command) is an example, not a real link;
+        # verifying it would report damage that is not there.
+        url_re = re.compile(r'https://www\.plantuml\.com/plantuml/\w+/[A-Za-z0-9_=-]+')
+        broken = 0
+        total = 0
+        skipped = 0
+        for filepath in args.verify_file:
+            try:
+                with open(filepath, encoding='utf-8') as fh:
+                    content = fh.read()
+            except OSError as e:
+                print(f"Error reading {filepath}: {e}", file=sys.stderr)
+                sys.exit(1)
+            for match in url_re.finditer(content):
+                url = match.group(0)
+                if content[match.end():match.end() + 1] in ('.', '$', '<'):
+                    skipped += 1
+                    continue
+                total += 1
+                ok, reason, source = verify_url(url)
+                if ok:
+                    title = next((ln.strip() for ln in source.splitlines()
+                                  if ln.strip().startswith('title ')), reason)
+                    print(f"OK      {filepath}: {title}")
+                else:
+                    broken += 1
+                    print(f"BROKEN  {filepath}: {reason}\n        {url[:70]}...")
+        note = f" ({skipped} abbreviated example(s) skipped)" if skipped else ""
+        if broken:
+            print(f"\n{broken} of {total} URL(s) broken.{note}")
+            sys.exit(1)
+        print(f"\nAll {total} URL(s) decode cleanly.{note}")
+        return
+
+    if args.verify_url:
+        broken = 0
+        for url in args.verify_url:
+            ok, reason, source = verify_url(url)
+            if ok:
+                title = next((ln.strip() for ln in source.splitlines()
+                              if ln.strip().startswith('title ')), '')
+                detail = f" — {title}" if title else ""
+                if not detail and reason != "ok":
+                    detail = f" — {reason}"
+                print(f"OK      {url[:60]}...{detail}")
+            else:
+                broken += 1
+                print(f"BROKEN  {url[:60]}...\n        {reason}")
+        if broken:
+            print(f"\n{broken} broken URL(s). Re-run --encode-only on the source and copy the "
+                  f"output verbatim; do not hand-edit an encoded string.")
+            sys.exit(1)
+        print(f"\nAll {len(args.verify_url)} URL(s) decode cleanly.")
+        return
 
     if args.check:
         all_errors = []
