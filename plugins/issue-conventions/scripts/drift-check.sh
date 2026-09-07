@@ -55,7 +55,8 @@ jq -n \
   --argjson modules "$MODULES" \
   --arg doc "$DOC" '
   ($model.axes | map(.values[].label)) as $declared
-  | ([$model.axes[] | .values[] | .name]) as $knownScopes
+  | (([$model.axes[] | .values[] | .name])
+     + ([$model.titleFormat.allowedScopes[]? | .scope])) as $knownScopes
   | ($live | map(.name)) as $onGitHub
   | ($model.builtins.canonical) as $builtins
   | ($model.softLimit // 5) as $softLimit

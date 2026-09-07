@@ -25,9 +25,21 @@ Report these as they are — no re-derivation:
 
 **ADR vs document.** Read the ADR if there is one. Does it still describe the taxonomy in the document — same axes, same value counts, same rules? Prose counts ("seven values", "a dictionary of 13") are the most common drift: they are written once and never updated. Report a mismatch as a divergence whose fix is "update the ADR, or supersede it with a new one" — never "edit the document to match the ADR". If parsing a stated count is ambiguous, report it as INFO rather than guessing.
 
-**Check the ADR's status first.** If it carries `status: superseded` (or `superseded in part`) and its successor documents the same drift, the prescribed fix has *already been carried out* — the divergence is a historical record, not an outstanding defect. Report it as **INFO**, naming the successor: "ADR 0029 states 7 area values against 8 in the document; already superseded by ADR 0038, which cites this drift as evidence."
+**Check whether the ADR has been superseded — in whole or in part.** If it has, and its successor documents the same drift, the prescribed fix has *already been carried out*: the divergence is a historical record, not an outstanding defect. Report it as **INFO**, naming the successor — "ADR 0029 states 7 area values against 8 in the document; superseded in part by ADR 0038, which cites this drift as evidence."
 
-Demanding another fix there would be wrong twice over: the work is done, and editing the numbers in place would violate the immutability convention that the successor ADR itself records. An ADR is a decision as it was made, not a mirror of current state — stale numbers inside a superseded record are expected, and a report that treats them as defects teaches people to skip it.
+Demanding another fix would be wrong twice over: the work is done, and editing the numbers in place would violate the immutability convention the successor itself records. An ADR is a decision as it was made, not a mirror of current state.
+
+**Three signals, any one of which counts.** Checking only `status:` is not enough, and the miss is not an edge case — in the reference project just 3 of 9 superseded records carry that status:
+
+1. `status: superseded` in the frontmatter — a record replaced wholesale.
+2. A non-empty `superseded_by` — often present while `status` stays `accepted`.
+3. The index row says "superseded by" — sometimes the *only* place the replacement is recorded, with no `superseded_by` field at all.
+
+**Partial supersession is the common case, and the one that matters most here.** When a record is replaced wholesale, `status` becomes `superseded` and people stop reading it. When only part of it is replaced, the status honestly stays `accepted` — the rest still governs the code — and *that* record keeps being read while its retired half quietly drifts from reality. Exactly the class of stale number this check exists to notice. Reporting it as a defect asks the maintainer to break the immutability convention.
+
+**Parsing `superseded_by` is a trap.** One repo can hold three shapes at once: a YAML list of filenames, a JSON array of strings, and a JSON array of bare numbers. Pull the leading four digits with a regex rather than parsing YAML strictly — strict parsing either throws or silently returns nothing, and silently returning nothing looks exactly like "not superseded".
+
+**Frontmatter disagreeing with the index is its own finding.** A record whose frontmatter says `superseded` while the index says `accepted (superseded by NNNN)` — or the reverse — means someone updated one and forgot the other. Report it as **INFO**, separately: it is not a taxonomy problem, but it is the kind of drift that makes every later check unreliable.
 
 **Documented norm vs the corpus.** Compare `softLimit` against `labelCountDistribution`. A soft limit of 5 with a median of 4 is healthy. A limit of 5 where most issues carry 6 means the limit is fiction. State it as INFO with the actual median, and let the user choose between restating the limit and accepting the de-facto norm.
 

@@ -121,5 +121,43 @@ else
 fi
 
 echo
+echo "=== allowed scopes: documented exceptions are not findings ==="
+
+# A scope can be legitimate without any axis carrying its name — an issue that
+# *proposes* a component reads better as feat(followup) than forced onto an
+# existing value. The document records these in a table; without honoring it,
+# every such title is a false positive.
+allowed_model='{"axes":[{"name":"stage","values":[{"name":"proofread"}]}],
+  "titleFormat":{"allowedScopes":[{"scope":"followup","why":"proposes a stage"}]}}'
+allowed_issues='[
+  {"number":1,"title":"feat(proofread): known","labels":["type:feature"]},
+  {"number":2,"title":"feat(followup): documented exception","labels":["type:feature"]},
+  {"number":3,"title":"research(pipeline): genuinely unknown","labels":["type:docs"]}
+]'
+
+allowed=$(jq -c -n --argjson model "$allowed_model" --argjson issues "$allowed_issues" '
+  (([$model.axes[] | .values[] | .name])
+   + ([$model.titleFormat.allowedScopes[]? | .scope])) as $knownScopes
+  | [ $issues[]
+      | select([.labels[] | startswith("by:")] | any | not)
+      | select(.title | test("^(?:CRITICAL )?[a-z]+\\([^)]+\\):"))
+      | {number, scope: (.title | capture("^(?:CRITICAL )?[a-z]+\\((?<s>[^)]+)\\):") | .s)}
+      | .scope as $s
+      | select($knownScopes | index($s) | not) ]' 2>&1)
+
+[ "$allowed" = '[{"number":3,"scope":"pipeline"}]' ] \
+  && ok "documented scope exempt, genuinely unknown one still reported" \
+  || bad "unexpected: $allowed"
+
+# `[]?` matters: a document with no Title format section has no allowedScopes,
+# and the expression must degrade to the axis values rather than erroring.
+no_table=$(jq -c -n --argjson model '{"axes":[{"name":"stage","values":[{"name":"proofread"}]}]}' '
+  (([$model.axes[] | .values[] | .name])
+   + ([$model.titleFormat.allowedScopes[]? | .scope]))' 2>&1)
+[ "$no_table" = '["proofread"]' ] \
+  && ok "missing allowedScopes degrades cleanly" \
+  || bad "expected [\"proofread\"], got $no_table"
+
+echo
 echo "Пройдено: $pass, провалено: $fail"
 [ "$fail" -eq 0 ]
