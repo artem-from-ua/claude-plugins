@@ -25,7 +25,7 @@ If a config already exists, read it and its document, and pre-fill every answer 
 
 ### 2. Scan the repo for candidates
 
-Follow `${SKILL_DIR}/references/repo-scan.md`. It produces three lists: structural candidates with a proposed axis name, topical candidates each backed by two real issue numbers, and the existing labels with their usage counts.
+Follow `${SKILL_DIR}/references/repo-scan.md`. It produces four lists: structural candidates with a proposed axis name, topical candidates each backed by two real issue numbers, title prefixes already in use, and the existing labels with their usage counts.
 
 ### 3. Interview
 

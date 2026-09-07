@@ -26,7 +26,9 @@ Before proposing a milestone migration, check whether the repo uses milestones a
 
 ## GitHub built-ins: one policy question
 
-Ask once, not nine times:
+Ask once, not nine times — and say in the question itself that **nothing is deleted now.** The built-ins stay on their issues throughout relabeling, where `bug`, `documentation` and `enhancement` are the classifier's strongest evidence for `type:*`; deleting them up front would throw away the signal the migration runs on. The question decides the end state, after relabeling finishes.
+
+Without that framing the third polygon's maintainer answered "I don't understand the question", and answered immediately once it was said. The options read as a choice about right now, and a maintainer who thinks their labels are about to vanish is being asked something different from what is meant.
 
 1. **Delete all nine** — the taxonomy replaces them.
 2. **Delete the six that duplicate or clash** (`bug`, `enhancement`, `documentation`, `duplicate`, `invalid`, `wontfix`), keep `good first issue` and `help wanted` — they have real integration value in a project that takes contributions.
