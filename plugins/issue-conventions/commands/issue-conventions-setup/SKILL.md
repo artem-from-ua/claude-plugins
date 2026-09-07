@@ -57,6 +57,10 @@ Render it per `${CLAUDE_PLUGIN_ROOT}/templates/document-schema.md`, using real i
 
 **Write every label description to fit 100 bytes of UTF-8** — GitHub's cap, and the text is created on the label verbatim. Count bytes as you write, not after: Cyrillic and emoji cost two to four bytes each, so a description that reads short can still be over. One clause naming what the value covers is the right size; a second clause listing what it also includes is what pushes it over, and that belongs in a disambiguation rule instead. Discovering the cap from a parse error means rewriting descriptions already reasoned about.
 
+**Then read the dictionaries back and ask, of each pair: is there an artifact both descriptions would accept?** Not "do they look similar" — name a concrete thing and see whether two values claim it. `type:test` written as "tests, including acceptance test documentation" and `type:docs` as "README, docs/, SKILL.md prose" share no word, yet every `ACCEPTANCE_TESTS.md` edit satisfies both. That is why the check has to be a question about cases rather than a comparison of text, and why it cannot be a parser check: the parser sees two structurally valid rows with nothing in common.
+
+Each collision found is either a description to narrow or a line for `## Disambiguation rules` — decided now, while the dictionary is being written, not later by a classifier that stalls on the case and has no authority to settle it.
+
 If the project's `CLAUDE.md` has a label section, show it and ask permission to cut it. **Never write anything to CLAUDE.md automatically.**
 
 ### 9. Record the decision, if the project keeps ADRs
