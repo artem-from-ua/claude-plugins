@@ -5,6 +5,33 @@ All notable changes to the PlantUML plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-09-08
+
+### Changed
+- **Diagram source is now collapsed into a `<details>` block.** A reader opening a document sees the rendered diagram and one `Diagram source` line instead of the text that produced it; a long diagram no longer pushes its own image off the first screen. The PostToolUse hook applies the wrapper on save, so existing documents convert as they are edited. This is the breaking change: markdown files are restructured, not merely given a corrected URL
+- The wrapper goes around the ordinary ```` ```plantuml ```` fence rather than replacing it. Fence content is code text, so a literal `-->` or `</details>` inside a diagram label is escaped by the renderer instead of acted on — and `grep -rl '```plantuml'`, which is how `/plantuml-validate` finds files, keeps working unchanged
+- The three near-duplicate block patterns are replaced by one extractor that reports each diagram's form and one emitter that renders it, so `--check`, `--sync` and `--lint` can no longer disagree about what a diagram is
+- The sync hook no longer touches every `.md` it is handed. It skips vendored and generated trees (`node_modules`, `vendor`, `dist`, `build`, `.venv`, `site-packages`), anything under `.git`, files outside a git repository, and files git is ignoring. Adding a missing URL was small enough to go unnoticed anywhere; restructuring a document is not
+- `/plantuml-validate` reports a third class of problem: a diagram the tool cannot maintain, meaning a half-written `<details>` wrapper or a fence indented in a list or inside a blockquote. These are reported and left untouched rather than rewritten, because rewriting them would guess at what the author meant
+
+### Added
+- `<!-- plantuml-source: visible -->` on its own line keeps a whole document's sources visible; the same comment before a single fence, or `visible` in the fence info string, keeps one diagram. Every form of opt-out lives outside the diagram source, so choosing one re-encodes no URLs. The four documents in this repository whose purpose is to show PlantUML source — the validation guide, both syntax references, and the acceptance tests whose fixtures are fed back to the tool — carry the file-level marker and kept every URL they had
+- `--dry-run`, used with `--sync`, prints a unified diff of what would change and writes nothing, exiting 1 if any file would change. It makes a repository-wide conversion reviewable before it lands, and doubles as a CI check that a tree is already in the expected form
+- The generated wrapper carries a `<!-- plantuml-generated -->` marker, so a `<details>` written by hand is recognized as someone else's and left as it stands — its `<summary>` text is never overwritten
+
+### Fixed
+- A diagram whose `note` contains triple backticks was truncated at the backticks, and `--sync` spliced the image link into the middle of the source. The closing fence is now anchored to its own line
+- A fence indented inside a list item, or inside a blockquote, had its indentation or `>` prefix encoded into the diagram — the blockquote case rendered a blank image — and gained a second image link at the wrong nesting level, while `--check` reported everything in sync. Such blocks are now reported instead of silently corrupted
+- A ```` ```plantuml ```` fence quoted inside another fenced block or a shell heredoc was treated as a real diagram, so documentation examples and acceptance-test fixtures were rewritten in place. Quoted regions are now recognized and skipped
+
+### Upgrading
+- Run `python3 plantuml-encode.py --dry-run --sync <files>` first: it shows exactly what will change, file by file, without touching anything
+- Documents that exist to show their diagram sources need a `<!-- plantuml-source: visible -->` line before the first sync, or their examples will be collapsed
+- `--check` is stricter than it was, so a commit that passed yesterday can now be blocked — a diagram indented inside a list is the common case. The fix is to move the diagram to the top level of the document; the check is reporting corruption that was previously silent
+
+### Rejected
+- Wrapping the source in an HTML comment, as [#414](https://github.com/artem-from-ua/claude-plugins/issues/414) proposed. HTML has no escaping mechanism inside a comment, so the first `-->` ends it — and `-->` is ordinary PlantUML arrow syntax, present in five of this plugin's own seventeen fences. Rendered on GitHub, such a diagram spills the tail of its source onto the page, producing more clutter than the visible fence it replaced. It would also hide the fence from `grep`-based discovery. See [ADR 0002](../../docs/adr/0002-plantuml-source-collapses-into-details-not-html-comments.md)
+
 ## [1.13.0] - 2026-09-08
 
 ### Changed

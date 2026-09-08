@@ -9,3 +9,4 @@ Add a record when a choice would otherwise have to be re-derived from the code: 
 | # | Title | Status | Date |
 |---|---|---|---|
 | 0001 | [Issue taxonomy lives in a versioned document](0001-issue-taxonomy-lives-in-a-versioned-document.md) | draft | 2026-09-07 |
+| 0002 | [PlantUML source collapses into `<details>`, not an HTML comment](0002-plantuml-source-collapses-into-details-not-html-comments.md) | draft | 2026-09-08 |
