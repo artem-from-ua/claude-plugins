@@ -148,10 +148,11 @@ Then restart Claude Code to pick up changes.
 
 - Use `#!/bin/bash` shebang
 - Use `${CLAUDE_PLUGIN_ROOT}` for plugin paths
-- Provide fallback: `${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}`
+- Provide fallback: `${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}` — but only in scripts that actually resolve a path against it; adding the line to a script that never reads it leaves dead code behind
 - Support macOS and Linux (see [Cross-Platform Compatibility](docs/conventions.md#cross-platform-compatibility))
 - Keep hooks fast (timeout ≤30s)
 - Silent on success, informative on errors
+- Staged shell scripts are linted by ShellCheck on commit — see [Shell Script Linting](docs/conventions.md#shell-script-linting) for the severity gate, how files are selected, and how to suppress an intentional finding
 
 ### Skills (SKILL.md)
 

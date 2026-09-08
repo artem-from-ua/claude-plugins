@@ -277,6 +277,8 @@ Plugins that install git hooks (pre-commit, pre-push, etc.) **must not overwrite
 - **`chmod +x`** — always set the executable bit after writing the hook file.
 - **Provide an uninstall command** — every plugin that installs git hooks must also provide an uninstall script and a slash command (e.g., `/plantuml-uninstall`) that removes its marker-delimited section. If the section is the only content, delete the hook file. If other sections remain, preserve them.
 
+**Repo-local sections:** a section that belongs to no plugin — one maintained directly in this repo's `.githooks/` rather than installed by a setup script — puts the tool name in the `<plugin-name>` slot (e.g. `# >>> artem-from-ua/shellcheck >>>`). The marker's job is to be a stable, unique delimiter so sections can be added and removed independently; a second syntax for non-plugin sections would fork the format for no benefit. See [Shell Script Linting](#shell-script-linting).
+
 **Reference implementation:** `plugins/plantuml/scripts/setup-project.sh` + `plugins/plantuml/scripts/uninstall-hook.sh` + `plugins/plantuml/templates/pre-commit`
 
 ---
@@ -308,6 +310,38 @@ fi
 3. Linux credentials file: `~/.claude/.credentials.json`
 
 **Shared `/tmp` files:** Always append `-${UID}` to avoid collisions in multi-user environments.
+
+---
+
+## Shell Script Linting
+
+The repo-level `.githooks/pre-commit` runs ShellCheck over staged shell scripts at `-S warning`, so **error and warning findings block the commit** while `style` findings stay advisory. ShellCheck is an optional dependency: when it is not installed the check is skipped silently and the commit proceeds.
+
+**File selection is by shebang, not by extension.** The gate reads the first line of each staged blob and lints anything starting with `#!` and naming a shell. Extension-based selection would be wrong in both directions here: three shell files carry no `.sh` suffix (`.githooks/pre-commit`, `.githooks/pre-push`, `plugins/git-branch-naming/templates/pre-push`), while `plugins/plantuml/templates/pre-commit` is a marker-delimited fragment with no shebang that fails SC2148 if linted. Sniffing the shebang handles both cases without a hand-maintained exclude list — a new script is covered the moment it is added.
+
+**The staged blob is linted, not the working copy** (`git show :file`). A pre-commit hook must check what is actually being committed; linting the worktree would report findings on code outside the commit and miss code inside it.
+
+**Bypass:** `SHELLCHECK_SKIP=1 git commit ...` skips the gate for one commit. Use it when a file you touched carries pre-existing findings unrelated to your change — not to push new findings past the gate.
+
+### Suppressing a finding
+
+Not every finding is a defect. When ShellCheck flags an intentional pattern, suppress it **at the point of use with a written reason**. Never leave a bare directive:
+
+```bash
+# shellcheck disable=SC2053  # unquoted RHS is the glob mechanism — quoting disables exclude patterns
+if [[ "$f" == $simple_pattern ]] || [[ "$f" == $pattern ]]; then
+```
+
+A directive above a function or compound command applies to the **whole block**, not just the next line. Place it on the tightest scope that works, so it cannot silently absorb a future real finding.
+
+Use a file-level directive (immediately after the shebang) only when the same pattern recurs throughout the file:
+
+```bash
+#!/usr/bin/env bash
+# shellcheck disable=SC2088  # literal ~/ appears in human-readable display strings, not paths
+```
+
+**Do not add a `.shellcheckrc`.** A repo-wide `disable=` is invisible at the call site and weakens every future script; the same applies to adding `--exclude=` to the hook. If a check genuinely never applies to this repo, that deserves its own PR and a documented rationale.
 
 ---
 
