@@ -275,7 +275,7 @@ colorize_model() {
   # "Opus 4.8 (1M context)" -> "Opus 4.8"
   name=$(echo "$name" | sed -E 's/ *\([^)]*context\)$//')
   # Drop a leading "Claude " if present
-  name=$(echo "$name" | sed 's/^Claude //')
+  name="${name#Claude }"
 
   local color="" keyword=""
   if echo "$name" | grep -qi "fable"; then
@@ -297,9 +297,9 @@ colorize_model() {
   local out
   out=$(echo "$name" | sed -E "s/ ([0-9]+(\.[0-9]+)?)$/ ${dim}\1${rst}/")
   # Color the keyword token (display_name is canonical-cased, no /I flag needed)
-  [ -n "$color" ] && out=$(echo "$out" | sed "s/${keyword}/${color}${keyword}${rst}/")
+  [ -n "$color" ] && out="${out/$keyword/${color}${keyword}${rst}}"
   # Join the keyword and version with a tight separator (e.g. Opus･4.8)
-  echo "$out" | sed "s/ /${SEP}/g"
+  echo "${out// /$SEP}"
 }
 
 # Map a branch-type prefix token to its color.
