@@ -1,5 +1,8 @@
 # Visual Styling Guidelines
 
+<!-- A styling reference exists to show its source, so nothing here is collapsed. -->
+<!-- plantuml-source: visible -->
+
 ## Arrow Thickness
 
 **MANDATORY:** Never leave arrows at the default thickness. At the default `1` an arrow carries the same visual weight as element borders and lifelines, so the flow — the thing the diagram exists to show — is no longer what the eye finds first.
