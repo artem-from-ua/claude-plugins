@@ -24,7 +24,6 @@ input=$(cat)
 rst=$(printf '\033[0m')
 dim=$(printf '\033[38;5;240m')
 very_dim=$(printf '\033[38;5;237m')
-bright_green=$(printf '\033[38;5;71m')
 bright_red=$(printf '\033[38;5;167m')
 yellow=$(printf '\033[38;5;178m')
 ultra_color=$(printf '\033[38;5;135m') # ultracode/ultraplan marker — violet, distinct from 167/178
@@ -148,7 +147,7 @@ pr_cache_refresh() {
   local cwd="$1" branch="$2" file="$3"
   command -v gh > /dev/null 2>&1 || return 0
   mkdir -p "$PR_CACHE_DIR" 2>/dev/null
-  local state now json merged
+  local state now json
   # --state all so we still see a merged PR; take the most recent match.
   json=$(cd "$cwd" && gh pr list --head "$branch" --state all \
            --json state --limit 1 --jq '.[0].state' 2>/dev/null)
@@ -359,7 +358,6 @@ humanize_ctx() {
   local n="$1"
   case "$n" in ''|*[!0-9]*) echo "$n"; return ;; esac
   local whole rem
-  local yellow=$(printf '\033[38;5;178m')
   if [ "$n" -ge 1000000 ]; then
     whole=$((n / 1000000)); rem=$(((n % 1000000) / 100000))
     [ "$rem" -eq 0 ] && echo "${whole}${dim}M${rst}" || echo "${whole}.${rem}${dim}M${rst}"
