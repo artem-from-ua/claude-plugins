@@ -34,3 +34,62 @@ if [ -n "$PLANTUML_STAGED_MD" ]; then
     fi
 fi
 # <<< artem-from-ua/plantuml <<<
+
+# >>> artem-from-ua/shellcheck >>>
+# ShellCheck gate for staged shell scripts — repo-local, not installed by a plugin.
+#
+# Lints the STAGED content (git show :file), not the worktree, so what is checked
+# is exactly what is committed. Files are selected by sniffing the staged blob's
+# shebang rather than by extension: three shell files here have no .sh suffix
+# (.githooks/pre-commit, .githooks/pre-push, plugins/git-branch-naming/templates/pre-push),
+# and plugins/plantuml/templates/pre-commit is a marker fragment with no shebang
+# that must NOT be linted (it would fail SC2148).
+#
+# Severity is -S warning: error + warning block the commit, style stays advisory.
+# Degrades silently when shellcheck is not installed.
+# Set SHELLCHECK_SKIP=1 to bypass the gate for one commit.
+if [ -z "$SHELLCHECK_SKIP" ] && command -v shellcheck >/dev/null 2>&1; then
+    SHELLCHECK_STAGED=""
+    SHELLCHECK_CANDIDATES=$(git diff --cached --name-only --diff-filter=ACMR)
+
+    if [ -n "$SHELLCHECK_CANDIDATES" ]; then
+        while IFS= read -r SHELLCHECK_FILE; do
+            [ -n "$SHELLCHECK_FILE" ] || continue
+            case "$(git show ":$SHELLCHECK_FILE" 2>/dev/null | head -n 1)" in
+                '#!'*sh*) SHELLCHECK_STAGED="$SHELLCHECK_STAGED$SHELLCHECK_FILE
+" ;;
+            esac
+        done <<EOF
+$SHELLCHECK_CANDIDATES
+EOF
+    fi
+
+    if [ -n "$SHELLCHECK_STAGED" ]; then
+        echo "Checking shell scripts with shellcheck:"
+        echo "$SHELLCHECK_STAGED" | sed '/^$/d; s/^/  /'
+
+        SHELLCHECK_FAILED=0
+        while IFS= read -r SHELLCHECK_FILE; do
+            [ -n "$SHELLCHECK_FILE" ] || continue
+            SHELLCHECK_OUT=$(git show ":$SHELLCHECK_FILE" 2>/dev/null \
+                | shellcheck -S warning -f gcc - 2>&1 \
+                | sed "s|^-:|$SHELLCHECK_FILE:|")
+            if [ -n "$SHELLCHECK_OUT" ]; then
+                echo "$SHELLCHECK_OUT"
+                SHELLCHECK_FAILED=1
+            fi
+        done <<EOF
+$SHELLCHECK_STAGED
+EOF
+
+        if [ "$SHELLCHECK_FAILED" -ne 0 ]; then
+            echo ""
+            echo "Commit blocked: staged shell scripts have shellcheck findings."
+            echo "  Real defect: fix the code, then re-stage the file."
+            echo "  Intentional pattern: add '# shellcheck disable=SCxxxx' above the line, with a reason comment."
+            echo "  Pre-existing finding unrelated to your change: SHELLCHECK_SKIP=1 git commit ..."
+            exit 1
+        fi
+    fi
+fi
+# <<< artem-from-ua/shellcheck <<<

@@ -116,3 +116,7 @@ Claude Code console interaction examples (blocks showing `You: … Claude: …` 
 - statusline-compact: jq, git (no python3; the render makes no network calls). Optional `gh` for the
   `[CPM]` block's M (PR-not-merged) letter, invoked only as a detached background refresh — without
   `gh` the M letter is simply omitted and everything else works
+
+Repo-level (not a plugin): optional `shellcheck` for the pre-commit lint gate over staged shell
+scripts — without it the check is skipped silently and commits proceed. See
+[`docs/conventions.md`](docs/conventions.md#shell-script-linting).
