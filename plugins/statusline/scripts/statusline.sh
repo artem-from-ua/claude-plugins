@@ -157,7 +157,7 @@ build_progress_bar() {
 colorize_model() {
   local name="$1"
   # Strip "Claude " prefix
-  name=$(echo "$name" | sed 's/^Claude //')
+  name="${name#Claude }"
   local color=""
   local keyword=""
   if echo "$name" | grep -qi "opus"; then
@@ -168,7 +168,7 @@ colorize_model() {
     color=$(printf '\033[38;5;33m'); keyword="Haiku"
   fi
   if [ -n "$color" ]; then
-    echo "$name" | sed "s/$keyword/${color}${keyword}${rst}/"
+    echo "${name/$keyword/${color}${keyword}${rst}}"
   else
     echo "$name"
   fi
@@ -178,11 +178,11 @@ colorize_model() {
 colorize_branch() {
   local branch="$1"
   # Colors for branch prefixes
-  local c_feature=$(printf '\033[38;5;114m')   # green
-  local c_fix=$(printf '\033[38;5;203m')        # red
-  local c_release=$(printf '\033[38;5;221m')    # yellow
-  local c_refactor=$(printf '\033[38;5;110m')   # blue
-  local c_default=$(printf '\033[38;5;245m')    # gray
+  local c_feature=$'\033[38;5;114m'   # green
+  local c_fix=$'\033[38;5;203m'       # red
+  local c_release=$'\033[38;5;221m'   # yellow
+  local c_refactor=$'\033[38;5;110m'  # blue
+  local c_default=$'\033[38;5;245m'   # gray
 
   local prefix color suffix
   if echo "$branch" | grep -q '/'; then
@@ -227,8 +227,9 @@ format_time_remaining() {
     echo ""
     return
   fi
-  local now=$(date +%s)
-  local diff=$(( reset_epoch - now ))
+  local now diff
+  now=$(date +%s)
+  diff=$(( reset_epoch - now ))
   if [ "$diff" -le 0 ]; then
     echo "⏰"
     return
@@ -272,8 +273,9 @@ calc_time_pct() {
     echo "0"
     return
   fi
-  local now=$(date +%s)
-  local diff=$(( reset_epoch - now ))
+  local now diff
+  now=$(date +%s)
+  diff=$(( reset_epoch - now ))
   if [ "$diff" -le 0 ]; then
     echo "100"
     return
@@ -373,13 +375,13 @@ fi
 # Model: colorize keyword, dim version number, replace spaces with SEP
 model_colored=$(colorize_model "$model")
 model_with_dim=$(echo "$model_colored" | sed -E "s/([0-9]+\.[0-9]+)/${dim}\1${rst}/g")
-model_display=$(echo "$model_with_dim" | sed "s/ /${SEP}/g")
+model_display="${model_with_dim// /$SEP}"
 # Visible terminal width of "🤖･model" (strip ANSI then measure)
 model_visible=$(echo "🤖･${model_display}" | sed $'s/\x1b\\[[0-9;]*m//g')
 model_visible_width=$(calc_display_width "$model_visible")
 
 # Directory: replace spaces with SEP
-dir_display=$(echo "$short_dir" | sed "s/ /${SEP}/g")
+dir_display="${short_dir// /$SEP}"
 
 # ===== BUILD LINE 2: 7d limit + context + branch =====
 
@@ -504,6 +506,7 @@ if [ -n "$usage_json" ]; then
     if [ -n "$used_credits" ]; then
       # Money formatting
       money_raw=$(echo "$used_credits" | awk '{printf "%.2f", $1/100}')
+      # shellcheck disable=SC2001  # [.,] is a character class — matches either decimal separator, which ${var//} cannot express
       money_int=$(echo "$money_raw" | sed 's/[.,].*//')
       money_frac=$(echo "$money_raw" | grep -o '[.,][0-9]*$')
 
@@ -563,8 +566,10 @@ session_cost_visible_width=0
 if [ -n "$session_cost_usd" ] && [ "$session_cost_usd" != "null" ]; then
   # Convert JSON dot-decimal to locale decimal separator, then format with awk
   dec_sep=$(printf "%.1f" 1 | tr -d '01')
+  # shellcheck disable=SC2001  # the pattern is an escaped regex dot, not a literal — ${var//} would need the escaping stripped
   cost_locale=$(echo "$session_cost_usd" | sed "s/\./${dec_sep}/")
   cost_fmt=$(echo "$cost_locale" | awk '{printf "%.2f", $1}')
+  # shellcheck disable=SC2001  # [.,] is a character class — matches either decimal separator, which ${var//} cannot express
   cost_int=$(echo "$cost_fmt" | sed 's/[.,].*//')
   cost_frac=$(echo "$cost_fmt" | grep -o '[.,][0-9]*$')
   session_cost_widget="💵${SEP}${dim}\$${rst}${cost_int}${dim}${cost_frac}${rst}"
@@ -575,7 +580,7 @@ fi
 branch_widget=""
 if [ -n "$branch" ]; then
   branch_colored=$(colorize_branch "$branch")
-  branch_display=$(echo "$branch_colored" | sed "s/ /${SEP}/g")
+  branch_display="${branch_colored// /$SEP}"
   if [ -n "$dirty" ]; then
     branch_widget="🌿${SEP}${branch_display}${SEP}⚠️"
   else
@@ -653,10 +658,10 @@ if [ -n "$session_id" ]; then
 
   # Build widget
   if [ "$session_style" = "custom" ]; then
-    session_display=$(echo "$session_name" | sed "s/ /${SEP}/g")
+    session_display="${session_name// /$SEP}"
     session_widget="✏️${SEP}${session_display}"
   else
-    session_display=$(echo "$session_name" | sed "s/ /${SEP}/g")
+    session_display="${session_name// /$SEP}"
     session_widget="✏️${SEP}${yellow}${session_display}${rst}${SEP}⚠️"
   fi
 fi
