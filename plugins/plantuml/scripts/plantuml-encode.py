@@ -33,6 +33,7 @@ Usage:
 
 import sys
 import zlib
+import difflib
 import argparse
 import re
 import urllib.request
@@ -205,6 +206,37 @@ RENDER_COMPLAINT_MARKERS = (
     'cannot be parsed',
 )
 
+# How a diagram's source is stored in the markdown.
+#
+# HIDDEN wraps the fence in <details>, so a reader sees the rendered diagram and
+# one collapsed line instead of the full source. The source stays in an ordinary
+# fenced block, which is what makes the form safe: fence content is code text, so
+# GitHub escapes a literal `-->` or `</details>` inside a diagram label instead of
+# acting on it. Wrapping the source in an HTML comment cannot do this — HTML has no
+# escaping mechanism inside a comment, and `-->` is ordinary PlantUML arrow syntax.
+FORM_HIDDEN = 'hidden'
+FORM_VISIBLE = 'visible'
+
+DEFAULT_SUMMARY = 'Diagram source'
+
+# Emitted inside the wrapper so a later --sync can tell its own wrapper from a
+# <details> the author wrote by hand, and never rewrite someone else's <summary>.
+# Safe as an HTML comment: it carries no diagram body, so it cannot contain `-->`.
+GENERATED_SENTINEL = '<!-- plantuml-generated -->'
+
+# Keeps a whole document in the visible form. Placed on its own line anywhere in
+# the file, it costs nothing: unlike a marker inside the diagram, it does not
+# change the source, so no URL is re-encoded. This is what a document that teaches
+# PlantUML uses — including this plugin's own docs and their test fixtures.
+FILE_VISIBLE_MARKER = re.compile(r'^[ \t]*<!--[ \t]*plantuml-source:[ \t]*visible[ \t]*-->[ \t]*$',
+                                 re.MULTILINE)
+
+# Keeps one diagram visible: `<!-- plantuml-source: visible -->` on the line
+# before the fence, or `visible` in the fence info string (```plantuml visible).
+# Both sit outside the source, so again no URL churn.
+BLOCK_VISIBLE_COMMENT = re.compile(
+    r'<!--[ \t]*plantuml-source:[ \t]*visible[ \t]*-->[ \t]*\n[ \t]*$')
+
 
 def lint_source_offline(puml_source):
     """
@@ -276,17 +308,190 @@ def lint_source_remote(puml_source, timeout=15):
     return problems, False
 
 
+class PlantumlBlock:
+    """
+    One diagram found in a markdown file: its source, how that source is stored,
+    and the image link that belongs to it.
+
+    `span` covers the whole unit — the <details> wrapper included — so replacing
+    that slice rewrites the diagram without orphaning half of its wrapper.
+    """
+
+    def __init__(self, index, form, source, summary, alt, fmt, encoded,
+                 has_image, line, span, context=None, owned=True):
+        self.index = index
+        self.form = form
+        self.source = source          # verbatim fence body, newline included
+        self.summary = summary        # <summary> text when hidden, else None
+        self.alt = alt
+        self.fmt = fmt
+        self.encoded = encoded
+        self.has_image = has_image
+        self.line = line
+        self.span = span
+        # None when the block is usable; otherwise why it must be left alone.
+        self.context = context
+        # False when the <details> around this diagram was written by hand.
+        self.owned = owned
+
+
+# One pattern for every mode. The <details> wrapper is matched on both sides but
+# each half is independently optional, so the form is decided in Python and a
+# half-wrapped block can be reported instead of silently "fixed".
+#
+# The closing fence is anchored to its own line. Without that anchor `(.*?)```
+# stops at the first triple backtick anywhere, which truncates a diagram whose
+# note contains one — PlantUML accepts that, and --sync used to splice the image
+# link into the middle of the source. The anchor allows leading whitespace so a
+# diagram indented inside a list item is still found and can be diagnosed.
+BLOCK_RE = re.compile(
+    r'(?P<open_details>^[ \t]*<details>[ \t]*\n'
+    r'[ \t]*<summary>(?P<summary>.*?)</summary>[ \t]*\n'
+    r'(?:[ \t]*' + re.escape(GENERATED_SENTINEL) + r'[ \t]*\n)?'
+    r'(?:[ \t]*\n)*)?'
+    r'(?P<fence_open>^(?P<indent>[ \t]*)(?P<quote>>[ \t]*)?```plantuml(?P<info>[^\n]*)\n)'
+    r'(?P<source>.*?)'
+    r'(?P<fence_close>^[ \t]*(?:>[ \t]*)?```[ \t]*$)'
+    r'(?P<close_details>\n(?:[ \t]*\n)*[ \t]*</details>[ \t]*$)?'
+    r'(?P<image_clause>\s*\n!\[(?P<alt>[^\]]*)\]'
+    r'\(https://www\.plantuml\.com/plantuml/(?P<fmt>svg|png)/(?P<encoded>[^\)]*)\))?',
+    re.DOTALL | re.MULTILINE,
+)
+
+# Spans of the file that are inside some other fenced block. A ```plantuml fence
+# in there is quoted text — a tutorial showing the format, or a test fixture in a
+# heredoc — not a diagram this tool owns.
+_OUTER_FENCE_RE = re.compile(r'^[ \t]*(`{3,}|~{3,})[^\n]*$', re.MULTILINE)
+
+# `cat > file << 'EOF'` ... `EOF`. Everything between is literal data being written
+# to another file, so any fence inside it belongs to that file, not to this one.
+_HEREDOC_RE = re.compile(
+    r'^[ \t]*[^\n]*<<-?[ \t]*[\'"]?(?P<tag>[A-Za-z_][A-Za-z0-9_]*)[\'"]?[ \t]*$'
+    r'(?P<body>.*?)'
+    r'^[ \t]*(?P=tag)[ \t]*$',
+    re.DOTALL | re.MULTILINE,
+)
+
+
+def _quoted_regions(content):
+    """
+    Return (start, end) offsets of regions enclosed by a non-plantuml fence.
+
+    Fences nest by convention only, so this walks them in order: a fence opens a
+    region, the next fence of the same character closes it.
+    """
+    regions = [(m.start(), m.end()) for m in _HEREDOC_RE.finditer(content)]
+
+    open_at = None
+    open_marker = None
+    for m in _OUTER_FENCE_RE.finditer(content):
+        # A fence inside a heredoc is part of the file being written out.
+        if any(lo <= m.start() < hi for lo, hi in regions):
+            continue
+        marker = m.group(1)[0]
+        info = m.group(0).strip().lstrip('`~').strip()
+        if open_at is None:
+            # A plantuml fence at the top level opens a diagram, not a region.
+            if info.lower().startswith('plantuml'):
+                continue
+            open_at, open_marker = m.start(), marker
+        elif marker == open_marker:
+            regions.append((open_at, m.end()))
+            open_at = open_marker = None
+    return regions
+
+
+def iter_blocks(content):
+    """
+    Yield a PlantumlBlock for every diagram in `content`, in document order.
+    """
+    quoted = _quoted_regions(content)
+    index = 0
+    for m in BLOCK_RE.finditer(content):
+        start = m.start('fence_open')
+        if any(lo <= start < hi for lo, hi in quoted):
+            continue
+
+        index += 1
+        opened = m.group('open_details') is not None
+        closed = m.group('close_details') is not None
+
+        context = None
+        if opened != closed:
+            context = ('a <details> wrapper that is opened or closed but not both')
+        elif m.group('quote') or m.group('indent'):
+            # An indented or quoted fence cannot round-trip: the prefix ends up
+            # inside the encoded source, and an inserted image link lands at the
+            # wrong nesting level.
+            context = ('a fence that is indented or inside a blockquote')
+
+        has_image = m.group('image_clause') is not None
+        wrapper = m.group('open_details') or ''
+        yield PlantumlBlock(
+            index=index,
+            form=FORM_HIDDEN if opened and closed else FORM_VISIBLE,
+            source=m.group('source'),
+            summary=m.group('summary') if opened else None,
+            alt=m.group('alt') if has_image else None,
+            fmt=m.group('fmt') if has_image else None,
+            encoded=m.group('encoded') if has_image else None,
+            has_image=has_image,
+            line=content[:m.start()].count('\n') + 1,
+            span=(m.start(), m.end()),
+            context=context,
+            owned=(GENERATED_SENTINEL in wrapper) if opened else True,
+        )
+
+
+def iter_blocks_in_file(filepath):
+    with open(filepath, 'r') as f:
+        return list(iter_blocks(f.read()))
+
+
+def target_form(content, block, block_start_text):
+    """
+    Decide how a diagram should be stored. Hidden unless something asks for the
+    source to stay visible; every opt-out lives outside the source, so choosing
+    one never changes the diagram's URL.
+    """
+    if FILE_VISIBLE_MARKER.search(content):
+        return FORM_VISIBLE
+    if 'visible' in (block_start_text or '').split():
+        return FORM_VISIBLE
+    if BLOCK_VISIBLE_COMMENT.search(content[:block.span[0]]):
+        return FORM_VISIBLE
+    return FORM_HIDDEN
+
+
+def render_block(source, *, form, alt, fmt, summary=None, owned=True):
+    """
+    Build the on-disk text for one diagram. The single place that decides layout,
+    so --check, --sync and the docs cannot drift apart.
+
+    `owned` is False for a <details> the author wrote themselves: their wrapper is
+    reused as it stands, without stamping it with this tool's sentinel.
+    """
+    fence = '```plantuml\n%s```' % source
+    image = '![%s](%s)' % (alt, make_url(source.strip(), fmt))
+    if form == FORM_VISIBLE:
+        return '%s\n\n%s' % (fence, image)
+
+    sentinel = '%s\n' % GENERATED_SENTINEL if owned else ''
+    # The blank line after </summary> is required: without it GitHub renders the
+    # backticks literally instead of a highlighted code block.
+    return '<details>\n<summary>%s</summary>\n%s\n%s\n\n</details>\n\n%s' % (
+        summary or DEFAULT_SUMMARY, sentinel, fence, image)
+
+
 def iter_plantuml_blocks(filepath):
     """
-    Yield (index, source, line_number) for every ```plantuml block in a file.
-    """
-    with open(filepath, 'r') as f:
-        content = f.read()
+    Yield (index, source, line_number) for every diagram in a file.
 
-    block_pattern = re.compile(r'```plantuml\s*\n(.*?)```', re.DOTALL)
-    for i, match in enumerate(block_pattern.finditer(content), 1):
-        line_num = content[:match.start()].count('\n') + 1
-        yield i, match.group(1).strip(), line_num
+    Kept for the lint, which cares only about the source text and works the same
+    whether or not the source is wrapped.
+    """
+    for block in iter_blocks_in_file(filepath):
+        yield block.index, block.source.strip(), block.line
 
 
 def lint_markdown(filepath, use_network=True):
@@ -341,49 +546,49 @@ def lint_markdown(filepath, use_network=True):
 
 def check_markdown(filepath):
     """
-    Validate that all PlantUML code blocks have a matching, correctly encoded
-    image URL. Returns a list of error dicts. Empty list = all OK.
+    Validate that every diagram has a matching, correctly encoded image URL, and
+    that nothing about how it is stored blocks the tool from maintaining it.
 
-    Detects:
-    - Missing image URL after a PlantUML block
-    - Image URL that doesn't match the raw source (stale URL or manually edited URL)
+    Returns a list of error dicts. Empty list = all OK.
     """
     with open(filepath, 'r') as f:
         content = f.read()
 
     errors = []
 
-    # Find image links that follow a block (with optional whitespace between)
-    pair_pattern = re.compile(
-        r'(```plantuml\s*\n)(.*?)(```)'
-        r'(\s*\n\!\[([^\]]*)\]\(https://www\.plantuml\.com/plantuml/(svg|png)/([^\)]*)\))?',
-        re.DOTALL
-    )
-
-    for i, match in enumerate(pair_pattern.finditer(content), 1):
-        puml_source = match.group(2).strip()
-        has_image = match.group(4) is not None
-        existing_encoded = match.group(7)  # the encoded part of the URL
-
-        expected_encoded = plantuml_encode(puml_source)
-        line_num = content[:match.start()].count('\n') + 1
-
-        if not has_image:
+    for block in iter_blocks(content):
+        if block.context:
             errors.append({
                 'file': filepath,
-                'block': i,
-                'line': line_num,
+                'block': block.index,
+                'line': block.line,
+                'type': 'unsupported_context',
+                'message': f"PlantUML block #{block.index} (line {block.line}) sits in "
+                           f"{block.context}, so it is left untouched.\n"
+                           f"  Move the diagram to the top level of the document, or close "
+                           f"the wrapper, and run --sync again.",
+            })
+            continue
+
+        expected = plantuml_encode(block.source.strip())
+
+        if not block.has_image:
+            errors.append({
+                'file': filepath,
+                'block': block.index,
+                'line': block.line,
                 'type': 'missing_url',
-                'message': f"PlantUML block #{i} (line {line_num}) has no image URL. "
+                'message': f"PlantUML block #{block.index} (line {block.line}) has no image URL. "
                            f"Run: plantuml-encode.py --sync {filepath}"
             })
-        elif existing_encoded != expected_encoded:
+        elif block.encoded != expected:
             errors.append({
                 'file': filepath,
-                'block': i,
-                'line': line_num,
+                'block': block.index,
+                'line': block.line,
                 'type': 'url_mismatch',
-                'message': f"PlantUML block #{i} (line {line_num}): image URL does not match raw source.\n"
+                'message': f"PlantUML block #{block.index} (line {block.line}): image URL does not "
+                           f"match raw source.\n"
                            f"  Either the raw text was edited without updating the URL,\n"
                            f"  or the URL was manually changed without updating the raw text.\n"
                            f"  Run: plantuml-encode.py --sync {filepath}"
@@ -392,50 +597,77 @@ def check_markdown(filepath):
     return errors
 
 
-def sync_markdown(filepath):
+def rewrite_markdown(content):
     """
-    Find all PlantUML code blocks in a markdown file and update/insert
-    the rendered image URL immediately after each block.
+    Return `content` with every diagram re-emitted in the form it should have.
 
-    Expected pattern in markdown:
-```plantuml
-        @startuml
-        ...
-        @enduml
-```
-        ![<any alt text>](https://www.plantuml.com/plantuml/svg/...)
+    Blocks are spliced back to front so each replacement leaves the offsets of
+    the ones before it untouched, and so a block that must be left alone can be
+    skipped outright — something a regex substitution cannot express.
+    """
+    blocks = [b for b in iter_blocks(content) if not b.context]
 
-    If the image link is missing, it will be inserted.
-    If it exists, it will be updated with the correct encoded URL.
+    for block in reversed(blocks):
+        form = target_form(content, block, _info_of(content, block))
+        summary = block.summary if block.form == FORM_HIDDEN else None
+        replacement = render_block(
+            block.source,
+            form=form,
+            alt=block.alt or "PlantUML Diagram",
+            fmt=block.fmt or "svg",
+            summary=summary,
+            owned=block.owned,
+        )
+        start, end = block.span
+        content = content[:start] + replacement + content[end:]
+
+    return content
+
+
+def _info_of(content, block):
+    """Text after ```plantuml on the opening fence line, e.g. "visible"."""
+    line_start = content.rfind('\n', 0, block.span[0]) + 1
+    fence = content.find('```plantuml', block.span[0])
+    if fence == -1:
+        return ''
+    eol = content.find('\n', fence)
+    return content[fence + len('```plantuml'):eol if eol != -1 else len(content)]
+
+
+def sync_markdown(filepath, dry_run=False):
+    """
+    Bring every diagram in a markdown file to its target form and refresh its
+    image URL. With dry_run, print a unified diff and leave the file alone.
+
+    Returns True when the file differs from what it should be.
     """
     with open(filepath, 'r') as f:
         content = f.read()
 
-    # Pattern: ```plantuml block, then optional whitespace + existing image link
-    pattern = re.compile(
-        r'(```plantuml\s*\n)(.*?)(```)'
-        r'(\s*\n\!\[([^\]]*)\]\(https://www\.plantuml\.com/plantuml/(svg|png)/[^\)]*\))?',
-        re.DOTALL
-    )
+    new_content = rewrite_markdown(content)
+    changed = new_content != content
 
-    def replacer(match):
-        fence_open = match.group(1)
-        puml_source = match.group(2)
-        fence_close = match.group(3)
-        alt_text = match.group(5) or "PlantUML Diagram"
-        fmt = match.group(6) or "svg"
+    if dry_run:
+        if changed:
+            diff = difflib.unified_diff(
+                content.splitlines(keepends=True),
+                new_content.splitlines(keepends=True),
+                fromfile=f"{filepath} (current)",
+                tofile=f"{filepath} (after --sync)",
+            )
+            sys.stdout.writelines(diff)
+        else:
+            print(f"No changes: {filepath}")
+        return changed
 
-        url = make_url(puml_source.strip(), fmt)
-        return f"{fence_open}{puml_source}{fence_close}\n\n![{alt_text}]({url})"
-
-    new_content = pattern.sub(replacer, content)
-
-    if new_content != content:
+    if changed:
         with open(filepath, 'w') as f:
             f.write(new_content)
         print(f"Updated: {filepath}")
     else:
         print(f"No changes: {filepath}")
+    return changed
+
 
 
 def report_errors(all_errors, files_checked, unreachable, sync_only=True, linted=True):
@@ -503,6 +735,9 @@ def main():
     parser.add_argument('--no-lint', action='store_true',
                         help='With --check: only verify URL/source sync, skip the render lint '
                              '(fully offline)')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='With --sync: print a unified diff of what would change and write '
+                             'nothing (exit 1 if any file would change)')
     parser.add_argument('--offline', action='store_true',
                         help='Lint using local deprecated-syntax patterns only, never contacting '
                              'the PlantUML server')
@@ -615,8 +850,13 @@ def main():
         report_errors(all_errors, args.lint, unreachable, sync_only=False,
                       linted=True)
     elif args.sync:
+        changed = False
         for filepath in args.sync:
-            sync_markdown(filepath)
+            changed |= sync_markdown(filepath, dry_run=args.dry_run)
+        # A dry run is a check: exit non-zero when the tree is not what --sync
+        # would make it, so CI and pre-commit can use it directly.
+        if args.dry_run and changed:
+            sys.exit(1)
     elif args.render_ascii:
         text = sys.stdin.read().strip()
         if not text:
