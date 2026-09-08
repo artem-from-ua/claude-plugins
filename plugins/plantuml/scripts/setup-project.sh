@@ -21,6 +21,17 @@ HOOKS_DIR=$(git -C "$PROJECT_DIR" config --local core.hooksPath 2>/dev/null)
 if [ -z "$HOOKS_DIR" ]; then
   HOOKS_DIR=".githooks"
   git -C "$PROJECT_DIR" config core.hooksPath "$HOOKS_DIR"
+else
+  # core.hooksPath lives in the shared .git/config, so an absolute path pointing at
+  # this repo's own hooks makes every worktree run the main checkout's hooks instead
+  # of its own — a hook edited on a branch is silently not the one git executes.
+  # Rewrite that one case to a relative path, which git resolves per worktree.
+  # Any other value is the user's deliberate choice and is left alone.
+  HOOKS_TOPLEVEL=$(git -C "$PROJECT_DIR" rev-parse --show-toplevel 2>/dev/null)
+  if [ -n "$HOOKS_TOPLEVEL" ] && [ "$HOOKS_DIR" = "$HOOKS_TOPLEVEL/.githooks" ]; then
+    HOOKS_DIR=".githooks"
+    git -C "$PROJECT_DIR" config core.hooksPath "$HOOKS_DIR"
+  fi
 fi
 
 # Resolve relative hooks dir against project root

@@ -270,6 +270,7 @@ Plugins that install git hooks (pre-commit, pre-push, etc.) **must not overwrite
 **Rules:**
 
 - **Respect `core.hooksPath`** — read the existing value with `git config --local core.hooksPath`. Only set it when no value is configured.
+- **Write `core.hooksPath` as a relative path.** The setting lives in the shared `.git/config`, so an absolute path pointing at the repo's own `.githooks` makes every worktree execute the **main checkout's** hooks. A hook edited on a feature branch then silently is not the one git runs — the branch's own gate never fires, and a commit that should have been blocked goes through. A relative `.githooks` is resolved per worktree and behaves correctly in both. Setup scripts should rewrite that specific absolute-path-into-this-repo case; any other value is the user's deliberate choice and must be left alone.
 - **Variable namespacing** — prefix all variables with uppercase plugin name (e.g., `PLANTUML_STAGED_MD`, `PLANTUML_ENCODER`) to avoid clashes when multiple plugins share a hook file.
 - **Idempotency** — if markers are already present, replace the section between them. If absent, append the section. Never duplicate.
 - **Template format** — templates contain only the marker-delimited fragment (no `#!/bin/bash` shebang). The setup script adds a shebang when creating a new hook file.
