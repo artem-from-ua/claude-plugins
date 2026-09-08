@@ -1,5 +1,8 @@
 # PlantUML Plugin Acceptance Tests
 
+<!-- Test fixtures are inputs to the tool: they must stay in the form a test expects. -->
+<!-- plantuml-source: visible -->
+
 ## Purpose
 
 This document defines acceptance criteria and test scenarios for the PlantUML plugin. Use it to:
@@ -484,7 +487,7 @@ bash scripts/inject-rules.sh
 **Expected result:**
 - ✅ Outputs ~140 tokens of markdown text
 - ✅ Contains section: "PlantUML Diagrams in Markdown — Base Rules"
-- ✅ Describes two-part format (code block + image link)
+- ✅ Describes the storage format (source block + image link, source collapsed by default)
 - ✅ Includes example code
 - ✅ Contains "Proactive usage" section with:
   - Instruction to proactively add diagrams when creating/updating `.md` files
@@ -1129,7 +1132,7 @@ What are the rules for PlantUML diagrams in markdown files?
 ```
 
 **Expected response should include:**
-- ✅ Mention of "two parts" format (code block + image link)
+- ✅ Mention of the source block + image link shape, and that the source is collapsed by default
 - ✅ Reference to SVG format by default
 - ✅ Instruction to "proactively add PlantUML diagrams when creating or updating .md files"
 - ✅ Mention of the `plantuml-diagram-guide` skill
@@ -1137,9 +1140,15 @@ What are the rules for PlantUML diagrams in markdown files?
 
 **Example expected response:**
 ```
-PlantUML diagrams must have two parts:
+PlantUML diagrams must have a source block and an image link:
 1. A fenced code block with the `plantuml` language tag
 2. An image link pointing to the rendered diagram on plantuml.com
+
+In markdown files the source block is collapsed inside a <details>
+wrapper, so a reader sees the diagram and one "Diagram source" line.
+I write the plain fence and let the PostToolUse hook add the wrapper.
+A document that needs its sources visible carries a
+<!-- plantuml-source: visible --> line.
 
 I should proactively add PlantUML diagrams when creating or updating
 .md documentation files, and use the plantuml-diagram-guide skill to
@@ -1159,7 +1168,7 @@ Create a README.md file documenting a simple authentication system
 - ✅ Claude creates README.md
 - ✅ README includes a PlantUML diagram (Sequence or Activity) WITHOUT you requesting it
 - ✅ Claude mentions using `plantuml-diagram-guide` skill or explains diagram type choice
-- ✅ Diagram has both code block and image URL
+- ✅ Diagram has both a source block and an image URL
 
 ---
 
@@ -1191,7 +1200,7 @@ create docs/architecture.md with a description of simple client-server architect
 - ✅ Skill invocation happens BEFORE writing any PlantUML code
 - ✅ Claude may explain diagram type choice based on skill recommendations
 - ✅ Multiple diagrams are created (Component, Sequence, Deployment are common for this prompt)
-- ✅ All diagrams have correct two-part format
+- ✅ All diagrams have a source block and an image URL in the collapsed form
 
 **Test results from issue [#28](https://github.com/artem-from-ua/claude-plugins/issues/28):**
 
@@ -2443,6 +2452,322 @@ Tests that legends carry the three styling skinparams — dark-grey text, no bla
 - ✅ Non-legend element dimensions unchanged versus the unpadded diagram
 - ✅ A legend listing swatches ends each entry with `<size:17> </size>`; measured on the rendered SVG, consecutive legend baselines sit ~20px apart rather than the default ~16px, and the entry text itself is still `font-size="14"`
 - ✅ No standalone `<size:N> </size>` spacer lines *between* entries — those add a full line box (~33px step) and are reserved for the block's top and bottom padding
+
+---
+
+## Test 15: Collapsed Diagram Source (v2.0.0)
+
+**Objective:** Verify that a diagram's source is stored collapsed, that every shape the tool must not rewrite is left alone, and that the documents which need their sources visible keep them.
+
+Set `P` to the encoder for every step below:
+
+```bash
+export P="${CLAUDE_PLUGIN_ROOT}/scripts/plantuml-encode.py"
+rm -rf /tmp/plantuml-collapse && mkdir -p /tmp/plantuml-collapse && cd /tmp/plantuml-collapse
+git init -q .
+```
+
+### 15.1 A plain diagram is collapsed on sync
+
+**Steps:**
+```bash
+cat > basic.md << 'MD'
+Intro
+
+```plantuml
+@startuml
+A -> B: hi
+B --> A: ok
+@enduml
+```
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/SoWkIImgAStDuN9KqBLJSB9IoCZaSbBG1R8ThHJoixaSKlDIWD80)
+MD
+python3 "$P" --sync basic.md
+cat basic.md
+```
+
+**Expected result:**
+- ✅ The fence is wrapped in `<details>` / `</details>`
+- ✅ `<summary>Diagram source</summary>` is followed by `<!-- plantuml-generated -->`
+- ✅ A blank line separates `</summary>` from the fence — without it GitHub renders the backticks literally
+- ✅ Exactly one image link, placed after `</details>`
+- ✅ The URL now encodes the source
+
+### 15.2 Syncing again changes nothing
+
+**Steps:**
+```bash
+cp basic.md basic.1
+python3 "$P" --sync basic.md
+diff basic.1 basic.md && echo IDEMPOTENT
+```
+
+**Expected result:**
+- ✅ Prints `No changes:` and then `IDEMPOTENT`
+- ✅ `grep -c 'plantuml.com' basic.md` is still 1 — the wrapper never accumulates a second image
+
+### 15.3 Hostile labels survive
+
+A diagram body may contain the exact strings that would close the wrapper. This is why the source lives in a fence rather than an HTML comment.
+
+**Steps:**
+```bash
+cat > hostile.md << 'MD'
+```plantuml
+@startuml
+A -> B: literal --> in a label
+B --> A: and </details> too
+note right
+  a note containing ```
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/7OjH2e0W40N_FSMxWFGl4UbDjXHRs5RGxVw9dpFCdCEes_UAY_07Ke2mbKu2Fv4L1A6hY4jBn03IZ7tBnOXb7B3Md3Ohw5mVSvZ3mhlfB9Ir_W00) backticks
+end note
+@enduml
+```
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/STALE)
+MD
+python3 "$P" --sync hostile.md
+python3 "$P" --no-lint --check hostile.md
+```
+
+**Expected result:**
+- ✅ `--check` passes: the whole source was captured, including the line after the backticks in the note
+- ✅ Rendered on GitHub, the collapsible closes at its own `</details>`, and `-->`, `</details>` and the backticks appear as text inside the code block
+
+To confirm the rendering rather than assume it:
+
+```bash
+gh api -X POST /markdown -f mode=markdown -f text="$(cat hostile.md)" | head -20
+```
+
+- ✅ Output contains `--&gt;` and `&lt;/details&gt;` inside `<pre>`
+- ✅ Exactly one `</details>` tag, with the `<img>` after it
+
+### 15.4 The comment form is not used
+
+**Steps:**
+```bash
+gh api -X POST /markdown -f mode=markdown -f text='<!-- plantuml
+@startuml
+A --> B: result
+@enduml
+-->
+
+![d](https://www.plantuml.com/plantuml/svg/AAA)
+'
+```
+
+**Expected result:**
+- ✅ `B: result` and `@enduml --&gt;` are visible in the rendered output, outside any comment
+
+This is the counter-example: HTML has no escaping mechanism inside a comment, so the first `-->` in the diagram ends it. The tool must never emit this shape.
+
+### 15.5 A document can keep its sources visible
+
+**Steps:**
+```bash
+cat > teaching.md << 'MD'
+# Tutorial
+
+<!-- plantuml-source: visible -->
+
+```plantuml
+@startuml
+A -> B: shown on purpose
+@enduml
+```
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/SoWkIImgAStDuN9KqBLJSB9IACx8ByzJoCzJA2WjAiWlJkLoICrB0Ie00000)
+MD
+python3 "$P" --sync teaching.md
+grep -c '<details>' teaching.md
+```
+
+**Expected result:**
+- ✅ `grep -c` prints `0` — the source stays visible
+- ✅ The URL is still corrected, so validation keeps working
+- ✅ The diagram source is byte-for-byte unchanged, so opting out re-encodes nothing
+
+Repeat with the marker on the line immediately before the fence, and with `visible` in the fence info string (```` ```plantuml visible ````): both keep that one diagram visible.
+
+### 15.6 Fixtures quoted inside another fence are not diagrams
+
+**Steps:**
+```bash
+cat > fixture.md << 'OUTER'
+**Steps:**
+```bash
+cat > inner.md << 'EOF'
+```plantuml
+@startuml
+Alice -> Bob: Hello
+@enduml
+```
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/SoWkIImgAStDuNBCoKnELT2rKt3AJx9Iy4ZDoSddSaZDIm7A0G00)
+EOF
+```
+
+A real diagram follows:
+
+```plantuml
+@startuml
+X -> Y: real
+@enduml
+```
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/SoWkIImgAStDuOfGqBLJYBHIA4fDpE5oICrB0Ge20000)
+OUTER
+cp fixture.md fixture.before
+python3 "$P" --sync fixture.md
+diff fixture.before fixture.md
+```
+
+**Expected result:**
+- ✅ Only the diagram after "A real diagram follows" is wrapped
+- ✅ The heredoc fixture is untouched — it is input to a test, and rewriting it would change what the test asserts
+
+### 15.7 Shapes the tool refuses to rewrite
+
+**Steps:**
+```bash
+cat > edge.md << 'MD'
+1. In a list:
+
+   ```plantuml
+   @startuml
+   A -> B: indented
+   @enduml
+   ```
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/SoWkIImgAStDuL9GK71KqBLJSB9IoCnBISqhIKq1YJcavgK0fG40)
+
+   ![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/BAD1)
+
+<details>
+<summary>Only opened</summary>
+
+```plantuml
+@startuml
+A -> B: half
+@enduml
+```
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/SoWkIImgAStDuN9KqBLJSB9Io4ZCIUDoICrB0Ge20000)
+MD
+cp edge.md edge.before
+python3 "$P" --no-lint --check edge.md
+python3 "$P" --sync edge.md
+diff edge.before edge.md && echo UNTOUCHED
+```
+
+**Expected result:**
+- ✅ `--check` reports the indented fence as sitting in `a fence that is indented or inside a blockquote`
+- ✅ `--check` reports the half-wrapped block as `a <details> wrapper that is opened or closed but not both`
+- ✅ `--sync` prints `UNTOUCHED`: neither block is rewritten, because rewriting would guess at intent
+- ✅ Exit code is 1 for `--check`
+
+A blockquoted fence (`> ```plantuml`) behaves the same way. Before this release such a fence was silently encoded together with its `>` prefixes and rendered as a blank image.
+
+### 15.8 A hand-written wrapper is left as it stands
+
+**Steps:**
+```bash
+cat > mine.md << 'MD'
+<details>
+<summary>My own section</summary>
+
+```plantuml
+@startuml
+A -> B: mine
+@enduml
+```
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/SoWkIImgAStDuN9KqBLJSB9IoCtCI-LoICrB0Ge20000)
+
+</details>
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/STALE)
+MD
+python3 "$P" --sync mine.md
+grep -n 'summary\|plantuml-generated' mine.md
+```
+
+**Expected result:**
+- ✅ `<summary>My own section</summary>` is preserved verbatim
+- ✅ No `<!-- plantuml-generated -->` marker is added — the tool does not claim a wrapper it did not write
+- ✅ The URL is still refreshed
+- ✅ Running `--sync` a second time changes nothing
+
+### 15.9 `--dry-run` writes nothing
+
+**Steps:**
+```bash
+cat > dry.md << 'MD'
+```plantuml
+@startuml
+A -> B: dry
+@enduml
+```
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/SoWkIImgAStDuN9KqBLJSB9II2cgv798pKi1YW40)
+MD
+cp dry.md dry.before
+python3 "$P" --dry-run --sync dry.md
+echo "exit=$?"
+diff dry.before dry.md && echo UNWRITTEN
+```
+
+**Expected result:**
+- ✅ A unified diff is printed showing the wrapper and the corrected URL
+- ✅ `exit=1`, because the file would change — usable as a CI check
+- ✅ `UNWRITTEN`: the file on disk is unchanged
+- ✅ On an already-synced file, prints `No changes:` and exits 0
+
+Note that `--sync` takes one or more file arguments, so `--dry-run` must come before it.
+
+### 15.10 The hook leaves other people's trees alone
+
+**Steps:**
+```bash
+mkdir -p node_modules/pkg
+cat > node_modules/pkg/doc.md << 'MD'
+```plantuml
+@startuml
+A -> B
+@enduml
+```
+
+![d](https://www.plantuml.com/plantuml/svg/SoWkIImgAStDuN9KqBLJSE9oICrB0N81)
+MD
+cp node_modules/pkg/doc.md nm.before
+printf '{"tool_input":{"file_path":"node_modules/pkg/doc.md"}}' | bash "${CLAUDE_PLUGIN_ROOT}/scripts/sync-plantuml.sh"
+diff nm.before node_modules/pkg/doc.md && echo SKIPPED
+```
+
+**Expected result:**
+- ✅ Prints `SKIPPED` — vendored trees are not restructured
+- ✅ The same holds for `vendor/`, `dist/`, `build/`, `.venv/`, `site-packages/` and anything under `.git/`
+- ✅ A file git ignores is skipped too: a document with no diff to review the change in should not be rewritten behind the author's back
+- ✅ A file outside any git repository is skipped
+- ✅ A normal tracked `.md` file **is** synced
+
+### 15.11 This repository stays green
+
+**Steps:**
+```bash
+cd "$(git rev-parse --show-toplevel)"
+python3 "$P" --no-lint --check plugins/plantuml/README.md plugins/plantuml/docs/VALIDATION.md plugins/plantuml/docs/ACCEPTANCE_TESTS.md plugins/plantuml/skills/plantuml-diagram-guide/references/sequence.md plugins/plantuml/skills/plantuml-diagram-guide/references/styling.md
+python3 "$P" --dry-run --sync plugins/plantuml/docs/VALIDATION.md plugins/plantuml/docs/ACCEPTANCE_TESTS.md plugins/plantuml/skills/plantuml-diagram-guide/references/sequence.md plugins/plantuml/skills/plantuml-diagram-guide/references/styling.md
+git diff --exit-code
+```
+
+**Expected result:**
+- ✅ `--check` passes on every file
+- ✅ `--dry-run` reports `No changes` for all four: they carry `<!-- plantuml-source: visible -->` because their whole purpose is to show diagram sources
+- ✅ `git diff --exit-code` is clean — validating the repository never modifies it
 
 ---
 

@@ -95,12 +95,32 @@ Here's the full flow:
 
 ## ⚙️ How it works <a name="how-it-works"></a>
 
-Every diagram has two parts: a `plantuml` source block and an image URL below it. Claude writes both — you only edit the source. When you save, the URL updates automatically.
+Every diagram has a `plantuml` source block and an image URL below it. Claude writes both — you only edit the source. When you save, the URL updates automatically and the source is folded into a collapsed `Diagram source` block, so readers see the diagram instead of the text that produced it:
+
+````markdown
+<details>
+<summary>Diagram source</summary>
+
+```plantuml
+@startuml
+Client -> API: POST /login
+API --> Client: token
+@enduml
+```
+
+![PlantUML Diagram](https://www.plantuml.com/plantuml/svg/SoWkIImgAStDuNBEoKpDAr7GjLDm3F2qKWZm3mvHqC_9Jy_Cum8AAEW29I1Ah1HAyhDJyxWSKlDIW1e1)
+
+</details>
+
+![Login Flow](https://www.plantuml.com/plantuml/svg/...)
+````
+
+The source stays in a normal fenced block, so it is one click away in the rendered page, plain text in the diff, and still found by `grep`. Documents that exist to *show* their source — a tutorial, a reference — opt out with a `<!-- plantuml-source: visible -->` line; see [validation & CI](docs/VALIDATION.md).
 
 | Trigger | What happens |
 |---------|-------------|
 | SessionStart | Injects diagram formatting rules and ASCII rendering workflow |
-| PostToolUse (Write/Edit on `.md`) | Auto-updates image URLs when source changes ([validation & CI](docs/VALIDATION.md)) |
+| PostToolUse (Write/Edit on `.md`) | Auto-updates image URLs and collapses the source ([validation & CI](docs/VALIDATION.md)) |
 | PreToolUse | Auto-allows all PlantUML operations — no permission prompts |
 | Before creating any diagram | `plantuml-diagram-guide` skill invoked automatically — picks the right type from 17 options |
 | Pre-commit | Blocks commits with a stale URL, deprecated syntax, or a diagram that fails to render |

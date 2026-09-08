@@ -1,6 +1,6 @@
 #!/bin/bash
 # SessionStart hook: inject PlantUML formatting rules into Claude's context.
-# Outputs compact base rules so Claude always knows the 2-part format.
+# Outputs compact base rules so Claude always knows the diagram storage format.
 # The full diagram type catalog is available on-demand via the plantuml-diagram-guide skill.
 
 # Resolve plugin root path (works both as hook and standalone)
@@ -9,9 +9,28 @@ PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 cat <<RULES
 ## PlantUML Diagrams in Markdown — Base Rules
 
-Every PlantUML diagram MUST have two parts, in this order:
-1. A fenced \`plantuml\` code block with raw source
-2. A blank line, then a Markdown image link to \`https://www.plantuml.com/plantuml/svg/<encoded>\`
+In a markdown file, every PlantUML diagram MUST have a source block followed by a Markdown image link to \`https://www.plantuml.com/plantuml/svg/<encoded>\`. The source is collapsed by default, so a reader sees the diagram and one \`Diagram source\` line instead of the whole source:
+
+\`\`\`
+<details>
+<summary>Diagram source</summary>
+<!-- plantuml-generated -->
+
+\`\`\`plantuml
+@startuml
+...
+@enduml
+\`\`\`
+
+</details>
+
+![Alt text](https://www.plantuml.com/plantuml/svg/<encoded>)
+\`\`\`
+
+- **Never write the \`<details>\` wrapper by hand** — write the plain fenced block plus the image link, and the PostToolUse hook wraps it on save. A wrapper that is half-written blocks the diagram from being maintained at all.
+- Exactly one image link per diagram, after \`</details>\`.
+- To keep a source visible — a tutorial, a syntax reference, a test fixture — put \`<!-- plantuml-source: visible -->\` on its own line in the document, or immediately before one fence. This never changes the diagram's URL.
+- This applies to markdown files only. In terminal replies, show the source in a plain fenced \`plantuml\` block; a collapsible there is just noise.
 
 Proactive usage:
 - When creating/updating \`.md\` docs, proactively add PlantUML diagrams for architecture, sequences, state machines, data flow, and component relationships.
@@ -28,10 +47,9 @@ Proactive usage:
 - **ALWAYS invoke the \`plantuml-diagram-guide\` skill BEFORE creating any PlantUML diagram** to choose the correct diagram type. This is MANDATORY — do not skip this step even if you think you know which type to use.
 
 Rules:
-- Always keep both parts in sync. When you modify PlantUML source, the PostToolUse hook auto-updates the image URL.
+- Always keep source and image in sync. When you modify PlantUML source, the PostToolUse hook auto-updates the image URL and re-applies the wrapper.
 - Use SVG format (\`/svg/\` path) unless PNG is specifically requested.
 - The alt text in the image link should be a short description of the diagram.
-- Place a blank line between the closing \`\`\` and the image link.
 - Every diagram MUST set a non-default arrow thickness after \`@startuml\`: \`skinparam sequenceArrowThickness 1.5\` for sequence diagrams, \`skinparam ArrowThickness 1.5\` for activity, state, class, component, object, use case, deployment and ER. Sequence diagrams MUST also include \`skinparam LifeLineBorderColor #C0C0C0\`.
 - For sequence diagrams: consult \`references/sequence.md\` (via plantuml-diagram-guide skill) for ACK suppression rules and arrow style conventions.
 RULES

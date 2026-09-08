@@ -1,5 +1,8 @@
 # Sequence Diagram Reference
 
+<!-- A syntax reference exists to show its source, so nothing here is collapsed. -->
+<!-- plantuml-source: visible -->
+
 ## Visual Styling Boilerplate
 
 Include these two skinparams in every sequence diagram immediately after `@startuml`:
